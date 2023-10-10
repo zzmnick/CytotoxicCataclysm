@@ -74,6 +74,39 @@ struct Mesh
 	std::vector<uint16_t> vertex_indices;
 };
 
+enum class REGION_THEME_ID {
+	NERVOUS = 0,
+	RESPIRATORY = NERVOUS + 1,
+	URINARY = RESPIRATORY + 1,
+	MUSCULAR = URINARY + 1,
+	SKELETAL = MUSCULAR + 1,
+	CUTANEOUS = SKELETAL + 1,
+	REGION_THEME_COUNT = CUTANEOUS + 1
+};
+const int region_theme_count = (int)REGION_THEME_ID::REGION_THEME_COUNT;
+
+enum class REGION_GOAL_ID {
+	CURE = 0,
+	CANCER_CELL = CURE + 1,
+	MELEE_WEAPON = CANCER_CELL + 1,
+	DOUBLE_DAMAGE = MELEE_WEAPON + 1,
+	REGION_GOAL_COUNT = DOUBLE_DAMAGE + 1
+};
+const int region_goal_count = (int)REGION_GOAL_ID::REGION_GOAL_COUNT;
+
+enum class ENEMY_ID {
+	ORANGE = 0,
+	ENEMY_COUNT = ORANGE + 1
+};
+const int enemy_type_count = (int)ENEMY_ID::ENEMY_COUNT;
+
+enum class BOSS_ID {
+	SALMONELLA = 0,
+	ECOLI = SALMONELLA + 1,
+	BOSS_COUNT = ECOLI + 1
+};
+const int boss_type_count = (int)BOSS_ID::BOSS_COUNT;
+
 /**
  * The following enumerators represent global identifiers refering to graphic
  * assets. For example TEXTURE_ASSET_ID are the identifiers of each texture
@@ -99,8 +132,14 @@ struct Mesh
  */
 
 enum class TEXTURE_ASSET_ID {
-	FISH = 0,
-	TEXTURE_COUNT = FISH + 1 // TEXTURE_COUNT indicates that no txture is needed
+	IMMUNITY = 0,
+	NERVOUS_BG = IMMUNITY + 1,
+	RESPIRATORY_BG = NERVOUS_BG + 1,
+	URINARY_BG = RESPIRATORY_BG + 1,
+	MUSCULAR_BG = URINARY_BG + 1,
+	SKELETAL_BG = MUSCULAR_BG + 1,
+	CUTANEOUS_BG = SKELETAL_BG + 1,
+	TEXTURE_COUNT = CUTANEOUS_BG + 1 // TEXTURE_COUNT indicates that no txture is needed
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
@@ -108,7 +147,8 @@ enum class EFFECT_ASSET_ID {
 	COLOURED = 0,
 	TEXTURED = COLOURED + 1,
 	SCREEN = TEXTURED + 1,
-	EFFECT_COUNT = SCREEN + 1
+	REGION = SCREEN + 1,
+	EFFECT_COUNT = REGION + 1
 };
 const int effect_count = (int)EFFECT_ASSET_ID::EFFECT_COUNT;
 
@@ -116,7 +156,8 @@ enum class GEOMETRY_BUFFER_ID {
 	SPRITE = 0,
 	DEBUG_LINE = SPRITE + 1,
 	SCREEN_TRIANGLE = DEBUG_LINE + 1,
-	GEOMETRY_COUNT = SCREEN_TRIANGLE + 1
+	REGION_TRIANGLE = SCREEN_TRIANGLE + 1,
+	GEOMETRY_COUNT = REGION_TRIANGLE + 1
 };
 const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 
@@ -126,3 +167,23 @@ struct RenderRequest {
 	GEOMETRY_BUFFER_ID used_geometry = GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 };
 
+// map between region theme and the corresponding texture asset
+static std::unordered_map <REGION_THEME_ID, TEXTURE_ASSET_ID> region_texture_map = {
+	{REGION_THEME_ID::NERVOUS, TEXTURE_ASSET_ID::NERVOUS_BG},
+	{REGION_THEME_ID::RESPIRATORY, TEXTURE_ASSET_ID::RESPIRATORY_BG},
+	{REGION_THEME_ID::URINARY, TEXTURE_ASSET_ID::URINARY_BG},
+	{REGION_THEME_ID::MUSCULAR, TEXTURE_ASSET_ID::MUSCULAR_BG},
+	{REGION_THEME_ID::SKELETAL, TEXTURE_ASSET_ID::SKELETAL_BG},
+	{REGION_THEME_ID::CUTANEOUS, TEXTURE_ASSET_ID::CUTANEOUS_BG}
+};
+
+// Stucture to store body region (section) information
+struct Region
+{
+	float angle;
+	REGION_THEME_ID theme = REGION_THEME_ID::REGION_THEME_COUNT;
+	REGION_GOAL_ID goal = REGION_GOAL_ID::REGION_GOAL_COUNT;
+	ENEMY_ID enemy = ENEMY_ID::ENEMY_COUNT;
+	BOSS_ID boss = BOSS_ID::BOSS_COUNT;
+	bool is_cleared = false;
+};

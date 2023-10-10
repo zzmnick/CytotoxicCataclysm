@@ -197,6 +197,19 @@ void RenderSystem::initializeGlGeometryBuffers()
 	// Counterclockwise as it's the default opengl front winding direction.
 	const std::vector<uint16_t> screen_indices = { 0, 1, 2 };
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE, screen_vertices, screen_indices);
+
+	///////////////////////////////////////////////////////
+	// Initialize region triangle
+	std::vector<TexturedVertex> region_vertices(3);
+	region_vertices[0].position = { 0.f, 0.f, 0.f };
+	region_vertices[1].position = { 1.f, 0.f, 0.f };
+	region_vertices[2].position = { 0.f, 1.f, 0.f };
+	region_vertices[0].texcoord = { 0.f, 0.f };
+	region_vertices[1].texcoord = { 10.f, 0.f };
+	region_vertices[2].texcoord = { 0.f, 10.f };
+
+	const std::vector<uint16_t> region_indices = { 0, 1, 2 };
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::REGION_TRIANGLE, region_vertices, region_indices);
 }
 
 RenderSystem::~RenderSystem()

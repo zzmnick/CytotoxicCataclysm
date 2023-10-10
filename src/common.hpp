@@ -30,8 +30,6 @@ inline std::string textures_path(const std::string& name) {return data_path() + 
 inline std::string audio_path(const std::string& name) {return data_path() + "/audio/" + std::string(name);};
 inline std::string mesh_path(const std::string& name) {return data_path() + "/meshes/" + std::string(name);};
 
-const int window_width_px = 1200;
-const int window_height_px = 800;
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
@@ -48,3 +46,11 @@ struct Transform {
 };
 
 bool gl_has_errors();
+
+// Game configuration
+const int window_width_px = 1200;
+const int window_height_px = 800;
+const size_t NUM_REGIONS = 4;
+const float MAP_RADIUS = 4000;
+const float SPAWN_REGION_RADIUS = window_width_px - 200;
+const float EDGE_FADING_THICKNESS = window_width_px / 2;

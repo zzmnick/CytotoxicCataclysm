@@ -1,5 +1,6 @@
 // internal
 #include "render_system.hpp"
+#include "common.hpp"
 #include <SDL.h>
 
 #include "tiny_ecs_registry.hpp"
@@ -99,6 +100,91 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 	gl_has_errors();
 }
 
+void RenderSystem::drawBackground(const mat3& viewProjection)
+{
+	auto& region_container = registry.regions;
+	for (uint i = 0; i < region_container.components.size(); i++) {
+		Region& region = region_container.components[i];
+		Entity entity = region_container.entities[i];
+		Transform transform;
+		transform.rotate(region.angle);
+		vec2 scalar(1.f);
+		scalar *= (MAP_RADIUS * 1.5f);
+		transform.scale(scalar);
+
+		assert(registry.renderRequests.has(entity));
+		const RenderRequest& render_request = registry.renderRequests.get(entity);
+
+		const GLuint used_effect_enum = (GLuint)render_request.used_effect;
+		assert(used_effect_enum == (GLuint)EFFECT_ASSET_ID::REGION);
+		const GLuint program = (GLuint)effects[used_effect_enum];
+
+		// Setting shaders
+		glUseProgram(program);
+		gl_has_errors();
+
+		assert(render_request.used_geometry == GEOMETRY_BUFFER_ID::REGION_TRIANGLE);
+		const GLuint vbo = vertex_buffers[(GLuint)render_request.used_geometry];
+		const GLuint ibo = index_buffers[(GLuint)render_request.used_geometry];
+
+		// Setting vertex and index buffers
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+		gl_has_errors();
+
+		GLint in_position_loc = glGetAttribLocation(program, "in_position");
+		GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
+		gl_has_errors();
+		assert(in_texcoord_loc >= 0);
+
+		glEnableVertexAttribArray(in_position_loc);
+		glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
+			sizeof(TexturedVertex), (void*)0);
+		gl_has_errors();
+
+		glEnableVertexAttribArray(in_texcoord_loc);
+		glVertexAttribPointer(
+			in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex),
+			(void*)sizeof(
+				vec3)); // note the stride to skip the preceeding vertex position
+
+		// Enabling and binding texture to slot 0
+		glActiveTexture(GL_TEXTURE0);
+		gl_has_errors();
+
+		assert(registry.renderRequests.has(entity));
+		GLuint texture_id =
+			texture_gl_handles[(GLuint)render_request.used_texture];
+
+		glBindTexture(GL_TEXTURE_2D, texture_id);
+		gl_has_errors();
+
+		// Get number of indices from index buffer, which has elements uint16_t
+		GLint size = 0;
+		glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+		gl_has_errors();
+
+		GLsizei num_indices = size / sizeof(uint16_t);
+		// GLsizei num_triangles = num_indices / 3;
+
+		// Setting uniform values to the currently bound program
+		GLuint transform_loc = glGetUniformLocation(program, "transform");
+		glUniformMatrix3fv(transform_loc, 1, GL_FALSE, (float*)&transform.mat);
+		GLuint projection_loc = glGetUniformLocation(program, "viewProjection");
+		glUniformMatrix3fv(projection_loc, 1, GL_FALSE, (float*)&viewProjection);
+		GLuint mapRadius_loc = glGetUniformLocation(program, "mapRadius");
+		glUniform1f(mapRadius_loc, MAP_RADIUS);
+		GLuint spawnRadius_loc = glGetUniformLocation(program, "spawnRadius");
+		glUniform1f(spawnRadius_loc, SPAWN_REGION_RADIUS);
+		GLuint edgeThickness_loc = glGetUniformLocation(program, "edgeThickness");
+		glUniform1f(edgeThickness_loc, EDGE_FADING_THICKNESS);
+		gl_has_errors();
+		// Drawing of num_indices/3 triangles specified in the index buffer
+		glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, nullptr);
+		gl_has_errors();
+	}
+}
+
 // draw the intermediate texture to the screen
 void RenderSystem::drawToScreen()
 {
@@ -112,7 +198,7 @@ void RenderSystem::drawToScreen()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, w, h);
 	glDepthRange(0, 10);
-	glClearColor(1.f, 0, 0, 1.0);
+	glClearColor(0, 0, 0, 1);	// black default background
 	glClearDepth(1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	gl_has_errors();
@@ -170,7 +256,7 @@ void RenderSystem::draw()
 	// Clearing backbuffer
 	glViewport(0, 0, w, h);
 	glDepthRange(0.00001, 10);
-	glClearColor(0, 0, 1, 1.0);
+	glClearColor(0, 0, 0, 1);	// black default background
 	glClearDepth(10.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_BLEND);
@@ -186,6 +272,9 @@ void RenderSystem::draw()
 	bool playerCamera = true;
 
 	mat3 viewProjection = playerCamera ? projection_2D * view : projection_2D;
+
+	// Draw background
+	drawBackground(viewProjection);
 
 	// Draw all textured meshes that have a position and size component
 	for (Entity entity : registry.renderRequests.entities)

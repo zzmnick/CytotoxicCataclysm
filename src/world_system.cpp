@@ -9,10 +9,6 @@
 #include "physics_system.hpp"
 #include <unordered_map>
 
-
-// Game configuration
-
-
 std::unordered_map < int, int > keys_pressed;
 vec2 mouse;
 
@@ -192,6 +188,9 @@ void WorldSystem::restart_game() {
 	// Create a new player
 	player = createPlayer(renderer, { 0, 0 });
 	registry.colors.insert(player, {1, 0.8f, 0.8f});
+
+	// Create map sections
+	createRandomRegion(renderer, NUM_REGIONS);
 }
 
 // Compute collisions between entities
@@ -291,8 +290,8 @@ void WorldSystem::movement() {
 	if (magnitude > MAX_VELOCITY || magnitude < -MAX_VELOCITY) {
 		playermovement.velocity *= (MAX_VELOCITY / magnitude);
 	}
-	printf("MAGNITUDE:%f\n", magnitude);
-	printf("VELOCITYX:%f\n", playermovement.velocity.x);
+	 //printf("MAGNITUDE:%f\n", magnitude);
+	 //printf("VELOCITYX:%f\n", playermovement.velocity.x);
 
 
 }
@@ -314,8 +313,8 @@ void WorldSystem::direction() {
 
 	float angle = atan2(-bottom/2 + mouse.y, right/2 - mouse.x) + M_PI;
 
-	printf("POSITiONX:%f\n", playerdirection.position.x);
-	printf("POSITIONY:%f\n", playerdirection.position.y);
+	//printf("POSITiONX:%f\n", playerdirection.position.x);
+	//printf("POSITIONY:%f\n", playerdirection.position.y);
 
 
 

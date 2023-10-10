@@ -30,14 +30,23 @@ class RenderSystem {
 
 	// Make sure these paths remain in sync with the associated enumerators.
 	const std::array<std::string, texture_count> texture_paths = {
-			textures_path("fish.png") };
+		textures_path("immunity.png"),
+		textures_path("nervous_bg.png"),
+		textures_path("respiratory_bg.png"),
+		textures_path("urinary_bg.png"),
+		textures_path("muscular_bg.png"),
+		textures_path("skeletal_bg.png"),
+		textures_path("cutaneous_bg.png"),
+	};
 
 	std::array<GLuint, effect_count> effects;
 	// Make sure these paths remain in sync with the associated enumerators.
 	const std::array<std::string, effect_count> effect_paths = {
 		shader_path("coloured"),
 		shader_path("textured"),
-		shader_path("screen") };
+		shader_path("screen"),
+		shader_path("region")
+	};
 
 	std::array<GLuint, geometry_count> vertex_buffers;
 	std::array<GLuint, geometry_count> index_buffers;
@@ -79,6 +88,7 @@ public:
 private:
 	// Internal drawing functions for each entity type
 	void drawTexturedMesh(Entity entity, const mat3& viewProjection);
+	void drawBackground(const mat3& viewProjection);
 	void drawToScreen();
 
 	// Window handle
