@@ -1,5 +1,6 @@
 .vs/
+.vscode/
 .git
 out/
-ext/project_path.hpp
 build/
+ext/project_path.hpp

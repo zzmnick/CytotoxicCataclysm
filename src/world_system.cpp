@@ -191,6 +191,13 @@ void WorldSystem::restart_game() {
 
 	// Create map sections
 	createRandomRegion(renderer, NUM_REGIONS);
+
+	// Create multiple instances of the Red Enemy (new addition)
+    int num_enemies = 5; // Adjust this number as desired
+    for (int i = 0; i < num_enemies; ++i) {
+        vec2 enemy_position = { 50.f + uniform_dist(rng) * (window_width_px - 100.f), 50.f + uniform_dist(rng) * (window_height_px - 100.f) };
+        createRedEnemy(renderer, enemy_position);
+    }
 }
 
 // Compute collisions between entities
@@ -311,7 +318,7 @@ void WorldSystem::direction() {
 	float bottom = (float)window_height_px;
 
 
-	float angle = atan2(-bottom/2 + mouse.y, right/2 - mouse.x) + M_PI;
+	float angle = atan2(-bottom/2 + mouse.y, right/2 - mouse.x) + M_PI+0.70;
 
 	//printf("POSITiONX:%f\n", playerdirection.position.x);
 	//printf("POSITIONY:%f\n", playerdirection.position.y);

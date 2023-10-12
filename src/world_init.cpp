@@ -34,8 +34,32 @@ Entity createPlayer(RenderSystem* renderer, vec2 pos)
 	return entity;
 }
 
-void createRandomRegion(RenderSystem* renderer, size_t num_regions)
-{
+Entity createRedEnemy(RenderSystem* renderer, vec2 pos) {
+
+    auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Setting initial motion values
+	Motion& motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 3.14f;
+	motion.velocity = { 0.f, 0.f };
+	motion.scale = vec2({ RED_ENEMY_BB_WIDTH, RED_ENEMY_BB_HEIGHT });
+
+	// Create an enemy
+	registry.enemies.emplace(entity);
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::RED_ENEMY,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE });
+
+    return entity;
+}
+
+void createRandomRegion(RenderSystem* renderer, size_t num_regions) {
 	assert(region_theme_count >= num_regions);
 	assert(region_goal_count >= num_regions);
 
@@ -97,8 +121,7 @@ void createRandomRegion(RenderSystem* renderer, size_t num_regions)
 	}
 }
 
-Entity createLine(vec2 position, vec2 scale)
-{
+Entity createLine(vec2 position, vec2 scale) {
 	Entity entity = Entity();
 
 	// Store a reference to the potentially re-used mesh object (the value is stored in the resource cache)

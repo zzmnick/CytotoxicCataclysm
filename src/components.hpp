@@ -10,6 +10,12 @@ struct Player
 
 };
 
+// Enemy component
+struct Enemy
+{
+
+};
+
 // All data relevant to the shape and motion of entities
 struct Motion {
 	vec2 position = { 0.f, 0.f };
@@ -133,7 +139,8 @@ const int boss_type_count = (int)BOSS_ID::BOSS_COUNT;
 
 enum class TEXTURE_ASSET_ID {
 	IMMUNITY = 0,
-	NERVOUS_BG = IMMUNITY + 1,
+	RED_ENEMY = IMMUNITY + 1,
+	NERVOUS_BG = RED_ENEMY + 1,
 	RESPIRATORY_BG = NERVOUS_BG + 1,
 	URINARY_BG = RESPIRATORY_BG + 1,
 	MUSCULAR_BG = URINARY_BG + 1,
