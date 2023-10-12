@@ -37,6 +37,7 @@ public:
 		registry_list.push_back(&screenStates);
 		registry_list.push_back(&debugComponents);
 		registry_list.push_back(&colors);
+		registry_list.push_back(&regions);
 	}
 
 	void clear_all_components() {
