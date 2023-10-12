@@ -24,12 +24,27 @@ struct Motion {
 	vec2 scale = { 10.f, 10.f };
 };
 
+enum class COLLISION_TYPE {
+	WITH_BOUNDARY = 0,
+	PLAYER_WITH_ENEMY = WITH_BOUNDARY + 1,
+	ENEMY_WITH_ENEMY = PLAYER_WITH_ENEMY + 1
+};
+
 // Stucture to store collision information
 struct Collision
 {
 	// Note, the first object is stored in the ECS container.entities
+	COLLISION_TYPE collision_type;
 	Entity other_entity; // the second object involved in the collision
-	Collision(Entity& other_entity) { this->other_entity = other_entity; };
+	Collision(COLLISION_TYPE collision_type, Entity& other_entity) {
+		this->other_entity = other_entity; 
+		this->collision_type = collision_type;
+	};
+	Collision(COLLISION_TYPE collision_type) {
+		assert(collision_type == COLLISION_TYPE::WITH_BOUNDARY && 
+			   "other_entity must be specified unless colliding with boundary");
+		this->collision_type = collision_type;
+	}
 };
 
 // Data structure for toggling debug mode

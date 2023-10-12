@@ -11,11 +11,15 @@
 
 std::unordered_map < int, int > keys_pressed;
 vec2 mouse;
+float MAX_VELOCITY = 400;
+float VELOCITY_UNIT = 20;
+float ACCELERATION_UNIT = 0.9;
 
 // Create the world
 WorldSystem::WorldSystem() {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
+	allow_accel = true;
 }
 
 WorldSystem::~WorldSystem() {
@@ -124,21 +128,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	while (registry.debugComponents.entities.size() > 0)
 	    registry.remove_all_components_of(registry.debugComponents.entities.back());
 
-	// Removing out of screen entities
-	auto& motion_container = registry.motions;
-
-	// TODO remove this, as we don't want to permanently remove
-	// // Remove entities that leave the screen on the left side
-	// // Iterate backwards to be able to remove without unterfering with the next object to visit
-	// // (the containers exchange the last element with the current)
-	// for (int i = (int)motion_container.components.size()-1; i>=0; --i) {
-	//     Motion& motion = motion_container.components[i];
-	// 	if (motion.position.x + abs(motion.scale.x) < 0.f) {
-	// 		if(!registry.players.has(motion_container.entities[i])) // don't remove the player
-	// 			registry.remove_all_components_of(motion_container.entities[i]);
-	// 	}
-	// }
-
 	// Processing the player state
 	assert(registry.screenStates.components.size() <= 1);
     ScreenState &screen = registry.screenStates.components[0];
@@ -162,7 +151,13 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	}
 	// reduce window brightness if deathTimer has progressed
 	screen.screen_darken_factor = 1 - min_timer_ms / 3000;
-	movement();
+	// Block velocity update for one step after collision to
+	// avoid going out of border / going through enemy
+	if (allow_accel) {
+		movement();
+	} else {
+		allow_accel = true;
+	}
 	direction();
 
 	return true;
@@ -207,12 +202,33 @@ void WorldSystem::handle_collisions() {
 	for (uint i = 0; i < collisionsRegistry.components.size(); i++) {
 		// The entity and its collider
 		Entity entity = collisionsRegistry.entities[i];
-		Entity entity_other = collisionsRegistry.components[i].other_entity;
-
-		// For now, we are only interested in collisions that involve the player
-		if (registry.players.has(entity)) {
-			//Player& player = registry.players.get(entity);
-			
+		Collision collision = collisionsRegistry.components[i];
+		Motion& motion = registry.motions.get(entity);
+		// When any moving object collides with the boundary, it gets bounced towards the 
+		// reflected direction (similar to the physics model of reflection of light)
+		if (collision.collision_type == COLLISION_TYPE::WITH_BOUNDARY) {
+			vec2 normal_vec = -normalize(motion.position);
+			// Only reflect when velocity is pointing out of the boundary to avoid being stuck
+			if (dot(motion.velocity, normal_vec) < 0) {
+				vec2 reflection = motion.velocity - 2 * dot(motion.velocity, normal_vec) * normal_vec;
+				// Gradually lose some momentum each collision
+				motion.velocity = 0.95f * reflection;
+				allow_accel = false;
+			}
+		} else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_ENEMY) {
+			// When player collides with enemy, only player gets knocked back,
+			// towards its relative direction from the enemy
+			Entity enemy_entity = collisionsRegistry.components[i].other_entity;
+			Motion& enemy_motion = registry.motions.get(enemy_entity); 
+			vec2 knockback_direction = normalize(motion.position - enemy_motion.position);
+			motion.velocity = MAX_VELOCITY * knockback_direction;
+			allow_accel = false;
+		} else if (collision.collision_type == COLLISION_TYPE::ENEMY_WITH_ENEMY) {
+			// When two enemies collide, one enemy simply follows the movement of 
+			// the other. One of the enemies is considered rigid body in this case
+			Entity other_enemy_entity = collisionsRegistry.components[i].other_entity;
+			Motion& other_enemy_motion = registry.motions.get(other_enemy_entity);
+			motion.velocity = other_enemy_motion.velocity;
 		}
 	}
 
@@ -263,12 +279,9 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 	}
 	current_speed = fmax(0.f, current_speed);
 }
-void WorldSystem::movement() {
-	float MAX_VELOCITY = 400;
-	float VELOCITY_UNIT = 20;
-	float ACCELERATION_UNIT = 0.9;
-	Motion& playermovement = registry.motions.get(player);
 
+void WorldSystem::movement() {
+	Motion& playermovement = registry.motions.get(player);
 
 	if (keys_pressed[GLFW_KEY_W]) {
 		playermovement.velocity.y += VELOCITY_UNIT;
@@ -297,33 +310,22 @@ void WorldSystem::movement() {
 	if (magnitude > MAX_VELOCITY || magnitude < -MAX_VELOCITY) {
 		playermovement.velocity *= (MAX_VELOCITY / magnitude);
 	}
-	 //printf("MAGNITUDE:%f\n", magnitude);
-	 //printf("VELOCITYX:%f\n", playermovement.velocity.x);
-
-
 }
+
 void WorldSystem::on_mouse_move(vec2 pos) {
 	if (registry.deathTimers.has(player)) {
 		return;
 	}
 	mouse = pos;
-
 }
 
 void WorldSystem::direction() {
-	
 	Motion playerdirection = registry.motions.get(player);
 
 	float right = (float)window_width_px;
 	float bottom = (float)window_height_px;
 
-
 	float angle = atan2(-bottom/2 + mouse.y, right/2 - mouse.x) + M_PI+0.70;
-
-	//printf("POSITiONX:%f\n", playerdirection.position.x);
-	//printf("POSITIONY:%f\n", playerdirection.position.y);
-
-
 
 	registry.motions.get(player).angle = angle;
 }	

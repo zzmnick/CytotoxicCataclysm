@@ -9,20 +9,79 @@ vec2 get_bounding_box(const Motion& motion)
 	return { abs(motion.scale.x), abs(motion.scale.y) };
 }
 
-// This is a SUPER APPROXIMATE check that puts a circle around the bounding boxes and sees
-// if the center point of either object is inside the other's bounding-box-circle. You can
-// surely implement a more accurate detection
+struct CollisionCircle {
+	vec2 position;
+	float radius;
+	CollisionCircle(vec2 position, float radius) : 
+		position(position), 
+		radius(radius) 
+	{}
+};
+
+// A brief explanation of the collision detection algorithm used in functions below:
+// For a textured moving object, try to fit some number of circles within its bounding
+// box. These circles together represent the collision region of the entity. if any
+// collision circle of one entity collides with any collision circle of another entity,
+// then these two entities collide. This is a more accurate approximation when the
+// entity's bounding box is not square
+std::vector<CollisionCircle> get_collision_circles(const Motion& motion)
+{
+	std::vector<CollisionCircle> res;
+	vec2 bounding_box = get_bounding_box(motion);
+	// If the bounding box is square, use a single circle
+	if (abs(bounding_box.x - bounding_box.y) < 0.0001f) {
+		res.push_back(CollisionCircle(motion.position, bounding_box.x / 2));
+	} else {
+		// Otherwise partition the rectangle into multiple circles
+		float shorter_edge = min(bounding_box.x, bounding_box.y); 
+		float longer_edge = max(bounding_box.x, bounding_box.y);
+		Transform transform;
+		transform.rotate((bounding_box.x < bounding_box.y) ? (M_PI / 2 + motion.angle) : motion.angle);
+		// Start from one side of the rectangle and go along the longer edge
+		float circle_pos = -(longer_edge / 2.f - shorter_edge / 2.f);
+		vec2 pos_offset;
+		while (circle_pos < longer_edge / 2.f - shorter_edge / 2.f) {
+			pos_offset = vec2(circle_pos, 0);
+			pos_offset = transform.mat * vec3(pos_offset, 1.f);
+			res.push_back(CollisionCircle(
+				motion.position + vec2(pos_offset.x, pos_offset.y),
+				shorter_edge / 2.f
+			));
+			circle_pos += shorter_edge / 4.f;
+		}
+		pos_offset = vec2(longer_edge / 2.f - shorter_edge / 2.f, 0);
+		pos_offset = transform.mat * vec3(pos_offset, 1.f);
+		res.push_back(CollisionCircle(
+			motion.position + vec2(pos_offset.x, pos_offset.y),
+			shorter_edge / 2.f
+		));
+	}
+	return res;
+}
+
 bool collides(const Motion& motion1, const Motion& motion2)
 {
-	vec2 dp = motion1.position - motion2.position;
-	float dist_squared = dot(dp,dp);
-	const vec2 other_bonding_box = get_bounding_box(motion1) / 2.f;
-	const float other_r_squared = dot(other_bonding_box, other_bonding_box);
-	const vec2 my_bonding_box = get_bounding_box(motion2) / 2.f;
-	const float my_r_squared = dot(my_bonding_box, my_bonding_box);
-	const float r_squared = max(other_r_squared, my_r_squared);
-	if (dist_squared < r_squared)
-		return true;
+	std::vector<CollisionCircle> circles1 = get_collision_circles(motion1);
+	std::vector<CollisionCircle> circles2 = get_collision_circles(motion2);
+	for (CollisionCircle circle1 : circles1) {
+		for (CollisionCircle circle2: circles2) {
+			float distance = length(circle1.position - circle2.position);
+			if (distance < circle1.radius + circle2.radius) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool collides_with_boundary(const Motion& motion)
+{
+	std::vector<CollisionCircle> collision_circles = get_collision_circles(motion);
+	for (CollisionCircle circle : collision_circles) {
+		if (length(circle.position) > MAP_RADIUS - circle.radius) {
+			return true;
+		}
+	}
 	return false;
 }
 
@@ -54,9 +113,21 @@ void PhysicsSystem::step(float elapsed_ms)
 				Entity entity_j = motion_container.entities[j];
 				// Create a collisions event
 				// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
-				registry.collisions.emplace_with_duplicates(entity_i, entity_j);
-				registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+				// If collision between player and enemy, always add the collision component under player entity
+				if (registry.players.has(entity_i)) {
+					registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::PLAYER_WITH_ENEMY, entity_j);
+				} else if (registry.players.has(entity_j)) {
+					registry.collisions.emplace_with_duplicates(entity_j, COLLISION_TYPE::PLAYER_WITH_ENEMY, entity_j);
+				} else {
+					// If both entities have motion component and are not player, assume both are enemies
+					registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::ENEMY_WITH_ENEMY, entity_j);
+				}
 			}
+		}
+
+		// Check for collisions with the map boundary
+		if (collides_with_boundary(motion_i)) {
+			registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::WITH_BOUNDARY);
 		}
 	}
 }
