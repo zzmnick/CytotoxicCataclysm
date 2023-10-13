@@ -116,8 +116,12 @@ void PhysicsSystem::step(float elapsed_ms)
 				// If collision between player and enemy, always add the collision component under player entity
 				if (registry.players.has(entity_i)) {
 					registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::PLAYER_WITH_ENEMY, entity_j);
+					Health& playerHealth = registry.healthValues.get(entity_i);
+					playerHealth.targetHealthPercentage -= 10.0;
 				} else if (registry.players.has(entity_j)) {
 					registry.collisions.emplace_with_duplicates(entity_j, COLLISION_TYPE::PLAYER_WITH_ENEMY, entity_j);
+					Health& playerHealth = registry.healthValues.get(entity_j);
+					playerHealth.targetHealthPercentage -= 10.0;
 				} else {
 					// If both entities have motion component and are not player, assume both are enemies
 					registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::ENEMY_WITH_ENEMY, entity_j);

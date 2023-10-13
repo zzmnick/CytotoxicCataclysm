@@ -54,3 +54,5 @@ const size_t NUM_REGIONS = 4;
 const float MAP_RADIUS = 4000;
 const float SPAWN_REGION_RADIUS = window_width_px - 200;
 const float EDGE_FADING_THICKNESS = window_width_px / 2;
+const float HEALTH_BAR_UPDATE_TIME_SLAP = 300.0;
+const float HEALTH_BAR_LENGTH_VS_COORD = 1.0;

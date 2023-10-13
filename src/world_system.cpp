@@ -149,6 +149,32 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 			return true;
 		}
 	}
+
+	//constantly checking if the current health value
+	Health& playerHealthBar = registry.healthValues.get(player);
+	if (playerHealthBar.currentHealthPercentage != playerHealthBar.targetHealthPercentage && playerHealthBar.timer_ms > 0) {
+		playerHealthBar.timer_ms -= elapsed_ms_since_last_update;
+		if (playerHealthBar.timer_ms < min_timer_ms && playerHealthBar.targetHealthPercentage <= 0.0) {
+			min_timer_ms = playerHealthBar.timer_ms;
+		}
+
+		// Resume the static state of the Health Bar 
+		if (playerHealthBar.timer_ms < 0) {
+			playerHealthBar.timer_ms = HEALTH_BAR_UPDATE_TIME_SLAP;
+			playerHealthBar.currentHealthPercentage = playerHealthBar.targetHealthPercentage;
+			assert(playerHealthBar.currentHealthPercentage == playerHealthBar.targetHealthPercentage);
+			
+		}
+
+		if (playerHealthBar.currentHealthPercentage <= 0.0) {
+			screen.screen_darken_factor = 0;
+			restart_game();
+			return true;
+		}
+	}
+	
+	
+
 	// reduce window brightness if deathTimer has progressed
 	screen.screen_darken_factor = 1 - min_timer_ms / 3000;
 	// Block velocity update for one step after collision to
@@ -282,6 +308,12 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 
 void WorldSystem::movement() {
 	Motion& playermovement = registry.motions.get(player);
+
+	//temporary: test health bar. decrease by 10%
+	if (keys_pressed[GLFW_KEY_H]) {
+		Health& playerHealth = registry.healthValues.get(player);
+		playerHealth.targetHealthPercentage -= 1.0;
+	}
 
 	if (keys_pressed[GLFW_KEY_W]) {
 		playermovement.velocity.y += VELOCITY_UNIT;

@@ -31,6 +31,9 @@ Entity createPlayer(RenderSystem* renderer, vec2 pos)
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITE });
 
+	//creat a brand new health with 100% health value
+	registry.healthValues.emplace(entity);
+
 	return entity;
 }
 

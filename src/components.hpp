@@ -161,7 +161,8 @@ enum class TEXTURE_ASSET_ID {
 	MUSCULAR_BG = URINARY_BG + 1,
 	SKELETAL_BG = MUSCULAR_BG + 1,
 	CUTANEOUS_BG = SKELETAL_BG + 1,
-	TEXTURE_COUNT = CUTANEOUS_BG + 1 // TEXTURE_COUNT indicates that no txture is needed
+	HEALTHBARFRAME = CUTANEOUS_BG + 1,
+	TEXTURE_COUNT = HEALTHBARFRAME + 1 // TEXTURE_COUNT indicates that no txture is needed
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
@@ -170,7 +171,9 @@ enum class EFFECT_ASSET_ID {
 	TEXTURED = COLOURED + 1,
 	SCREEN = TEXTURED + 1,
 	REGION = SCREEN + 1,
-	EFFECT_COUNT = REGION + 1
+	HEALTHBAR = REGION + 1,
+	STATICWINDOW = HEALTHBAR + 1,
+	EFFECT_COUNT = STATICWINDOW + 1
 };
 const int effect_count = (int)EFFECT_ASSET_ID::EFFECT_COUNT;
 
@@ -179,7 +182,9 @@ enum class GEOMETRY_BUFFER_ID {
 	DEBUG_LINE = SPRITE + 1,
 	SCREEN_TRIANGLE = DEBUG_LINE + 1,
 	REGION_TRIANGLE = SCREEN_TRIANGLE + 1,
-	GEOMETRY_COUNT = REGION_TRIANGLE + 1
+	HEALTH_RECTANGLE = REGION_TRIANGLE + 1,
+	HEALTHBARFRAME_RECTANGLE = HEALTH_RECTANGLE + 1,
+	GEOMETRY_COUNT = HEALTHBARFRAME_RECTANGLE + 1
 };
 const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 
@@ -208,4 +213,11 @@ struct Region
 	ENEMY_ID enemy = ENEMY_ID::ENEMY_COUNT;
 	BOSS_ID boss = BOSS_ID::BOSS_COUNT;
 	bool is_cleared = false;
+};
+
+struct Health
+{
+	float currentHealthPercentage = 100.f;
+	float targetHealthPercentage = 100.f;
+	float timer_ms = HEALTH_BAR_UPDATE_TIME_SLAP;
 };

@@ -38,6 +38,7 @@ class RenderSystem {
 		textures_path("muscular_bg.png"),
 		textures_path("skeletal_bg.png"),
 		textures_path("cutaneous_bg.png"),
+		textures_path("healthbarframe.png"),
 	};
 
 	std::array<GLuint, effect_count> effects;
@@ -46,7 +47,9 @@ class RenderSystem {
 		shader_path("coloured"),
 		shader_path("textured"),
 		shader_path("screen"),
-		shader_path("region")
+		shader_path("region"),
+		shader_path("healthBar"),
+		shader_path("staticWindow")
 	};
 
 	std::array<GLuint, geometry_count> vertex_buffers;
@@ -91,6 +94,10 @@ private:
 	void drawTexturedMesh(Entity entity, const mat3& viewProjection);
 	void drawBackground(const mat3& viewProjection);
 	void drawToScreen();
+	void drawHealthBar();
+	void drawHealthBarFrame();
+	void getPlayerHealth();
+	Health playerHealth;
 
 	// Window handle
 	GLFWwindow* window;

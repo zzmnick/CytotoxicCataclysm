@@ -199,6 +199,33 @@ void RenderSystem::initializeGlGeometryBuffers()
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE, screen_vertices, screen_indices);
 
 	///////////////////////////////////////////////////////
+	// Initialize health bar rectangle.
+	std::vector<vec3> healthBar_vertices(4);
+	healthBar_vertices[0] = { -0.5, -0.8, 0.f };
+	healthBar_vertices[1] = { 0.5, -0.8, 0.f };
+	healthBar_vertices[2] = { 0.5, -0.85, 0.f };
+	healthBar_vertices[3] = { -0.5, -0.85, 0.f };
+
+	// Counterclockwise as it's the default opengl front winding direction.
+	const std::vector<uint16_t> healthBar_indices = { 0, 1, 2, 0, 2, 3 };
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::HEALTH_RECTANGLE, healthBar_vertices, healthBar_indices);
+
+	///////////////////////////////////////////////////////
+	// Initialize health bar frame rectangle
+	std::vector<TexturedVertex> healthBarFrame_vertices(4);
+	healthBarFrame_vertices[0].position = { -0.922, -0.935, 0.f };
+	healthBarFrame_vertices[1].position = { 0.561, -0.935, 0.f };
+	healthBarFrame_vertices[2].position = { 0.561, -0.71, 0.f };
+	healthBarFrame_vertices[3].position = { -0.922, -0.71, 0.f };
+	healthBarFrame_vertices[0].texcoord = { 0.f, 1.f };
+	healthBarFrame_vertices[1].texcoord = { 1.f, 1.f };
+	healthBarFrame_vertices[2].texcoord = { 1.f, 0.f };
+	healthBarFrame_vertices[3].texcoord = { 0.f, 0.f };
+
+	const std::vector<uint16_t> healthBarFrame_indices = { 0, 1, 2, 0, 2, 3 };
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::HEALTHBARFRAME_RECTANGLE, healthBarFrame_vertices, healthBarFrame_indices);
+
+	///////////////////////////////////////////////////////
 	// Initialize region triangle
 	std::vector<TexturedVertex> region_vertices(3);
 	region_vertices[0].position = { 0.f, 0.f, 0.f };

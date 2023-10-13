@@ -185,6 +185,95 @@ void RenderSystem::drawBackground(const mat3& viewProjection)
 	}
 }
 
+void RenderSystem::drawHealthBar() {
+	
+
+	const GLuint vbo = vertex_buffers[(GLuint)GEOMETRY_BUFFER_ID::HEALTH_RECTANGLE];
+	const GLuint ibo = index_buffers[(GLuint)GEOMETRY_BUFFER_ID::HEALTH_RECTANGLE];
+
+	// Setting vertex and index buffers
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	gl_has_errors();
+
+	const GLuint healthBar_program = effects[(GLuint)EFFECT_ASSET_ID::HEALTHBAR];
+	GLint in_position_loc = glGetAttribLocation(healthBar_program, "in_position");
+	glEnableVertexAttribArray(in_position_loc);
+	glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void*)0);
+	gl_has_errors();
+
+	glUseProgram(healthBar_program);
+	gl_has_errors();
+	
+	getPlayerHealth();
+	float C_t_Percentage = playerHealth.currentHealthPercentage * playerHealth.timer_ms / HEALTH_BAR_UPDATE_TIME_SLAP + (1.0 - playerHealth.timer_ms / HEALTH_BAR_UPDATE_TIME_SLAP) * playerHealth.targetHealthPercentage;
+	if (C_t_Percentage <= 0.0) C_t_Percentage = 0.0;
+	//printf("C_t: %f\n", C_t);
+	playerHealth.currentHealthPercentage = C_t_Percentage;
+	GLint HealthBar_Length_Scale_loc = glGetUniformLocation(healthBar_program, "HealthBar_Length_Scale");
+	glUniform1f(HealthBar_Length_Scale_loc, C_t_Percentage / 100.0);
+	gl_has_errors();
+
+	
+
+	// Get number of indices from index buffer, which has elements uint16_t
+	GLint size = 0;
+	glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+	gl_has_errors();
+
+	GLsizei num_indices = size / sizeof(uint16_t);
+	glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, nullptr);
+	gl_has_errors();
+	return;
+}
+
+void RenderSystem::drawHealthBarFrame() {
+	const GLuint vbo = vertex_buffers[(GLuint)GEOMETRY_BUFFER_ID::HEALTHBARFRAME_RECTANGLE];
+	const GLuint ibo = index_buffers[(GLuint)GEOMETRY_BUFFER_ID::HEALTHBARFRAME_RECTANGLE];
+
+	// Setting vertex and index buffers
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	gl_has_errors();
+
+	const GLuint healthBarFrame_program = effects[(GLuint)EFFECT_ASSET_ID::STATICWINDOW];
+	GLint in_position_loc = glGetAttribLocation(healthBarFrame_program, "in_position");
+	GLint in_texcoord_loc = glGetAttribLocation(healthBarFrame_program, "in_texcoord");
+	glEnableVertexAttribArray(in_position_loc);
+	glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), (void*)0);
+	gl_has_errors();
+
+	glEnableVertexAttribArray(in_texcoord_loc);
+	glVertexAttribPointer( in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), (void*)sizeof(vec3)); 
+	// Enabling and binding texture to slot 0
+	glActiveTexture(GL_TEXTURE0);
+	gl_has_errors();
+
+	glUseProgram(healthBarFrame_program);
+	gl_has_errors();
+
+	GLuint texture_id = texture_gl_handles[(GLuint)TEXTURE_ASSET_ID::HEALTHBARFRAME];
+	glBindTexture(GL_TEXTURE_2D, texture_id);
+	gl_has_errors();
+
+	// Getting uniform locations for glUniform* calls
+	//GLint color_uloc = glGetUniformLocation(healthBarFrame_program, "fcolor");
+	//const vec3 color = vec3(1);
+	//glUniform3fv(color_uloc, 1, (float*)&color);
+	//gl_has_errors();
+
+
+	// Get number of indices from index buffer, which has elements uint16_t
+	GLint size = 0;
+	glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+	gl_has_errors();
+
+	GLsizei num_indices = size / sizeof(uint16_t);
+	glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, nullptr);
+	gl_has_errors();
+	return;
+}
+
 // draw the intermediate texture to the screen
 void RenderSystem::drawToScreen()
 {
@@ -291,6 +380,11 @@ void RenderSystem::draw()
 		drawTexturedMesh(entity, viewProjection);
 	}
 
+
+	//Draw Fixed screen items
+	drawHealthBar();
+	drawHealthBarFrame();
+
 	// Truely render to the screen
 	drawToScreen();
 
@@ -335,4 +429,21 @@ mat3 RenderSystem::createViewMatrix()
 		}
 	}
 	return { {1.f, 0.f, 0.f}, {0.f, -1.f, 0.f}, {offset.x, offset.y, 1.f} };
+}
+
+void RenderSystem::getPlayerHealth() {
+	auto& health_container = registry.healthValues;
+	for (uint i = 0; i < health_container.size(); i++)
+	{
+		Entity entity = health_container.entities[i];
+		if (registry.players.has(entity))
+		{
+			
+			playerHealth = health_container.components[i];
+			//return true;
+			//return health_container.components[i];
+		}
+	}
+	//return false;
+	//throw std::invalid_argument("No health value links to the player entity");
 }

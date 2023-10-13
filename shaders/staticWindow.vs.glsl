@@ -8,13 +8,12 @@ in vec2 in_texcoord;
 out vec2 texcoord;
 
 // Application data
-uniform mat3 transform;
-uniform mat3 viewProjection;
 
-//The player shader
+
+//The floating window for UI elements
 void main()
 {
 	texcoord = in_texcoord;
-	vec3 pos = viewProjection * transform * vec3(in_position.xy, 1.0);
+	vec3 pos = vec3(in_position.xy, 1.0);
 	gl_Position = vec4(pos.xy, in_position.z, 1.0);
 }
