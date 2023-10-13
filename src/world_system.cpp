@@ -208,7 +208,6 @@ void WorldSystem::restart_game() {
 
 	// Create a new player
 	player = createPlayer(renderer, { 0, 0 });
-	registry.colors.insert(player, {1, 0.8f, 0.8f});
 
 	// Create map sections
 	createRandomRegion(renderer, NUM_REGIONS);
