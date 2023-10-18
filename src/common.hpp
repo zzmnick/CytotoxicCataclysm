@@ -48,8 +48,8 @@ struct Transform {
 bool gl_has_errors();
 
 // Game configuration
-const int window_width_px = 1200;
-const int window_height_px = 800;
+const int window_width_px = 1920;
+const int window_height_px = 1080;
 const size_t NUM_REGIONS = 4;
 const float MAP_RADIUS = 4000;
 const float SPAWN_REGION_RADIUS = window_width_px - 200;

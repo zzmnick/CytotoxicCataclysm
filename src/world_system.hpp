@@ -40,6 +40,7 @@ public:
 private:
 	// Input callback functions
 	void on_key(int key, int, int action, int mod);
+	void enemy_movement();
 	void movement();
 	void on_mouse_move(vec2 pos);
 

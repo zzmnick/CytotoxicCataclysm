@@ -62,6 +62,30 @@ Entity createRedEnemy(RenderSystem* renderer, vec2 pos) {
     return entity;
 }
 
+Entity createGreenEnemy(RenderSystem* renderer, vec2 pos) {
+
+	auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Setting initial motion values
+	Motion& motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 3.14f;
+	motion.velocity = { 0.f, 0.f };
+	motion.scale = vec2({ GREEN_ENEMY_BB_WIDTH, GREEN_ENEMY_BB_HEIGHT });
+
+	// Create an enemy
+	registry.enemies.emplace(entity);
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::GREEN_ENEMY,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE });
+
+	return entity;
+}
 void createRandomRegion(RenderSystem* renderer, size_t num_regions) {
 	assert(region_theme_count >= num_regions);
 	assert(region_goal_count >= num_regions);

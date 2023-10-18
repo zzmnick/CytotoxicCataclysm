@@ -13,7 +13,8 @@ std::unordered_map < int, int > keys_pressed;
 vec2 mouse;
 float MAX_VELOCITY = 400;
 float VELOCITY_UNIT = 20;
-float ACCELERATION_UNIT = 0.9;
+float ACCELERATION_UNIT = 0.05;
+float DECELERATION_UNIT = 0.9;
 
 // Create the world
 WorldSystem::WorldSystem() {
@@ -185,6 +186,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 		allow_accel = true;
 	}
 	direction();
+	enemy_movement();
 
 	return true;
 }
@@ -218,6 +220,10 @@ void WorldSystem::restart_game() {
         vec2 enemy_position = { 50.f + uniform_dist(rng) * (window_width_px - 100.f), 50.f + uniform_dist(rng) * (window_height_px - 100.f) };
         createRedEnemy(renderer, enemy_position);
     }
+	for (int i = 0; i < num_enemies; ++i) {
+		vec2 enemy_position = { 50.f + uniform_dist(rng) * (window_width_px - 100.f), 50.f + uniform_dist(rng) * (window_height_px - 100.f) };
+		createGreenEnemy(renderer, enemy_position);
+	}
 }
 
 // Compute collisions between entities
@@ -260,6 +266,7 @@ void WorldSystem::handle_collisions() {
 	// Remove all collisions from this simulation step
 	registry.collisions.clear();
 }
+
 
 // Should the game be over ?
 bool WorldSystem::is_over() const {
@@ -304,7 +311,17 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 	}
 	current_speed = fmax(0.f, current_speed);
 }
+void WorldSystem::enemy_movement() {
+	for (Entity entity : registry.enemies.entities) {
+		Motion& motion = registry.motions.get(entity);
+		vec2 playerposition = registry.motions.get(player).position;
+		float angle = atan2(motion.position.y - playerposition.y, motion.position.x - playerposition.x);
+		motion.velocity.x = -cos(angle)  * ACCELERATION_UNIT*MAX_VELOCITY*2;
+		motion.velocity.y = -sin(angle)  * ACCELERATION_UNIT*MAX_VELOCITY*2;
+		motion.angle = angle+M_PI+0.8;
+	}
 
+}
 void WorldSystem::movement() {
 	Motion& playermovement = registry.motions.get(player);
 
@@ -315,25 +332,25 @@ void WorldSystem::movement() {
 	}
 
 	if (keys_pressed[GLFW_KEY_W]) {
-		playermovement.velocity.y += VELOCITY_UNIT;
+		playermovement.velocity.y += MAX_VELOCITY* ACCELERATION_UNIT;
 	}
 	if (keys_pressed[GLFW_KEY_S]) {
-		playermovement.velocity.y -= VELOCITY_UNIT;
+		playermovement.velocity.y -= MAX_VELOCITY*ACCELERATION_UNIT;
 	}
 
 	if ((!(keys_pressed[GLFW_KEY_S] || keys_pressed[GLFW_KEY_W])) || (keys_pressed[GLFW_KEY_S] && keys_pressed[GLFW_KEY_W])) {
-		playermovement.velocity.y *= ACCELERATION_UNIT;
+		playermovement.velocity.y *= DECELERATION_UNIT;
 	}
 
 	if (keys_pressed[GLFW_KEY_D]) {
-		playermovement.velocity.x += VELOCITY_UNIT;
+		playermovement.velocity.x += MAX_VELOCITY * ACCELERATION_UNIT;
 	}
 	if (keys_pressed[GLFW_KEY_A]) {
-		playermovement.velocity.x -= VELOCITY_UNIT;
+		playermovement.velocity.x -= MAX_VELOCITY * ACCELERATION_UNIT;
 	}
 
 	if ((!(keys_pressed[GLFW_KEY_D] || keys_pressed[GLFW_KEY_A])) || (keys_pressed[GLFW_KEY_D] && keys_pressed[GLFW_KEY_A])) {
-		playermovement.velocity.x *= ACCELERATION_UNIT;
+		playermovement.velocity.x *= DECELERATION_UNIT;
 	}
 
 	float magnitude = length(playermovement.velocity);
