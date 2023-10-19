@@ -50,6 +50,7 @@ class RenderSystem {
 		shader_path("screen"),
 		shader_path("region"),
 		shader_path("healthBar"),
+		shader_path("bullet"),
 		shader_path("staticWindow")
 	};
 

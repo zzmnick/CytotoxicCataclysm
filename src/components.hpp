@@ -7,12 +7,19 @@
 // Player component
 struct Player
 {
-
+	float attack_timer = 200.f;
+	float max_velocity = 400;
+	float acceleration_unit = 0.05;
+	float deceleration_unit = 0.9;
 };
 
 // Enemy component
 struct Enemy
 {
+	bool allow_accel=true;
+	float max_velocity = 400;
+	float acceleration_unit = 0.05;
+
 
 };
 
@@ -27,7 +34,11 @@ struct Motion {
 enum class COLLISION_TYPE {
 	WITH_BOUNDARY = 0,
 	PLAYER_WITH_ENEMY = WITH_BOUNDARY + 1,
-	ENEMY_WITH_ENEMY = PLAYER_WITH_ENEMY + 1
+	ENEMY_WITH_ENEMY = PLAYER_WITH_ENEMY + 1,
+	BULLET_WITH_ENEMY = ENEMY_WITH_ENEMY + 1,
+	BULLET_WITH_PLAYER = BULLET_WITH_ENEMY + 1,
+	BULLET_WITH_BULLET = BULLET_WITH_PLAYER + 1,
+	BULLET_WITH_BOUNDARY = BULLET_WITH_BULLET + 1
 };
 
 // Stucture to store collision information
@@ -41,7 +52,7 @@ struct Collision
 		this->collision_type = collision_type;
 	};
 	Collision(COLLISION_TYPE collision_type) {
-		assert(collision_type == COLLISION_TYPE::WITH_BOUNDARY && 
+		assert((collision_type == COLLISION_TYPE::WITH_BOUNDARY || collision_type == COLLISION_TYPE::BULLET_WITH_BOUNDARY) &&
 			   "other_entity must be specified unless colliding with boundary");
 		this->collision_type = collision_type;
 	}
@@ -84,6 +95,12 @@ struct TexturedVertex
 {
 	vec3 position;
 	vec2 texcoord;
+};
+
+struct Weapon
+{
+	float damage = 10.f;
+	float cooldown = 0.5f;
 };
 
 // Mesh datastructure for storing vertex and index buffers
@@ -173,7 +190,8 @@ enum class EFFECT_ASSET_ID {
 	SCREEN = TEXTURED + 1,
 	REGION = SCREEN + 1,
 	HEALTHBAR = REGION + 1,
-	STATICWINDOW = HEALTHBAR + 1,
+	BULLET = HEALTHBAR + 1,
+	STATICWINDOW = BULLET + 1,
 	EFFECT_COUNT = STATICWINDOW + 1
 };
 const int effect_count = (int)EFFECT_ASSET_ID::EFFECT_COUNT;
@@ -185,7 +203,8 @@ enum class GEOMETRY_BUFFER_ID {
 	REGION_TRIANGLE = SCREEN_TRIANGLE + 1,
 	HEALTH_RECTANGLE = REGION_TRIANGLE + 1,
 	HEALTHBARFRAME_RECTANGLE = HEALTH_RECTANGLE + 1,
-	GEOMETRY_COUNT = HEALTHBARFRAME_RECTANGLE + 1
+	BULLET = HEALTHBARFRAME_RECTANGLE + 1,
+	GEOMETRY_COUNT = BULLET + 1
 };
 const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 

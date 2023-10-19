@@ -163,6 +163,8 @@ void RenderSystem::initializeGlGeometryBuffers()
 	const std::vector<uint16_t> textured_indices = { 0, 3, 1, 1, 3, 2 };
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::SPRITE, textured_vertices, textured_indices);
 
+
+
 	//////////////////////////////////
 	// Initialize debug line
 	std::vector<ColoredVertex> line_vertices;
@@ -237,6 +239,32 @@ void RenderSystem::initializeGlGeometryBuffers()
 
 	const std::vector<uint16_t> region_indices = { 0, 1, 2 };
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::REGION_TRIANGLE, region_vertices, region_indices);
+
+	//////////////////////////////////
+// Initialize bullet
+	std::vector<ColoredVertex> bullet_vertices;
+	std::vector<uint16_t> bullet_indices;
+	constexpr float z = -0.1f;
+	constexpr int NUM_TRIANGLES = 62;
+
+	for (int i = 0; i < NUM_TRIANGLES; i++) {
+		const float t = float(i) * M_PI * 2.f / float(NUM_TRIANGLES - 1);
+		bullet_vertices.push_back({});
+		bullet_vertices.back().position = { 0.5 * cos(t), 0.5 * sin(t), z };
+		bullet_vertices.back().color = { 1.0, 0.0, 0.0 };
+	}
+	bullet_vertices.push_back({});
+	bullet_vertices.back().position = { 0, 0, 0 };
+	bullet_vertices.back().color = { 1.0, 0.0, 0.0 };
+	for (int i = 0; i < NUM_TRIANGLES; i++) {
+		bullet_indices.push_back((uint16_t)i);
+		bullet_indices.push_back((uint16_t)((i + 1) % NUM_TRIANGLES));
+		bullet_indices.push_back((uint16_t)NUM_TRIANGLES);
+	}
+	geom_index = (int)GEOMETRY_BUFFER_ID::BULLET;
+	meshes[geom_index].vertices = bullet_vertices;
+	meshes[geom_index].vertex_indices = bullet_indices;
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::BULLET, meshes[geom_index].vertices, meshes[geom_index].vertex_indices);
 }
 
 RenderSystem::~RenderSystem()
