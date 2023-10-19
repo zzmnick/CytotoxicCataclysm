@@ -46,6 +46,8 @@ private:
 
 	void direction();
 
+	void bullets();
+
 	// restart level
 	void restart_game();
 
@@ -67,4 +69,5 @@ private:
 	std::uniform_real_distribution<float> uniform_dist; // number between 0..1
 
 	bool allow_accel;
+
 };
