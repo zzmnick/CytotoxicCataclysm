@@ -352,12 +352,18 @@ void WorldSystem::enemy_movement() {
 			enemy.allow_accel= true;
 			continue;
 		}
-		Motion& motion = registry.motions.get(entity);
+		Motion& enemymotion = registry.motions.get(entity);
 		vec2 playerposition = registry.motions.get(player).position;
-		float angle = atan2(motion.position.y - playerposition.y, motion.position.x - playerposition.x);
-		motion.velocity.x = -cos(angle) *enemy.max_velocity;
-		motion.velocity.y = -sin(angle) *enemy.max_velocity;
-		motion.angle = angle+M_PI+0.8;
+		float angle = atan2(enemymotion.position.y - playerposition.y, enemymotion.position.x - playerposition.x);
+		enemymotion.velocity.x += -cos(angle) *enemy.max_velocity*enemy.acceleration_unit;
+		enemymotion.velocity.y += -sin(angle) *enemy.max_velocity*enemy.acceleration_unit;
+		enemymotion.angle = angle+M_PI+0.8;
+
+		float magnitude = length(enemymotion.velocity);
+
+		if (magnitude > enemy.max_velocity || magnitude < -enemy.max_velocity) {
+			enemymotion.velocity *= (enemy.max_velocity / magnitude);
+		}
 	}
 
 }
@@ -399,8 +405,8 @@ void WorldSystem::movement() {
 
 	float magnitude = length(playermovement.velocity);
 
-	if (magnitude > MAX_VELOCITY || magnitude < -MAX_VELOCITY) {
-		playermovement.velocity *= (MAX_VELOCITY / magnitude);
+	if (magnitude > playerobject.max_velocity || magnitude < -playerobject.max_velocity) {
+		playermovement.velocity *= (playerobject.max_velocity / magnitude);
 	}
 }
 
