@@ -98,13 +98,21 @@ GLFWwindow* WorldSystem::create_window() {
 		return nullptr;
 	}
 
-	background_music = Mix_LoadMUS(audio_path("music.wav").c_str());
+	
+	// TODO: For Voxel Revolution.wav must credit as below:
+	/*
+		"Voxel Revolution" Kevin MacLeod (incompetech.com)
+		Licensed under Creative Commons: By Attribution 4.0 License
+		http://creativecommons.org/licenses/by/4.0/
+	*/
+
+	background_music = Mix_LoadMUS(audio_path("Voxel Revolution.wav").c_str());
 	player_dead_sound = Mix_LoadWAV(audio_path("player_dead.wav").c_str());
 	player_eat_sound = Mix_LoadWAV(audio_path("player_eat.wav").c_str());
 
 	if (background_music == nullptr || player_dead_sound == nullptr || player_eat_sound == nullptr) {
 		fprintf(stderr, "Failed to load sounds\n %s\n %s\n %s\n make sure the data directory is present",
-			audio_path("music.wav").c_str(),
+			audio_path("Voxel Revolution.wav").c_str(),
 			audio_path("player_dead.wav").c_str(),
 			audio_path("player_eat.wav").c_str());
 		return nullptr;
@@ -309,6 +317,11 @@ bool WorldSystem::is_over() const {
 void WorldSystem::on_key(int key, int, int action, int mod) {
 	// key is of 'type' GLFW_KEY_
 	// action can be GLFW_PRESS GLFW_RELEASE GLFW_REPEAT
+
+	// Mute/Unmute music
+	if (action == GLFW_RELEASE && key == GLFW_KEY_M) {
+		Mix_PausedMusic() ? Mix_ResumeMusic() : Mix_PauseMusic();
+	}
 
 	// Resetting game
 	if (action == GLFW_RELEASE && key == GLFW_KEY_R) {
