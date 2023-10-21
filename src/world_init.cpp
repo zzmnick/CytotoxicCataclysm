@@ -28,7 +28,7 @@ Entity createPlayer(RenderSystem* renderer, vec2 pos)
 	registry.renderRequests.insert(
 		entity,
 		{ TEXTURE_ASSET_ID::IMMUNITY,
-			EFFECT_ASSET_ID::TEXTURED,
+			EFFECT_ASSET_ID::PLAYER,
 			GEOMETRY_BUFFER_ID::SPRITE });
 
 	//creat a brand new health with 100% health value

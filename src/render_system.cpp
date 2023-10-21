@@ -39,7 +39,7 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 	gl_has_errors();
 
 	// Input data location as in the vertex buffer
-	if (render_request.used_effect == EFFECT_ASSET_ID::TEXTURED)
+	if (render_request.used_effect == EFFECT_ASSET_ID::TEXTURED || render_request.used_effect == EFFECT_ASSET_ID::PLAYER)
 	{
 		GLint in_position_loc = glGetAttribLocation(program, "in_position");
 		GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
@@ -67,6 +67,18 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 
 		glBindTexture(GL_TEXTURE_2D, texture_id);
 		gl_has_errors();
+
+		if (render_request.used_effect == EFFECT_ASSET_ID::PLAYER)
+		{
+			GLint light_up_uloc = glGetUniformLocation(program, "isHit");
+			assert(light_up_uloc >= 0);
+			glUniform1i(light_up_uloc, registry.invincibility.has(entity));
+
+			GLuint time_uloc = glGetUniformLocation(program, "time");
+			glUniform1f(time_uloc, (float)(glfwGetTime() * 10.0f));
+
+			gl_has_errors();
+		}
 	}
 	else if(render_request.used_effect == EFFECT_ASSET_ID::BULLET){
 		GLint in_position_loc = glGetAttribLocation(program, "in_position");

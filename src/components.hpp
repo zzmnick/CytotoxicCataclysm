@@ -34,7 +34,8 @@ enum class EFFECT_ASSET_ID {
 	COLOURED = 0,
 	TEXTURED = COLOURED + 1,
 	SCREEN = TEXTURED + 1,
-	REGION = SCREEN + 1,
+	PLAYER = SCREEN + 1,
+	REGION = PLAYER + 1,
 	HEALTHBAR = REGION + 1,
 	BULLET = HEALTHBAR + 1,
 	STATICWINDOW = BULLET + 1,
@@ -226,9 +227,11 @@ struct Health
 	float timer_ms = HEALTH_BAR_UPDATE_TIME_SLAP;
 };
 
-
+struct Invincibility
+{
+	float timer_ms = 600.f;
+};
 struct Weapon
 {
 	float damage = 10.f;
 };
-
