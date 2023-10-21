@@ -8,18 +8,12 @@
 struct Player
 {
 	float attack_timer = 200.f;
-	float max_velocity = 400;
-	float acceleration_unit = 0.05;
-	float deceleration_unit = 0.9;
+
 };
 
 // Enemy component
 struct Enemy
 {
-	bool allow_accel=true;
-	float max_velocity = 400;
-	float acceleration_unit = 0.05;
-
 
 };
 
@@ -29,6 +23,11 @@ struct Motion {
 	float angle = 0.f;
 	vec2 velocity = { 0.f, 0.f };
 	vec2 scale = { 10.f, 10.f };
+	float max_velocity = 400;
+	float acceleration_unit = 0.05;
+	float deceleration_unit = 0.9;
+	bool allow_accel = true;
+
 };
 
 enum class COLLISION_TYPE {
@@ -100,7 +99,6 @@ struct TexturedVertex
 struct Weapon
 {
 	float damage = 10.f;
-	float cooldown = 0.5f;
 };
 
 // Mesh datastructure for storing vertex and index buffers
