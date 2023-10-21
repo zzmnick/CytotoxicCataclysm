@@ -114,14 +114,16 @@ void PhysicsSystem::step(float elapsed_ms)
 				// Create a collisions event
 				// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
 				// If collision between player and enemy, always add the collision component under player entity
-				if (registry.players.has(entity_i)) {
-					registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::PLAYER_WITH_ENEMY, entity_j);
-					Health& playerHealth = registry.healthValues.get(entity_i);
-					playerHealth.targetHealthPercentage -= 10.0;
-				} else if (registry.players.has(entity_j)) {
-					registry.collisions.emplace_with_duplicates(entity_j, COLLISION_TYPE::PLAYER_WITH_ENEMY, entity_j);
-					Health& playerHealth = registry.healthValues.get(entity_j);
-					playerHealth.targetHealthPercentage -= 10.0;
+				if (registry.players.has(entity_i) || registry.players.has(entity_j)) {
+					Entity playerEntity = registry.players.has(entity_i) ? entity_i : entity_j;
+					Entity enemyEntity = (playerEntity == entity_i) ? entity_j : entity_i;
+					// Only take collide and take damage if not already hit
+					if (!registry.invincibility.has(playerEntity)) {
+						registry.collisions.emplace_with_duplicates(playerEntity, COLLISION_TYPE::PLAYER_WITH_ENEMY, enemyEntity);
+						registry.invincibility.emplace(playerEntity);
+						Health& playerHealth = registry.healthValues.get(playerEntity);
+						playerHealth.targetHealthPercentage -= 10.0;
+					}
 				} else {
 					// If both entities have motion component and are not player, assume both are enemies
 					registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::ENEMY_WITH_ENEMY, entity_j);

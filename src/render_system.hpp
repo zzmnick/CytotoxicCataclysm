@@ -48,6 +48,7 @@ class RenderSystem {
 		shader_path("coloured"),
 		shader_path("textured"),
 		shader_path("screen"),
+		shader_path("player"),
 		shader_path("region"),
 		shader_path("healthBar"),
 		shader_path("staticWindow")

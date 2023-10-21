@@ -34,7 +34,8 @@ enum class EFFECT_ASSET_ID {
 	COLOURED = 0,
 	TEXTURED = COLOURED + 1,
 	SCREEN = TEXTURED + 1,
-	REGION = SCREEN + 1,
+	PLAYER = SCREEN + 1,
+	REGION = PLAYER + 1,
 	HEALTHBAR = REGION + 1,
 	STATICWINDOW = HEALTHBAR + 1,
 	EFFECT_COUNT = STATICWINDOW + 1
@@ -213,4 +214,9 @@ struct Health
 	float currentHealthPercentage = 100.f;
 	float targetHealthPercentage = 100.f;
 	float timer_ms = HEALTH_BAR_UPDATE_TIME_SLAP;
+};
+
+struct Invincibility
+{
+	float timer_ms = 600.f;
 };

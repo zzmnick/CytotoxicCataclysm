@@ -172,7 +172,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 			playerHealthBar.timer_ms = HEALTH_BAR_UPDATE_TIME_SLAP;
 			playerHealthBar.currentHealthPercentage = playerHealthBar.targetHealthPercentage;
 			assert(playerHealthBar.currentHealthPercentage == playerHealthBar.targetHealthPercentage);
-			
 		}
 
 		if (playerHealthBar.currentHealthPercentage <= 0.0) {
@@ -181,11 +180,19 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 			return true;
 		}
 	}
-	
-	
 
 	// reduce window brightness if deathTimer has progressed
 	screen.screen_darken_factor = 1 - min_timer_ms / 3000;
+
+	// Progress player hit timer
+	if (registry.invincibility.has(player)) {
+		float& timer = registry.invincibility.get(player).timer_ms;
+		timer -= elapsed_ms_since_last_update;
+		if (timer <= 0) {
+			registry.invincibility.remove(player);
+		}
+	}
+
 	// Block velocity update for one step after collision to
 	// avoid going out of border / going through enemy
 	if (allow_accel) {
