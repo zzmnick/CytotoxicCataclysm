@@ -28,7 +28,7 @@ Entity createPlayer(RenderSystem* renderer, vec2 pos)
 	registry.renderRequests.insert(
 		entity,
 		{ TEXTURE_ASSET_ID::IMMUNITY,
-			EFFECT_ASSET_ID::TEXTURED,
+			EFFECT_ASSET_ID::PLAYER,
 			GEOMETRY_BUFFER_ID::SPRITE });
 
 	//creat a brand new health with 100% health value
@@ -53,8 +53,7 @@ Entity createRedEnemy(RenderSystem* renderer, vec2 pos) {
 
 	// Create an enemy
 	registry.enemies.emplace(entity);
-	Enemy& enemy = registry.enemies.get(entity);
-	enemy.max_velocity = 400;
+	motion.max_velocity = 400;
 	registry.healthValues.emplace(entity);
 
 	registry.renderRequests.insert(
@@ -82,8 +81,7 @@ Entity createGreenEnemy(RenderSystem* renderer, vec2 pos) {
 
 	// Create an enemy
 	registry.enemies.emplace(entity);
-	Enemy& enemy = registry.enemies.get(entity);
-	enemy.max_velocity = 200;
+	motion.max_velocity = 200;
 	registry.healthValues.emplace(entity);
 	Health& health = registry.healthValues.get(entity);
 	health.currentHealthPercentage = 200.0;

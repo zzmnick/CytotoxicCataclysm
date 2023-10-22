@@ -98,13 +98,21 @@ GLFWwindow* WorldSystem::create_window() {
 		return nullptr;
 	}
 
-	background_music = Mix_LoadMUS(audio_path("music.wav").c_str());
+	
+	// TODO: For Voxel Revolution.wav must credit as below:
+	/*
+		"Voxel Revolution" Kevin MacLeod (incompetech.com)
+		Licensed under Creative Commons: By Attribution 4.0 License
+		http://creativecommons.org/licenses/by/4.0/
+	*/
+
+	background_music = Mix_LoadMUS(audio_path("Voxel Revolution.wav").c_str());
 	player_dead_sound = Mix_LoadWAV(audio_path("player_dead.wav").c_str());
 	player_eat_sound = Mix_LoadWAV(audio_path("player_eat.wav").c_str());
 
 	if (background_music == nullptr || player_dead_sound == nullptr || player_eat_sound == nullptr) {
 		fprintf(stderr, "Failed to load sounds\n %s\n %s\n %s\n make sure the data directory is present",
-			audio_path("music.wav").c_str(),
+			audio_path("Voxel Revolution.wav").c_str(),
 			audio_path("player_dead.wav").c_str(),
 			audio_path("player_eat.wav").c_str());
 		return nullptr;
@@ -150,7 +158,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 			return true;
 		}
 	}
-	for (auto i : registry.healthValues.entities) {
+	for (Entity i : registry.healthValues.entities) {
 		if (registry.players.has(i)) {
 			continue;
 		}
@@ -174,7 +182,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 			playerHealthBar.timer_ms = HEALTH_BAR_UPDATE_TIME_SLAP;
 			playerHealthBar.currentHealthPercentage = playerHealthBar.targetHealthPercentage;
 			assert(playerHealthBar.currentHealthPercentage == playerHealthBar.targetHealthPercentage);
-			
 		}
 
 		if (playerHealthBar.currentHealthPercentage <= 0.0) {
@@ -183,11 +190,19 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 			return true;
 		}
 	}
-	
-	
 
 	// reduce window brightness if deathTimer has progressed
 	screen.screen_darken_factor = 1 - min_timer_ms / 3000;
+
+	// Progress player hit timer
+	if (registry.invincibility.has(player)) {
+		float& timer = registry.invincibility.get(player).timer_ms;
+		timer -= elapsed_ms_since_last_update;
+		if (timer <= 0) {
+			registry.invincibility.remove(player);
+		}
+	}
+
 	// Block velocity update for one step after collision to
 	// avoid going out of border / going through enemy
 	if (allow_accel) {
@@ -262,10 +277,9 @@ void WorldSystem::handle_collisions() {
 			// When player collides with enemy, only player gets knocked back,
 			// towards its relative direction from the enemy
 			Entity enemy_entity = collisionsRegistry.components[i].other_entity;
-			Enemy enemy = registry.enemies.get(enemy_entity);
 			Motion& enemy_motion = registry.motions.get(enemy_entity); 
 			vec2 knockback_direction = normalize(motion.position - enemy_motion.position);
-			motion.velocity = (enemy.max_velocity+1000) * knockback_direction;
+			motion.velocity = (enemy_motion.max_velocity+1000) * knockback_direction;
 			allow_accel = false;
 
 
@@ -277,8 +291,7 @@ void WorldSystem::handle_collisions() {
 			Motion& enemy_motion = registry.motions.get(enemy_entity);
 			vec2 knockback_direction = normalize(enemy_motion.position - motion.position);
 			enemy_motion.velocity = MAX_VELOCITY * knockback_direction;
-			Enemy& enemy = registry.enemies.get(enemy_entity);
-			enemy.allow_accel = false;
+			enemy_motion.allow_accel = false;
 			garbage.push_back(entity);
 		}
 		else if (collision.collision_type == COLLISION_TYPE::ENEMY_WITH_ENEMY) {
@@ -292,7 +305,7 @@ void WorldSystem::handle_collisions() {
 			garbage.push_back(entity);
 		}
 	}
-	for (auto i : garbage) {
+	for (Entity i : garbage) {
 		registry.remove_all_components_of(i);
 	}
 
@@ -311,6 +324,11 @@ bool WorldSystem::is_over() const {
 void WorldSystem::on_key(int key, int, int action, int mod) {
 	// key is of 'type' GLFW_KEY_
 	// action can be GLFW_PRESS GLFW_RELEASE GLFW_REPEAT
+
+	// Mute/Unmute music
+	if (action == GLFW_RELEASE && key == GLFW_KEY_M) {
+		Mix_PausedMusic() ? Mix_ResumeMusic() : Mix_PauseMusic();
+	}
 
 	// Resetting game
 	if (action == GLFW_RELEASE && key == GLFW_KEY_R) {
@@ -347,29 +365,27 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 }
 void WorldSystem::enemy_movement() {
 	for (Entity entity : registry.enemies.entities) {
-		Enemy& enemy = registry.enemies.get(entity);
-		if (enemy.allow_accel == false) {
-			enemy.allow_accel= true;
+		Motion& enemymotion = registry.motions.get(entity);
+		if (enemymotion.allow_accel == false) {
+			enemymotion.allow_accel= true;
 			continue;
 		}
-		Motion& enemymotion = registry.motions.get(entity);
 		vec2 playerposition = registry.motions.get(player).position;
 		float angle = atan2(enemymotion.position.y - playerposition.y, enemymotion.position.x - playerposition.x);
-		enemymotion.velocity.x += -cos(angle) *enemy.max_velocity*enemy.acceleration_unit;
-		enemymotion.velocity.y += -sin(angle) *enemy.max_velocity*enemy.acceleration_unit;
+		enemymotion.velocity.x += -cos(angle) * enemymotion.max_velocity* enemymotion.acceleration_unit;
+		enemymotion.velocity.y += -sin(angle) * enemymotion.max_velocity* enemymotion.acceleration_unit;
 		enemymotion.angle = angle+M_PI+0.8;
 
 		float magnitude = length(enemymotion.velocity);
 
-		if (magnitude > enemy.max_velocity || magnitude < -enemy.max_velocity) {
-			enemymotion.velocity *= (enemy.max_velocity / magnitude);
+		if (magnitude > enemymotion.max_velocity || magnitude < -enemymotion.max_velocity) {
+			enemymotion.velocity *= (enemymotion.max_velocity / magnitude);
 		}
 	}
 
 }
 void WorldSystem::movement() {
 	Motion& playermovement = registry.motions.get(player);
-	Player& playerobject = registry.players.get(player);
 
 	if (keys_pressed[GLFW_MOUSE_BUTTON_LEFT]) {
 		bullets();
@@ -382,31 +398,31 @@ void WorldSystem::movement() {
 	}
 
 	if (keys_pressed[GLFW_KEY_W]) {
-		playermovement.velocity.y += playerobject.max_velocity* playerobject.acceleration_unit;
+		playermovement.velocity.y += playermovement.max_velocity* playermovement.acceleration_unit;
 	}
 	if (keys_pressed[GLFW_KEY_S]) {
-		playermovement.velocity.y -= playerobject.max_velocity * playerobject.acceleration_unit;
+		playermovement.velocity.y -= playermovement.max_velocity * playermovement.acceleration_unit;
 	}
 
 	if ((!(keys_pressed[GLFW_KEY_S] || keys_pressed[GLFW_KEY_W])) || (keys_pressed[GLFW_KEY_S] && keys_pressed[GLFW_KEY_W])) {
-		playermovement.velocity.y *= playerobject.deceleration_unit;
+		playermovement.velocity.y *= playermovement.deceleration_unit;
 	}
 
 	if (keys_pressed[GLFW_KEY_D]) {
-		playermovement.velocity.x += playerobject.max_velocity * playerobject.acceleration_unit;
+		playermovement.velocity.x += playermovement.max_velocity * playermovement.acceleration_unit;
 	}
 	if (keys_pressed[GLFW_KEY_A]) {
-		playermovement.velocity.x -= playerobject.max_velocity * playerobject.acceleration_unit;
+		playermovement.velocity.x -= playermovement.max_velocity * playermovement.acceleration_unit;
 	}
 
 	if ((!(keys_pressed[GLFW_KEY_D] || keys_pressed[GLFW_KEY_A])) || (keys_pressed[GLFW_KEY_D] && keys_pressed[GLFW_KEY_A])) {
-		playermovement.velocity.x *= playerobject.deceleration_unit;
+		playermovement.velocity.x *= playermovement.deceleration_unit;
 	}
 
 	float magnitude = length(playermovement.velocity);
 
-	if (magnitude > playerobject.max_velocity || magnitude < -playerobject.max_velocity) {
-		playermovement.velocity *= (playerobject.max_velocity / magnitude);
+	if (magnitude > playermovement.max_velocity || magnitude < -playermovement.max_velocity) {
+		playermovement.velocity *= (playermovement.max_velocity / magnitude);
 	}
 }
 
@@ -422,7 +438,6 @@ void WorldSystem::direction() {
 
 	float right = (float)window_width_px;
 	float bottom = (float)window_height_px;
-
 	float angle = atan2(-bottom/2 + mouse.y, right/2 - mouse.x) + M_PI+0.70;
 
 	registry.motions.get(player).angle = angle;

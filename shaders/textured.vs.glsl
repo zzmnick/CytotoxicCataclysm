@@ -11,7 +11,6 @@ out vec2 texcoord;
 uniform mat3 transform;
 uniform mat3 viewProjection;
 
-//The player shader
 void main()
 {
 	texcoord = in_texcoord;
