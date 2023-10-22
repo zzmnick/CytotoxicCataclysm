@@ -103,9 +103,13 @@ void collisionhelper(Entity entity_1, Entity entity_2) {
 	}
 	else if (registry.players.has(entity_1)) {
 		if (registry.enemies.has(entity_2)) {
-			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::PLAYER_WITH_ENEMY, entity_2);
-			Health& playerHealth = registry.healthValues.get(entity_1);
-			playerHealth.targetHealthPercentage -= 10.0;
+			if (!registry.invincibility.has(entity_1)) {
+				registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::PLAYER_WITH_ENEMY, entity_2);
+				registry.invincibility.emplace(entity_1);
+				Health& playerHealth = registry.healthValues.get(entity_1);
+				playerHealth.targetHealthPercentage -= 10.0;
+			}
+
 		}
 	}
 	else if (registry.enemies.has(entity_1)) {
