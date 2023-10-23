@@ -53,6 +53,9 @@ Entity createRedEnemy(RenderSystem* renderer, vec2 pos) {
 
 	// Create an enemy
 	registry.enemies.emplace(entity);
+	motion.max_velocity = 400;
+	registry.healthValues.emplace(entity);
+
 	registry.renderRequests.insert(
 		entity,
 		{ TEXTURE_ASSET_ID::RED_ENEMY,
@@ -78,6 +81,10 @@ Entity createGreenEnemy(RenderSystem* renderer, vec2 pos) {
 
 	// Create an enemy
 	registry.enemies.emplace(entity);
+	motion.max_velocity = 200;
+	registry.healthValues.emplace(entity);
+	Health& health = registry.healthValues.get(entity);
+	health.currentHealthPercentage = 200.0;
 	registry.renderRequests.insert(
 		entity,
 		{ TEXTURE_ASSET_ID::GREEN_ENEMY,
@@ -166,5 +173,37 @@ Entity createLine(vec2 position, vec2 scale) {
 	motion.scale = scale;
 
 	registry.debugComponents.emplace(entity);
+	return entity;
+}
+
+Entity createBullet(vec2 pos, vec2 size)
+{
+	auto entity = Entity();
+	auto& weapon_container = registry.weapons;
+	registry.weapons.emplace(entity);
+
+	auto& motion_container = registry.motions;
+	Motion& motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.scale = size;
+	motion.angle = 0.0;
+	for (uint i = 0; i < motion_container.size(); i++)
+	{
+		Entity player = motion_container.entities[i];
+		if (registry.players.has(player))
+		{
+			Motion playermotion = motion_container.get(player);
+			motion.velocity = { cos(playermotion.angle- 0.70) * 500,sin(playermotion.angle- 0.70) * 500 };
+
+
+		}
+	}
+
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no txture is needed
+			EFFECT_ASSET_ID::BULLET,
+			GEOMETRY_BUFFER_ID::BULLET });
+
 	return entity;
 }

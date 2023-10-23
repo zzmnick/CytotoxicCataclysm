@@ -37,7 +37,8 @@ enum class EFFECT_ASSET_ID {
 	PLAYER = SCREEN + 1,
 	REGION = PLAYER + 1,
 	HEALTHBAR = REGION + 1,
-	STATICWINDOW = HEALTHBAR + 1,
+	BULLET = HEALTHBAR + 1,
+	STATICWINDOW = BULLET + 1,
 	EFFECT_COUNT = STATICWINDOW + 1
 };
 const int effect_count = (int)EFFECT_ASSET_ID::EFFECT_COUNT;
@@ -49,7 +50,8 @@ enum class GEOMETRY_BUFFER_ID {
 	REGION_TRIANGLE = SCREEN_TRIANGLE + 1,
 	HEALTH_RECTANGLE = REGION_TRIANGLE + 1,
 	HEALTHBARFRAME_RECTANGLE = HEALTH_RECTANGLE + 1,
-	GEOMETRY_COUNT = HEALTHBARFRAME_RECTANGLE + 1
+	BULLET = HEALTHBARFRAME_RECTANGLE + 1,
+	GEOMETRY_COUNT = BULLET + 1
 };
 const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 
@@ -69,7 +71,11 @@ const int boss_type_count = (int)BOSS_ID::BOSS_COUNT;
 enum class COLLISION_TYPE {
 	WITH_BOUNDARY = 0,
 	PLAYER_WITH_ENEMY = WITH_BOUNDARY + 1,
-	ENEMY_WITH_ENEMY = PLAYER_WITH_ENEMY + 1
+	ENEMY_WITH_ENEMY = PLAYER_WITH_ENEMY + 1,
+	BULLET_WITH_ENEMY = ENEMY_WITH_ENEMY + 1,
+	BULLET_WITH_PLAYER = BULLET_WITH_ENEMY + 1,
+	BULLET_WITH_BULLET = BULLET_WITH_PLAYER + 1,
+	BULLET_WITH_BOUNDARY = BULLET_WITH_BULLET + 1
 };
 
 enum class REGION_THEME_ID {
@@ -110,6 +116,7 @@ static std::unordered_map <REGION_THEME_ID, TEXTURE_ASSET_ID> region_texture_map
 // Player component
 struct Player
 {
+	float attack_timer = 300.f;
 
 };
 
@@ -125,6 +132,10 @@ struct Motion {
 	float angle = 0.f;
 	vec2 velocity = { 0.f, 0.f };
 	vec2 scale = { 10.f, 10.f };
+	float max_velocity = 400;
+	float acceleration_unit = 0.05;
+	float deceleration_unit = 0.9;
+	bool allow_accel = true;
 };
 
 // Stucture to store collision information
@@ -134,12 +145,12 @@ struct Collision
 	COLLISION_TYPE collision_type;
 	Entity other_entity; // the second object involved in the collision
 	Collision(COLLISION_TYPE collision_type, Entity& other_entity) {
-		this->other_entity = other_entity; 
+		this->other_entity = other_entity;
 		this->collision_type = collision_type;
 	};
 	Collision(COLLISION_TYPE collision_type) {
-		assert(collision_type == COLLISION_TYPE::WITH_BOUNDARY && 
-			   "other_entity must be specified unless colliding with boundary");
+		assert((collision_type == COLLISION_TYPE::WITH_BOUNDARY || collision_type == COLLISION_TYPE::BULLET_WITH_BOUNDARY) &&
+			"other_entity must be specified unless colliding with boundary");
 		this->collision_type = collision_type;
 	}
 };
@@ -187,7 +198,7 @@ struct TexturedVertex
 struct Mesh
 {
 	static bool loadFromOBJFile(std::string obj_path, std::vector<ColoredVertex>& out_vertices, std::vector<uint16_t>& out_vertex_indices, vec2& out_size);
-	vec2 original_size = {1,1};
+	vec2 original_size = { 1,1 };
 	std::vector<ColoredVertex> vertices;
 	std::vector<uint16_t> vertex_indices;
 };
@@ -219,4 +230,8 @@ struct Health
 struct Invincibility
 {
 	float timer_ms = 600.f;
+};
+struct Weapon
+{
+	float damage = 10.f;
 };

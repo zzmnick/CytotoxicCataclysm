@@ -51,6 +51,7 @@ class RenderSystem {
 		shader_path("player"),
 		shader_path("region"),
 		shader_path("healthBar"),
+		shader_path("bullet"),
 		shader_path("staticWindow")
 	};
 

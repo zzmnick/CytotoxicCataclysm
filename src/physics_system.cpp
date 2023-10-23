@@ -85,6 +85,41 @@ bool collides_with_boundary(const Motion& motion)
 	return false;
 }
 
+void collisionhelper(Entity entity_1, Entity entity_2) {
+	if (registry.weapons.has(entity_1)) {
+		if (registry.weapons.has(entity_2)) {
+			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_BULLET, entity_2);
+
+		} else if (registry.players.has(entity_2)) {
+			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_PLAYER, entity_2);
+
+			} else if (registry.enemies.has(entity_2)) {
+			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_ENEMY, entity_2);
+			Health& enemyHealth = registry.healthValues.get(entity_2);
+			enemyHealth.currentHealthPercentage -= 10.0;
+
+		}
+
+	}
+	else if (registry.players.has(entity_1)) {
+		if (registry.enemies.has(entity_2)) {
+			if (!registry.invincibility.has(entity_1)) {
+				registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::PLAYER_WITH_ENEMY, entity_2);
+				registry.invincibility.emplace(entity_1);
+				Health& playerHealth = registry.healthValues.get(entity_1);
+				playerHealth.targetHealthPercentage -= 10.0;
+			}
+
+		}
+	}
+	else if (registry.enemies.has(entity_1)) {
+		if (registry.enemies.has(entity_2)) {
+			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::ENEMY_WITH_ENEMY, entity_2);
+		}
+
+	}
+}
+
 void PhysicsSystem::step(float elapsed_ms)
 {
 	// Move NPC based on how much time has passed, this is to (partially) avoid
@@ -114,26 +149,19 @@ void PhysicsSystem::step(float elapsed_ms)
 				// Create a collisions event
 				// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
 				// If collision between player and enemy, always add the collision component under player entity
-				if (registry.players.has(entity_i) || registry.players.has(entity_j)) {
-					Entity playerEntity = registry.players.has(entity_i) ? entity_i : entity_j;
-					Entity enemyEntity = (playerEntity == entity_i) ? entity_j : entity_i;
-					// Only take collide and take damage if not already hit
-					if (!registry.invincibility.has(playerEntity)) {
-						registry.collisions.emplace_with_duplicates(playerEntity, COLLISION_TYPE::PLAYER_WITH_ENEMY, enemyEntity);
-						registry.invincibility.emplace(playerEntity);
-						Health& playerHealth = registry.healthValues.get(playerEntity);
-						playerHealth.targetHealthPercentage -= 10.0;
-					}
-				} else {
-					// If both entities have motion component and are not player, assume both are enemies
-					registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::ENEMY_WITH_ENEMY, entity_j);
-				}
+				collisionhelper(entity_i, entity_j);
+				collisionhelper(entity_j, entity_i);
 			}
 		}
 
 		// Check for collisions with the map boundary
 		if (collides_with_boundary(motion_i)) {
-			registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::WITH_BOUNDARY);
+			if (registry.weapons.has(entity_i)) {
+				registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::BULLET_WITH_BOUNDARY);
+			}
+			else {
+				registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::WITH_BOUNDARY);
+			}
 		}
 	}
 }

@@ -23,3 +23,6 @@ Entity createGreenEnemy(RenderSystem* renderer, vec2 pos);
 Entity createLine(vec2 position, vec2 size);
 // the random regions
 void createRandomRegion(RenderSystem* renderer, size_t num_regions);
+
+Entity createBullet(vec2 pos, vec2 size);
+
