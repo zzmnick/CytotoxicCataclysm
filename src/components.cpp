@@ -9,7 +9,6 @@
 #include <sstream>
 
 Debug debugging;
-float death_timer_timer_ms = 3000;
 
 // Very, VERY simple OBJ loader from https://github.com/opengl-tutorials/ogl tutorial 7
 // (modified to also read vertex color and omit uv and normals)

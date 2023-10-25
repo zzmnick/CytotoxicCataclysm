@@ -40,7 +40,7 @@ WorldSystem::~WorldSystem() {
 
 // Debugging
 namespace {
-	void glfw_err_cb(int error, const char *desc) {
+	void glfw_err_cb(int error, const char* desc) {
 		fprintf(stderr, "%d: %s", error, desc);
 	}
 }
@@ -98,7 +98,7 @@ GLFWwindow* WorldSystem::create_window() {
 		return nullptr;
 	}
 
-	
+
 	// TODO: For Voxel Revolution.wav must credit as below:
 	/*
 		"Voxel Revolution" Kevin MacLeod (incompetech.com)
@@ -127,124 +127,174 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	Mix_PlayMusic(background_music, -1);
 	fprintf(stderr, "Loaded music\n");
 
+	// Create world entities that don't reset
+	createRandomRegions(renderer, NUM_REGIONS);
+	healthbar = createHealthbar({ -window_width_px * 0.35, -window_height_px * 0.45 }, STATUSBAR_SCALE);
+
 	// Set all states to default
-    restart_game();
+	restart_game();
+}
+
+void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
+	float min_timer_ms = DEATH_EFFECT_DURATION;
+	for (uint i = 0; i < registry.deathTimers.components.size(); i++) {
+		DeathTimer& timer = registry.deathTimers.components[i];
+		Entity entity = registry.deathTimers.entities[i];
+		// progress timer
+		timer.timer_ms -= elapsed_ms;
+
+		if (entity == player) {
+			if (timer.timer_ms <= 0) {
+				// Player is dead -> restart
+				registry.deathTimers.remove(entity);
+				screen.screen_darken_factor = 0;
+				restart_game();
+				return;
+			}
+			else {
+				// Player is dying -> set screen darken factor
+				screen.screen_darken_factor = 1 - timer.timer_ms / DEATH_EFFECT_DURATION;
+			}
+		}
+		else {
+			if (timer.timer_ms <= 0) {
+				// Enemy is dead -> remove
+				registry.remove_all_components_of(entity);
+			}
+			else {
+				// Enemy is dying -> dying animation
+				// TODO: @Shirley this may be a position to trigger or step the dying animation
+			}
+		}
+	}
+}
+
+void WorldSystem::step_health(float elapsed_ms) {
+	for (uint i = 0; i < registry.healthValues.components.size(); i++) {
+		Health& health = registry.healthValues.components[i];
+		Entity entity = registry.healthValues.entities[i];
+		if (health.previous_health_pct != health.health_pct) {
+			health.timer_ms -= elapsed_ms;
+			if (health.timer_ms <= 0) {
+				health.previous_health_pct = health.health_pct;
+				health.timer_ms = HEALTH_BAR_UPDATE_TIME_SLAP;
+			}
+			if (health.previous_health_pct <= 0) {
+				if (!registry.deathTimers.has(entity)) {
+					if (entity == player) {
+						isPaused = true;
+					}
+					else {
+						// Immobilize enemy
+						assert(registry.motions.has(entity));
+						registry.motions.remove(entity);
+					}
+					registry.deathTimers.emplace(entity);
+				}
+			}
+		}
+		if (entity == player) {
+			// Interpolate to get value of displayed healthbar
+			float healthbar_scale = 0.f;
+			float normalized_time = health.timer_ms / HEALTH_BAR_UPDATE_TIME_SLAP;
+			float new_health_pct = health.previous_health_pct * normalized_time + health.health_pct * (1.f - normalized_time);
+			healthbar_scale = max(0.f, new_health_pct / 100.f);
+
+			// Update the scale of the healthbar
+			assert(registry.transforms.has(healthbar));
+			Transform& transform = registry.transforms.get(healthbar);
+			transform.scale.x = HEALTHBAR_TEXTURE_SIZE.x * 0.72f * STATUSBAR_SCALE.x * healthbar_scale;
+
+			// Update the color of the healthbar
+			assert(registry.colors.has(healthbar));
+			vec4& color = registry.colors.get(healthbar);
+			color.g = healthbar_scale;
+			color.r = 1.f - healthbar_scale;
+		}
+	}
+}
+
+void WorldSystem::step_invincibility(float elapsed_ms) {
+	if (registry.invincibility.has(player)) {
+		assert(registry.colors.has(player));
+		vec4& color = registry.colors.get(player);
+
+		// Reduce timer and change set player flashing
+		float& timer = registry.invincibility.get(player).timer_ms;
+		timer -= elapsed_ms;
+		if (timer <= 0) {
+			registry.invincibility.remove(player);
+			color.a = 1.f;
+		}
+		else {
+			// Flash once every 200ms
+			color.a = mod(floor(timer / 100.f), 2.f);
+		}
+	}
+}
+
+void WorldSystem::step_attack(float elapsed_ms) {
+	assert(registry.players.has(player));
+	Player& playerObject = registry.players.get(player);
+	playerObject.attack_timer = max(playerObject.attack_timer - elapsed_ms, 0.f);
 }
 
 // Update our game world
 bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// Remove debug info from the last step
 	while (registry.debugComponents.entities.size() > 0)
-	    registry.remove_all_components_of(registry.debugComponents.entities.back());
+		registry.remove_all_components_of(registry.debugComponents.entities.back());
 
 	// Processing the player state
 	assert(registry.screenStates.components.size() <= 1);
-    ScreenState &screen = registry.screenStates.components[0];
+	ScreenState& screen = registry.screenStates.components[0];
 
-    float min_timer_ms = 3000.f;
-	for (Entity entity : registry.deathTimers.entities) {
-		// progress timer
-		DeathTimer& timer = registry.deathTimers.get(entity);
-		timer.timer_ms -= elapsed_ms_since_last_update;
-		if(timer.timer_ms < min_timer_ms){
-			min_timer_ms = timer.timer_ms;
-		}
-
-		// restart the game once the death timer expired
-		if (timer.timer_ms < 0) {
-			registry.deathTimers.remove(entity);
-			screen.screen_darken_factor = 0;
-            restart_game();
-			return true;
-		}
-	}
-	for (Entity i : registry.healthValues.entities) {
-		if (registry.players.has(i)) {
-			continue;
-		}
-		if (registry.healthValues.get(i).currentHealthPercentage <= 0.0) {
-			registry.remove_all_components_of(i);
-		}
-	}
-	Player& playerObject = registry.players.get(player);
-	playerObject.attack_timer -= elapsed_ms_since_last_update;
-
-	//constantly checking if the current health value
-	Health& playerHealthBar = registry.healthValues.get(player);
-	if (playerHealthBar.currentHealthPercentage != playerHealthBar.targetHealthPercentage && playerHealthBar.timer_ms > 0) {
-		playerHealthBar.timer_ms -= elapsed_ms_since_last_update;
-		if (playerHealthBar.timer_ms < min_timer_ms && playerHealthBar.targetHealthPercentage <= 0.0) {
-			min_timer_ms = playerHealthBar.timer_ms;
-		}
-
-		// Resume the static state of the Health Bar 
-		if (playerHealthBar.timer_ms < 0) {
-			playerHealthBar.timer_ms = HEALTH_BAR_UPDATE_TIME_SLAP;
-			playerHealthBar.currentHealthPercentage = playerHealthBar.targetHealthPercentage;
-			assert(playerHealthBar.currentHealthPercentage == playerHealthBar.targetHealthPercentage);
-		}
-
-		if (playerHealthBar.currentHealthPercentage <= 0.0) {
-			screen.screen_darken_factor = 0;
-			restart_game();
-			return true;
-		}
-	}
-
-	// reduce window brightness if deathTimer has progressed
-	screen.screen_darken_factor = 1 - min_timer_ms / 3000;
-
-	// Progress player hit timer
-	if (registry.invincibility.has(player)) {
-		float& timer = registry.invincibility.get(player).timer_ms;
-		timer -= elapsed_ms_since_last_update;
-		if (timer <= 0) {
-			registry.invincibility.remove(player);
-		}
-	}
+	step_deathTimer(screen, elapsed_ms_since_last_update);
+	if (isPaused) return false;
+	step_health(elapsed_ms_since_last_update);
+	step_invincibility(elapsed_ms_since_last_update);
+	step_attack(elapsed_ms_since_last_update);
 
 	// Block velocity update for one step after collision to
 	// avoid going out of border / going through enemy
 	if (allow_accel) {
-		movement();
-	} else {
+		control_movement();
+	}
+	else {
 		allow_accel = true;
 	}
-	direction();
-	enemy_movement();
+	control_direction();
+	control_action();
 
 	return true;
 }
 
 // Reset the world state to its initial state
 void WorldSystem::restart_game() {
+	/*************************[ cleanup ]*************************/
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 	printf("Restarting\n");
-
-	// Reset the game speed
-	current_speed = 1.f;
-
 	// Remove all entities that we created
 	// All that have a motion
 	while (registry.motions.entities.size() > 0)
-	    registry.remove_all_components_of(registry.motions.entities.back());
-
+		registry.remove_all_components_of(registry.transforms.entities.back());
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
+	/*************************[ setup new world ]*************************/
+	// Reset the game state
+	current_speed = 1.f;
+	isPaused = false;
 	// Create a new player
 	player = createPlayer(renderer, { 0, 0 });
 
-	// Create map sections
-	createRandomRegion(renderer, NUM_REGIONS);
-
 	// Create multiple instances of the Red Enemy (new addition)
-    int num_enemies = 5; // Adjust this number as desired
-    for (int i = 0; i < num_enemies; ++i) {
-        vec2 enemy_position = { 50.f + uniform_dist(rng) * (window_width_px - 100.f), 50.f + uniform_dist(rng) * (window_height_px - 100.f) };
-        createRedEnemy(renderer, enemy_position);
-    }
+	int num_enemies = 5; // Adjust this number as desired
+	for (int i = 0; i < num_enemies; ++i) {
+		vec2 enemy_position = { 50.f + uniform_dist(rng) * (window_width_px - 100.f), 50.f + uniform_dist(rng) * (window_height_px - 100.f) };
+		createRedEnemy(renderer, enemy_position);
+	}
 	for (int i = 0; i < num_enemies; ++i) {
 		vec2 enemy_position = { 50.f + uniform_dist(rng) * (window_width_px - 100.f), 50.f + uniform_dist(rng) * (window_height_px - 100.f) };
 		createGreenEnemy(renderer, enemy_position);
@@ -252,20 +302,20 @@ void WorldSystem::restart_game() {
 }
 
 // Compute collisions between entities
-void WorldSystem::handle_collisions() {
+void WorldSystem::resolve_collisions() {
 	// Loop over all collisions detected by the physics system
 	std::list<Entity> garbage{};
-	bool delete_entity = false;
 	auto& collisionsRegistry = registry.collisions;
 	for (uint i = 0; i < collisionsRegistry.components.size(); i++) {
 		// The entity and its collider
 		Entity entity = collisionsRegistry.entities[i];
 		Collision collision = collisionsRegistry.components[i];
+		Transform& transform = registry.transforms.get(entity);
 		Motion& motion = registry.motions.get(entity);
 		// When any moving object collides with the boundary, it gets bounced towards the 
 		// reflected direction (similar to the physics model of reflection of light)
 		if (collision.collision_type == COLLISION_TYPE::WITH_BOUNDARY) {
-			vec2 normal_vec = -normalize(motion.position);
+			vec2 normal_vec = -normalize(transform.position);
 			// Only reflect when velocity is pointing out of the boundary to avoid being stuck
 			if (dot(motion.velocity, normal_vec) < 0) {
 				vec2 reflection = motion.velocity - 2 * dot(motion.velocity, normal_vec) * normal_vec;
@@ -273,23 +323,24 @@ void WorldSystem::handle_collisions() {
 				motion.velocity = 0.95f * reflection;
 				allow_accel = false;
 			}
-		} else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_ENEMY) {
+		}
+		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_ENEMY) {
 			// When player collides with enemy, only player gets knocked back,
 			// towards its relative direction from the enemy
 			Entity enemy_entity = collisionsRegistry.components[i].other_entity;
-			Motion& enemy_motion = registry.motions.get(enemy_entity); 
-			vec2 knockback_direction = normalize(motion.position - enemy_motion.position);
-			motion.velocity = (enemy_motion.max_velocity+1000) * knockback_direction;
+			Transform& enemy_transform = registry.transforms.get(enemy_entity);
+			Motion& enemy_motion = registry.motions.get(enemy_entity);
+			vec2 knockback_direction = normalize(transform.position - enemy_transform.position);
+			motion.velocity = (enemy_motion.max_velocity + 1000) * knockback_direction;
 			allow_accel = false;
-
-
 		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_ENEMY) {
 			// When bullet collides with enemy, only enemy gets knocked back,
 			// towards its relative direction from the enemy
 			Entity enemy_entity = collisionsRegistry.components[i].other_entity;
+			Transform& enemy_transform = registry.transforms.get(enemy_entity);
 			Motion& enemy_motion = registry.motions.get(enemy_entity);
-			vec2 knockback_direction = normalize(enemy_motion.position - motion.position);
+			vec2 knockback_direction = normalize(enemy_transform.position - transform.position);
 			enemy_motion.velocity = MAX_VELOCITY * knockback_direction;
 			enemy_motion.allow_accel = false;
 			garbage.push_back(entity);
@@ -308,7 +359,6 @@ void WorldSystem::handle_collisions() {
 	for (Entity i : garbage) {
 		registry.remove_all_components_of(i);
 	}
-
 
 	// Remove all collisions from this simulation step
 	registry.collisions.clear();
@@ -334,8 +384,18 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 	if (action == GLFW_RELEASE && key == GLFW_KEY_R) {
 		int w, h;
 		glfwGetWindowSize(window, &w, &h);
+		restart_game();
+	}
 
-        restart_game();
+	// Pausing game
+	if (action == GLFW_RELEASE && key == GLFW_KEY_ESCAPE) {
+		isPaused = !isPaused;
+	}
+
+	//temporary: test health bar. decrease by 10%
+	if (action == GLFW_RELEASE && key == GLFW_KEY_H) {
+		Health& playerHealth = registry.healthValues.get(player);
+		playerHealth.health_pct -= 1.0;
 	}
 
 	if (action == GLFW_PRESS) {
@@ -363,58 +423,35 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 	}
 	current_speed = fmax(0.f, current_speed);
 }
-void WorldSystem::enemy_movement() {
-	for (Entity entity : registry.enemies.entities) {
-		Motion& enemymotion = registry.motions.get(entity);
-		if (enemymotion.allow_accel == false) {
-			enemymotion.allow_accel= true;
-			continue;
-		}
-		vec2 playerposition = registry.motions.get(player).position;
-		float angle = atan2(enemymotion.position.y - playerposition.y, enemymotion.position.x - playerposition.x);
-		enemymotion.velocity.x += -cos(angle) * enemymotion.max_velocity* enemymotion.acceleration_unit;
-		enemymotion.velocity.y += -sin(angle) * enemymotion.max_velocity* enemymotion.acceleration_unit;
-		enemymotion.angle = angle+M_PI+0.8;
 
-		float magnitude = length(enemymotion.velocity);
-
-		if (magnitude > enemymotion.max_velocity || magnitude < -enemymotion.max_velocity) {
-			enemymotion.velocity *= (enemymotion.max_velocity / magnitude);
-		}
+void WorldSystem::on_mouse_move(vec2 pos) {
+	if (registry.deathTimers.has(player)) {
+		return;
 	}
-
+	mouse = pos;
 }
-void WorldSystem::movement() {
+
+void WorldSystem::control_movement() {
 	Motion& playermovement = registry.motions.get(player);
 
-	if (keys_pressed[GLFW_MOUSE_BUTTON_LEFT]) {
-		bullets();
-	}
-
-	//temporary: test health bar. decrease by 10%
-	if (keys_pressed[GLFW_KEY_H]) {
-		Health& playerHealth = registry.healthValues.get(player);
-		playerHealth.targetHealthPercentage -= 1.0;
-	}
-
+	// Vertical movement
 	if (keys_pressed[GLFW_KEY_W]) {
-		playermovement.velocity.y += playermovement.max_velocity* playermovement.acceleration_unit;
+		playermovement.velocity.y += playermovement.max_velocity * playermovement.acceleration_unit;
 	}
 	if (keys_pressed[GLFW_KEY_S]) {
 		playermovement.velocity.y -= playermovement.max_velocity * playermovement.acceleration_unit;
 	}
-
 	if ((!(keys_pressed[GLFW_KEY_S] || keys_pressed[GLFW_KEY_W])) || (keys_pressed[GLFW_KEY_S] && keys_pressed[GLFW_KEY_W])) {
 		playermovement.velocity.y *= playermovement.deceleration_unit;
 	}
 
+	// Horizontal movement
 	if (keys_pressed[GLFW_KEY_D]) {
 		playermovement.velocity.x += playermovement.max_velocity * playermovement.acceleration_unit;
 	}
 	if (keys_pressed[GLFW_KEY_A]) {
 		playermovement.velocity.x -= playermovement.max_velocity * playermovement.acceleration_unit;
 	}
-
 	if ((!(keys_pressed[GLFW_KEY_D] || keys_pressed[GLFW_KEY_A])) || (keys_pressed[GLFW_KEY_D] && keys_pressed[GLFW_KEY_A])) {
 		playermovement.velocity.x *= playermovement.deceleration_unit;
 	}
@@ -426,37 +463,26 @@ void WorldSystem::movement() {
 	}
 }
 
-void WorldSystem::on_mouse_move(vec2 pos) {
-	if (registry.deathTimers.has(player)) {
-		return;
+void WorldSystem::control_action() {
+	if (keys_pressed[GLFW_MOUSE_BUTTON_LEFT]) {
+		player_shoot();
 	}
-	mouse = pos;
 }
 
-void WorldSystem::direction() {
-	Motion playerdirection = registry.motions.get(player);
+
+void WorldSystem::control_direction() {
+	assert(registry.transforms.has(player));
 
 	float right = (float)window_width_px;
 	float bottom = (float)window_height_px;
-	float angle = atan2(-bottom/2 + mouse.y, right/2 - mouse.x) + M_PI+0.70;
-
-	registry.motions.get(player).angle = angle;
-}	
-
-void WorldSystem::bullets() {
-	Player& playerObject = registry.players.get(player);
-	if (playerObject.attack_timer > 0) {
-		return;
-	}
-	Motion& playerpos = registry.motions.get(player);
-
-
-	float radius = 10;
-	Entity bullet = createBullet({ playerpos.position.x + 60 * cos(playerpos.angle), playerpos.position.y + 60 * sin(playerpos.angle) },
-		{ radius, radius });
-	float brightness = 1.0;
-	registry.colors.insert(bullet, { brightness, brightness, brightness });
-	playerObject.attack_timer = 200.f;
+	float angle = atan2(-bottom / 2 + mouse.y, right / 2 - mouse.x) + M_PI + 0.70;
+	registry.transforms.get(player).angle = angle;
 }
 
-
+void WorldSystem::player_shoot() {
+	Player& playerObject = registry.players.get(player);
+	if (playerObject.attack_timer <= 0) {
+		createBullet(player, { 10.f, 10.f }, {1.f, 0.2f, 0.2f, 1.f});
+		playerObject.attack_timer = ATTACK_DELAY;
+	}
+}

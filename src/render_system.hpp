@@ -48,11 +48,7 @@ class RenderSystem {
 		shader_path("coloured"),
 		shader_path("textured"),
 		shader_path("screen"),
-		shader_path("player"),
 		shader_path("region"),
-		shader_path("healthBar"),
-		shader_path("bullet"),
-		shader_path("staticWindow")
 	};
 
 	std::array<GLuint, geometry_count> vertex_buffers;
@@ -93,19 +89,28 @@ public:
 
 
 private:
+	Entity player; // Keep reference to player entity
+
 	// Internal drawing functions for each entity type
-	void drawTexturedMesh(Entity entity, const mat3& viewProjection);
-	void drawBackground(const mat3& viewProjection);
+	void drawEntity(
+		Entity entity,
+		const RenderRequest& render_request,
+		const mat3& transform,
+		const mat3& viewProjection
+	);
+	// void drawBackground(const mat3& viewProjection);
 	void drawToScreen();
-	void drawHealthBar();
-	void drawHealthBarFrame();
-	void getPlayerHealth();
-	Health playerHealth;
+	void setUniformShaderVars(
+		Entity entity,
+		const mat3& transform,
+		const mat3& viewProjection
+	);
+	void setTexturedShaderVars(Entity entity);
+	void setColouredShaderVars(Entity entity);
+	void setRegionShaderVars(Entity entity);
 
 	// Window handle
 	GLFWwindow* window;
-
-
 
 	// Screen texture handles
 	GLuint frame_buffer;

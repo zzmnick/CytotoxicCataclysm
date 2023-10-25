@@ -56,7 +56,7 @@ bool RenderSystem::init(GLFWwindow* window_arg)
 	gl_has_errors();
 
 	initScreenTexture();
-    initializeGlTextures();
+	initializeGlTextures();
 	initializeGlEffects();
 	initializeGlGeometryBuffers();
 
@@ -65,10 +65,10 @@ bool RenderSystem::init(GLFWwindow* window_arg)
 
 void RenderSystem::initializeGlTextures()
 {
-    glGenTextures((GLsizei)texture_gl_handles.size(), texture_gl_handles.data());
+	glGenTextures((GLsizei)texture_gl_handles.size(), texture_gl_handles.data());
 
-    for(uint i = 0; i < texture_paths.size(); i++)
-    {
+	for (uint i = 0; i < texture_paths.size(); i++)
+	{
 		const std::string& path = texture_paths[i];
 		ivec2& dimensions = texture_dimensions[i];
 
@@ -87,13 +87,13 @@ void RenderSystem::initializeGlTextures()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		gl_has_errors();
 		stbi_image_free(data);
-    }
+	}
 	gl_has_errors();
 }
 
 void RenderSystem::initializeGlEffects()
 {
-	for(uint i = 0; i < effect_paths.size(); i++)
+	for (uint i = 0; i < effect_paths.size(); i++)
 	{
 		const std::string vertex_shader_name = effect_paths[i] + ".vs.glsl";
 		const std::string fragment_shader_name = effect_paths[i] + ".fs.glsl";
@@ -125,13 +125,13 @@ void RenderSystem::initializeGlMeshes()
 		// Initialize meshes
 		GEOMETRY_BUFFER_ID geom_index = mesh_paths[i].first;
 		std::string name = mesh_paths[i].second;
-		Mesh::loadFromOBJFile(name, 
+		Mesh::loadFromOBJFile(name,
 			meshes[(int)geom_index].vertices,
 			meshes[(int)geom_index].vertex_indices,
 			meshes[(int)geom_index].original_size);
 
 		bindVBOandIBO(geom_index,
-			meshes[(int)geom_index].vertices, 
+			meshes[(int)geom_index].vertices,
 			meshes[(int)geom_index].vertex_indices);
 	}
 }
@@ -146,14 +146,17 @@ void RenderSystem::initializeGlGeometryBuffers()
 	// Index and Vertex buffer data initialization.
 	initializeGlMeshes();
 
+	constexpr vec3 red = { 0.8,0.1,0.1 };
+	constexpr vec3 white = { 0.9,0.9,0.9 };
+
 	//////////////////////////
 	// Initialize sprite
 	// The position corresponds to the center of the texture.
 	std::vector<TexturedVertex> textured_vertices(4);
-	textured_vertices[0].position = { -1.f/2, +1.f/2, 0.f };
-	textured_vertices[1].position = { +1.f/2, +1.f/2, 0.f };
-	textured_vertices[2].position = { +1.f/2, -1.f/2, 0.f };
-	textured_vertices[3].position = { -1.f/2, -1.f/2, 0.f };
+	textured_vertices[0].position = { -1.f / 2, +1.f / 2, 0.f };
+	textured_vertices[1].position = { +1.f / 2, +1.f / 2, 0.f };
+	textured_vertices[2].position = { +1.f / 2, -1.f / 2, 0.f };
+	textured_vertices[3].position = { -1.f / 2, -1.f / 2, 0.f };
 	textured_vertices[0].texcoord = { 0.f, 1.f };
 	textured_vertices[1].texcoord = { 1.f, 1.f };
 	textured_vertices[2].texcoord = { 1.f, 0.f };
@@ -171,7 +174,6 @@ void RenderSystem::initializeGlGeometryBuffers()
 	std::vector<uint16_t> line_indices;
 
 	constexpr float depth = 0.5f;
-	constexpr vec3 red = { 0.8,0.1,0.1 };
 
 	// Corner points
 	line_vertices = {
@@ -182,8 +184,8 @@ void RenderSystem::initializeGlGeometryBuffers()
 	};
 
 	// Two triangles
-	line_indices = {0, 1, 3, 1, 2, 3};
-	
+	line_indices = { 0, 1, 3, 1, 2, 3 };
+
 	int geom_index = (int)GEOMETRY_BUFFER_ID::DEBUG_LINE;
 	meshes[geom_index].vertices = line_vertices;
 	meshes[geom_index].vertex_indices = line_indices;
@@ -201,31 +203,16 @@ void RenderSystem::initializeGlGeometryBuffers()
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE, screen_vertices, screen_indices);
 
 	///////////////////////////////////////////////////////
-	// Initialize health bar rectangle.
-	std::vector<vec3> healthBar_vertices(4);
-	healthBar_vertices[0] = { -0.5, -0.8, 0.f };
-	healthBar_vertices[1] = { 0.5, -0.8, 0.f };
-	healthBar_vertices[2] = { 0.5, -0.85, 0.f };
-	healthBar_vertices[3] = { -0.5, -0.85, 0.f };
+	// Initialize statusbar rectangle
+	std::vector<ColoredVertex> statBar_vertices(4);
+	statBar_vertices[0] = { {0.f, -0.5, 0.f}, white };
+	statBar_vertices[1] = { {0.f, 0.5, 0.f}, white };
+	statBar_vertices[2] = { {1.f, 0.5, 0.f}, white };
+	statBar_vertices[3] = { {1.f, -0.5, 0.f}, white };
 
 	// Counterclockwise as it's the default opengl front winding direction.
-	const std::vector<uint16_t> healthBar_indices = { 0, 1, 2, 0, 2, 3 };
-	bindVBOandIBO(GEOMETRY_BUFFER_ID::HEALTH_RECTANGLE, healthBar_vertices, healthBar_indices);
-
-	///////////////////////////////////////////////////////
-	// Initialize health bar frame rectangle
-	std::vector<TexturedVertex> healthBarFrame_vertices(4);
-	healthBarFrame_vertices[0].position = { -0.922, -0.935, 0.f };
-	healthBarFrame_vertices[1].position = { 0.561, -0.935, 0.f };
-	healthBarFrame_vertices[2].position = { 0.561, -0.71, 0.f };
-	healthBarFrame_vertices[3].position = { -0.922, -0.71, 0.f };
-	healthBarFrame_vertices[0].texcoord = { 0.f, 1.f };
-	healthBarFrame_vertices[1].texcoord = { 1.f, 1.f };
-	healthBarFrame_vertices[2].texcoord = { 1.f, 0.f };
-	healthBarFrame_vertices[3].texcoord = { 0.f, 0.f };
-
-	const std::vector<uint16_t> healthBarFrame_indices = { 0, 1, 2, 0, 2, 3 };
-	bindVBOandIBO(GEOMETRY_BUFFER_ID::HEALTHBARFRAME_RECTANGLE, healthBarFrame_vertices, healthBarFrame_indices);
+	const std::vector<uint16_t> statBar_indices = { 0, 1, 3, 1, 2, 3 };
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::STATUSBAR_RECTANGLE, statBar_vertices, statBar_indices);
 
 	///////////////////////////////////////////////////////
 	// Initialize region triangle
@@ -241,7 +228,7 @@ void RenderSystem::initializeGlGeometryBuffers()
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::REGION_TRIANGLE, region_vertices, region_indices);
 
 	//////////////////////////////////
-// Initialize bullet
+	// Initialize bullet circle
 	std::vector<ColoredVertex> bullet_vertices;
 	std::vector<uint16_t> bullet_indices;
 	constexpr float z = -0.1f;
@@ -249,13 +236,9 @@ void RenderSystem::initializeGlGeometryBuffers()
 
 	for (int i = 0; i < NUM_TRIANGLES; i++) {
 		const float t = float(i) * M_PI * 2.f / float(NUM_TRIANGLES - 1);
-		bullet_vertices.push_back({});
-		bullet_vertices.back().position = { 0.5 * cos(t), 0.5 * sin(t), z };
-		bullet_vertices.back().color = { 1.0, 0.0, 0.0 };
+		bullet_vertices.push_back({ { 0.5 * cos(t), 0.5 * sin(t), z } , white});
 	}
-	bullet_vertices.push_back({});
-	bullet_vertices.back().position = { 0, 0, 0 };
-	bullet_vertices.back().color = { 1.0, 0.0, 0.0 };
+	bullet_vertices.push_back({ { 0, 0, 0 } , white});
 	for (int i = 0; i < NUM_TRIANGLES; i++) {
 		bullet_indices.push_back((uint16_t)i);
 		bullet_indices.push_back((uint16_t)((i + 1) % NUM_TRIANGLES));
@@ -278,7 +261,7 @@ RenderSystem::~RenderSystem()
 	glDeleteRenderbuffers(1, &off_screen_render_buffer_depth);
 	gl_has_errors();
 
-	for(uint i = 0; i < effect_count; i++) {
+	for (uint i = 0; i < effect_count; i++) {
 		glDeleteProgram(effects[i]);
 	}
 	// delete allocated resources
@@ -287,7 +270,7 @@ RenderSystem::~RenderSystem()
 
 	// remove all entities created by the render system
 	while (registry.renderRequests.entities.size() > 0)
-	    registry.remove_all_components_of(registry.renderRequests.entities.back());
+		registry.remove_all_components_of(registry.renderRequests.entities.back());
 }
 
 // Initialize the screen texture from a standard sprite

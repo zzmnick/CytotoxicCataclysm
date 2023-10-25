@@ -38,7 +38,7 @@ inline std::string mesh_path(const std::string& name) {return data_path() + "/me
 // The 'Transform' component handles transformations passed to the Vertex shader
 // (similar to the gl Immediate mode equivalent, e.g., glTranslate()...)
 // We recommend making all components non-copyable by derving from ComponentNonCopyable
-struct Transform {
+struct Transformation {
 	mat3 mat = { { 1.f, 0.f, 0.f }, { 0.f, 1.f, 0.f}, { 0.f, 0.f, 1.f} }; // start with the identity
 	void scale(vec2 scale);
 	void rotate(float radians);
@@ -52,7 +52,8 @@ const int window_width_px = 1920;
 const int window_height_px = 1080;
 const size_t NUM_REGIONS = 4;
 const float MAP_RADIUS = 4000;
-const float SPAWN_REGION_RADIUS = window_width_px - 200;
-const float EDGE_FADING_THICKNESS = window_width_px / 2;
-const float HEALTH_BAR_UPDATE_TIME_SLAP = 300.0;
-const float HEALTH_BAR_LENGTH_VS_COORD = 1.0;
+const float SPAWN_REGION_RADIUS = window_height_px;
+const float EDGE_FADING_THICKNESS = window_height_px / 2;
+const float HEALTH_BAR_UPDATE_TIME_SLAP = 200.0;
+const float DEATH_EFFECT_DURATION = 500.0;
+const float ATTACK_DELAY = 300.0;

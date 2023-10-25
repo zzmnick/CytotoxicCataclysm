@@ -33,20 +33,21 @@ public:
 	bool step(float elapsed_ms);
 
 	// Check for collisions
-	void handle_collisions();
+	void resolve_collisions();
 
 	// Should the game be over ?
 	bool is_over()const;
 private:
 	// Input callback functions
 	void on_key(int key, int, int action, int mod);
-	void enemy_movement();
-	void movement();
 	void on_mouse_move(vec2 pos);
 
-	void direction();
+	// User input handlers
+	void control_movement();
+	void control_direction();
+	void control_action();
 
-	void bullets();
+	void player_shoot();
 
 	// restart level
 	void restart_game();
@@ -58,6 +59,10 @@ private:
 	RenderSystem* renderer;
 	float current_speed;
 	Entity player;
+	bool isPaused;
+
+	// UI references
+	Entity healthbar;
 
 	// music references
 	Mix_Music* background_music;
@@ -70,4 +75,9 @@ private:
 
 	bool allow_accel;
 
+	// Step different sub-systems
+	void step_deathTimer(ScreenState& screen, float elapsed_ms);
+	void step_health(float elapsed_ms);
+	void step_invincibility(float elapsed_ms);
+	void step_attack(float elapsed_ms);
 };
