@@ -137,6 +137,7 @@ struct Player
 {
 	float attack_timer = ATTACK_DELAY;
 
+
 };
 
 // Enemy component
@@ -260,4 +261,10 @@ struct Weapon {
 	float damage = 10.f;
 };
 
+struct Dash
+{
+	float timer_ms = 400.f;
+	float active_dash_ms = 0.f;
+	float dash_speed = 5.f;
+};
 #pragma endregion

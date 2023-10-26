@@ -25,6 +25,7 @@ Entity createPlayer(RenderSystem* renderer, vec2 pos)
 
 	// Create an (empty) Player component to be able to refer to all players
 	registry.players.emplace(entity);
+	registry.dashes.emplace(entity);
 	registry.renderRequests.insert(
 		entity,
 		{ TEXTURE_ASSET_ID::IMMUNITY,

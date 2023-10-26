@@ -239,6 +239,14 @@ void WorldSystem::step_attack(float elapsed_ms) {
 	playerObject.attack_timer = max(playerObject.attack_timer - elapsed_ms, 0.f);
 }
 
+void WorldSystem::step_dash(float elapsed_ms) {
+	assert(registry.dashes.has(player));
+	Player& playerObject = registry.players.get(player);
+	playerObject.attack_timer -= elapsed_ms;
+	Dash& playerDash = registry.dashes.get(player);
+	playerDash.active_dash_ms -= elapsed_ms;
+	playerDash.timer_ms -= elapsed_ms;
+}
 // Update our game world
 bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// Remove debug info from the last step
@@ -254,6 +262,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	step_health(elapsed_ms_since_last_update);
 	step_invincibility(elapsed_ms_since_last_update);
 	step_attack(elapsed_ms_since_last_update);
+	step_dash(elapsed_ms_since_last_update);
 
 	// Block velocity update for one step after collision to
 	// avoid going out of border / going through enemy
@@ -433,6 +442,8 @@ void WorldSystem::on_mouse_move(vec2 pos) {
 
 void WorldSystem::control_movement() {
 	Motion& playermovement = registry.motions.get(player);
+	Player& playerObject = registry.players.get(player);
+	Dash& playerDash = registry.dashes.get(player);
 
 	// Vertical movement
 	if (keys_pressed[GLFW_KEY_W]) {
@@ -457,9 +468,11 @@ void WorldSystem::control_movement() {
 	}
 
 	float magnitude = length(playermovement.velocity);
-
-	if (magnitude > playermovement.max_velocity || magnitude < -playermovement.max_velocity) {
-		playermovement.velocity *= (playermovement.max_velocity / magnitude);
+	//If player is dashing then it can go over the max velocity
+	if (playerDash.active_dash_ms <= 0) {
+		if (magnitude > playermovement.max_velocity || magnitude < -playermovement.max_velocity) {
+			playermovement.velocity *= (playermovement.max_velocity / magnitude);
+		}
 	}
 }
 
@@ -467,7 +480,11 @@ void WorldSystem::control_action() {
 	if (keys_pressed[GLFW_MOUSE_BUTTON_LEFT]) {
 		player_shoot();
 	}
+	if (keys_pressed[GLFW_KEY_LEFT_CONTROL]) {
+		player_dash();
+	}
 }
+
 
 
 void WorldSystem::control_direction() {
@@ -485,4 +502,16 @@ void WorldSystem::player_shoot() {
 		createBullet(player, { 10.f, 10.f }, {1.f, 0.2f, 0.2f, 1.f});
 		playerObject.attack_timer = ATTACK_DELAY;
 	}
+}
+
+void WorldSystem::player_dash() {
+	Dash& playerDash = registry.dashes.get(player);
+	Motion& playerMovement = registry.motions.get(player);
+	if (playerDash.timer_ms > 0) { //make sure player dash cooldown is 0 if not don't allow them to dash
+		return;
+	}
+	playerMovement.velocity *= playerDash.dash_speed;
+	playerDash.timer_ms = 600.f;
+	playerDash.active_dash_ms = 100.f;
+
 }

@@ -48,6 +48,7 @@ private:
 	void control_action();
 
 	void player_shoot();
+	void player_dash();
 
 	// restart level
 	void restart_game();
@@ -80,4 +81,5 @@ private:
 	void step_health(float elapsed_ms);
 	void step_invincibility(float elapsed_ms);
 	void step_attack(float elapsed_ms);
+	void step_dash(float elapsed_ms);
 };
