@@ -333,31 +333,42 @@ void WorldSystem::resolve_collisions() {
 				allow_accel = false;
 			}
 		}
-		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_ENEMY) {
+		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_ENEMY &&
+				 !registry.invincibility.has(entity)) {
+			registry.invincibility.emplace(entity);
+
 			// When player collides with enemy, only player gets knocked back,
 			// towards its relative direction from the enemy
-			Entity enemy_entity = collisionsRegistry.components[i].other_entity;
+			Entity enemy_entity = collision.other_entity;
 			Transform& enemy_transform = registry.transforms.get(enemy_entity);
 			Motion& enemy_motion = registry.motions.get(enemy_entity);
 			vec2 knockback_direction = normalize(transform.position - enemy_transform.position);
 			motion.velocity = (enemy_motion.max_velocity + 1000) * knockback_direction;
 			allow_accel = false;
+
+			// Update player health
+			Health& playerHealth = registry.healthValues.get(entity);
+			playerHealth.health_pct -= 10.0;
 		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_ENEMY) {
 			// When bullet collides with enemy, only enemy gets knocked back,
 			// towards its relative direction from the enemy
-			Entity enemy_entity = collisionsRegistry.components[i].other_entity;
+			Entity enemy_entity = collision.other_entity;
 			Transform& enemy_transform = registry.transforms.get(enemy_entity);
 			Motion& enemy_motion = registry.motions.get(enemy_entity);
 			vec2 knockback_direction = normalize(enemy_transform.position - transform.position);
 			enemy_motion.velocity = MAX_VELOCITY * knockback_direction;
 			enemy_motion.allow_accel = false;
 			garbage.push_back(entity);
+			
+			// Update enemy health
+			Health& enemyHealth = registry.healthValues.get(enemy_entity);
+			enemyHealth.health_pct -= 10.0;
 		}
 		else if (collision.collision_type == COLLISION_TYPE::ENEMY_WITH_ENEMY) {
 			// When two enemies collide, one enemy simply follows the movement of 
 			// the other. One of the enemies is considered rigid body in this case
-			Entity other_enemy_entity = collisionsRegistry.components[i].other_entity;
+			Entity other_enemy_entity = collision.other_entity;
 			Motion& other_enemy_motion = registry.motions.get(other_enemy_entity);
 			motion.velocity = other_enemy_motion.velocity;
 		}

@@ -85,29 +85,23 @@ bool collides_with_boundary(const Transform& transform)
 	return false;
 }
 
-
+// Adds collision events to be handled in world_system's resolve_collisions()
 void collisionhelper(Entity entity_1, Entity entity_2) {
+	// Bullet Collisions
 	if (registry.weapons.has(entity_1)) {
 		if (registry.weapons.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_BULLET, entity_2);
-
 		} else if (registry.players.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_PLAYER, entity_2);
-
 		} else if (registry.enemies.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_ENEMY, entity_2);
-			Health& enemyHealth = registry.healthValues.get(entity_2);
-			enemyHealth.health_pct -= 10.0;
 		}
+	// Player Collisions
 	} else if (registry.players.has(entity_1)) {
 		if (registry.enemies.has(entity_2)) {
-			if (!registry.invincibility.has(entity_1)) {
-				registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::PLAYER_WITH_ENEMY, entity_2);
-				registry.invincibility.emplace(entity_1);
-				Health& playerHealth = registry.healthValues.get(entity_1);
-				playerHealth.health_pct -= 10.0;
-			}
+			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::PLAYER_WITH_ENEMY, entity_2);
 		}
+	// Enemy Collisions
 	} else if (registry.enemies.has(entity_1)) {
 		if (registry.enemies.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::ENEMY_WITH_ENEMY, entity_2);
