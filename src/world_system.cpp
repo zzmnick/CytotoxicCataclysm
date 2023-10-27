@@ -69,8 +69,24 @@ GLFWwindow* WorldSystem::create_window() {
 #endif
 	glfwWindowHint(GLFW_RESIZABLE, 0);
 
+	if (USE_FULLSCREEN) {
+		// Fullscreen window
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		window = glfwCreateWindow(CONTENT_WIDTH_PX, CONTENT_HEIGHT_PX, "Cytotoxic Cataclysm", monitor, nullptr);
+
+		// When fullscreen we attempt to set the video mode to use a refresh rate of TARGET_REFRESH_RATE
+		glfwSetWindowMonitor(window, monitor, 0, 0, CONTENT_WIDTH_PX, CONTENT_HEIGHT_PX, TARGET_REFRESH_RATE);
+		int actual_refresh_rate = glfwGetVideoMode(monitor)->refreshRate;
+		if (actual_refresh_rate != TARGET_REFRESH_RATE) {
+			printf("Warning: target refresh rate, %d, does not match actual refresh rate, %d\n", TARGET_REFRESH_RATE, actual_refresh_rate);
+		}
+	}
+	else {
+		// Windowed mode
+		window = glfwCreateWindow(CONTENT_WIDTH_PX, CONTENT_HEIGHT_PX, "Cytotoxic Cataclysm", nullptr, nullptr);
+	}
+
 	// Create the main window (for rendering, keyboard, and mouse input)
-	window = glfwCreateWindow(window_width_px, window_height_px, "Cytotoxic Cataclysm", nullptr, nullptr);
 	if (window == nullptr) {
 		fprintf(stderr, "Failed to glfwCreateWindow");
 		return nullptr;
@@ -129,7 +145,7 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 
 	// Create world entities that don't reset
 	createRandomRegions(renderer, NUM_REGIONS);
-	healthbar = createHealthbar({ -window_width_px * 0.35, -window_height_px * 0.45 }, STATUSBAR_SCALE);
+	healthbar = createHealthbar({ -CONTENT_WIDTH_PX * 0.35, -CONTENT_HEIGHT_PX * 0.45 }, STATUSBAR_SCALE);
 
 	// Set all states to default
 	restart_game();
@@ -301,11 +317,11 @@ void WorldSystem::restart_game() {
 	// Create multiple instances of the Red Enemy (new addition)
 	int num_enemies = 5; // Adjust this number as desired
 	for (int i = 0; i < num_enemies; ++i) {
-		vec2 enemy_position = { 50.f + uniform_dist(rng) * (window_width_px - 100.f), 50.f + uniform_dist(rng) * (window_height_px - 100.f) };
+		vec2 enemy_position = { 50.f + uniform_dist(rng) * (CONTENT_WIDTH_PX - 100.f), 50.f + uniform_dist(rng) * (CONTENT_HEIGHT_PX - 100.f) };
 		createRedEnemy(renderer, enemy_position);
 	}
 	for (int i = 0; i < num_enemies; ++i) {
-		vec2 enemy_position = { 50.f + uniform_dist(rng) * (window_width_px - 100.f), 50.f + uniform_dist(rng) * (window_height_px - 100.f) };
+		vec2 enemy_position = { 50.f + uniform_dist(rng) * (CONTENT_WIDTH_PX - 100.f), 50.f + uniform_dist(rng) * (CONTENT_HEIGHT_PX - 100.f) };
 		createGreenEnemy(renderer, enemy_position);
 	}
 }
@@ -402,8 +418,6 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 
 	// Resetting game
 	if (action == GLFW_RELEASE && key == GLFW_KEY_R) {
-		int w, h;
-		glfwGetWindowSize(window, &w, &h);
 		restart_game();
 	}
 
@@ -412,7 +426,13 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 		isPaused = !isPaused;
 	}
 
-	//temporary: test health bar. decrease by 10%
+	// temporary: shorctut for when testing
+	// Quit the program: press 'Q' when game is paused
+	if (isPaused && action == GLFW_RELEASE && key == GLFW_KEY_Q) {
+		exit(EXIT_SUCCESS);
+	}
+
+	// temporary: test health bar. decrease by 10%
 	if (action == GLFW_RELEASE && key == GLFW_KEY_H) {
 		Health& playerHealth = registry.healthValues.get(player);
 		playerHealth.health_pct -= 1.0;
@@ -501,8 +521,8 @@ void WorldSystem::control_action() {
 void WorldSystem::control_direction() {
 	assert(registry.transforms.has(player));
 
-	float right = (float)window_width_px;
-	float bottom = (float)window_height_px;
+	float right = (float)CONTENT_WIDTH_PX;
+	float bottom = (float)CONTENT_HEIGHT_PX;
 	float angle = atan2(-bottom / 2 + mouse.y, right / 2 - mouse.x) + M_PI + 0.70;
 	registry.transforms.get(player).angle = angle;
 }

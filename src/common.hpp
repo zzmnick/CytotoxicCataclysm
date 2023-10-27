@@ -48,12 +48,15 @@ struct Transformation {
 bool gl_has_errors();
 
 // Game configuration
-const int window_width_px = 1920;
-const int window_height_px = 1080;
+const bool USE_FULLSCREEN = true;
+const int TARGET_REFRESH_RATE = 60;
+// This is the "in-game" screen
+const int CONTENT_WIDTH_PX = 1920;
+const int CONTENT_HEIGHT_PX = 1080;
 const size_t NUM_REGIONS = 4;
 const float MAP_RADIUS = 4000;
-const float SPAWN_REGION_RADIUS = window_height_px;
-const float EDGE_FADING_THICKNESS = window_height_px / 2;
+const float SPAWN_REGION_RADIUS = CONTENT_HEIGHT_PX;
+const float EDGE_FADING_THICKNESS = CONTENT_HEIGHT_PX / 2;
 const float HEALTH_BAR_UPDATE_TIME_SLAP = 200.0;
 const float DEATH_EFFECT_DURATION = 500.0;
 const float ATTACK_DELAY = 300.0;
