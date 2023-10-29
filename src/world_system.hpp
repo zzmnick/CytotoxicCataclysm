@@ -65,10 +65,12 @@ private:
 	// UI references
 	Entity healthbar;
 
-	// music references
-	Mix_Music* background_music;
-	Mix_Chunk* player_dead_sound;
-	Mix_Chunk* player_eat_sound;
+	// sound references and handler
+	std::unordered_map<std::string, Mix_Music*> backgroundMusic;
+	std::unordered_map<std::string, Mix_Chunk*> soundChunks;
+	std::unordered_map<std::string, int> chunkToChannel;
+	void handle_shooting_sound_effect();
+	bool isShootingSoundQueued;
 
 	// C++ random number generator
 	std::default_random_engine rng;

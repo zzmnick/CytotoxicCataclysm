@@ -18,16 +18,21 @@ WorldSystem::WorldSystem() {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
 	allow_accel = true;
+	isShootingSoundQueued = false;
 }
 
 WorldSystem::~WorldSystem() {
 	// Destroy music components
-	if (background_music != nullptr)
-		Mix_FreeMusic(background_music);
-	if (player_dead_sound != nullptr)
-		Mix_FreeChunk(player_dead_sound);
-	if (player_eat_sound != nullptr)
-		Mix_FreeChunk(player_eat_sound);
+	for (const auto& pair : soundChunks) {
+		if (pair.second != nullptr) {
+			Mix_FreeChunk(pair.second);
+		}
+	}
+	for (const auto& pair : backgroundMusic) {
+		if (pair.second != nullptr) {
+			Mix_FreeMusic(pair.second);
+		}
+	}
 	Mix_CloseAudio();
 
 	// Destroy all created components
@@ -113,7 +118,6 @@ GLFWwindow* WorldSystem::create_window() {
 		return nullptr;
 	}
 
-
 	// TODO: For Voxel Revolution.wav must credit as below:
 	/*
 		"Voxel Revolution" Kevin MacLeod (incompetech.com)
@@ -121,17 +125,43 @@ GLFWwindow* WorldSystem::create_window() {
 		http://creativecommons.org/licenses/by/4.0/
 	*/
 
-	background_music = Mix_LoadMUS(audio_path("Voxel Revolution.wav").c_str());
-	player_dead_sound = Mix_LoadWAV(audio_path("player_dead.wav").c_str());
-	player_eat_sound = Mix_LoadWAV(audio_path("player_eat.wav").c_str());
+	backgroundMusic["main"] = Mix_LoadMUS(audio_path("music/Voxel Revolution.wav").c_str());
+	soundChunks["player_hit"]     = Mix_LoadWAV(audio_path("sound/sfx_sounds_damage1.wav").c_str());
+	soundChunks["player_dash"]    = Mix_LoadWAV(audio_path("sound/sfx_sound_nagger2.wav").c_str());
+	soundChunks["player_death"]   = Mix_LoadWAV(audio_path("sound/sfx_sounds_falling3.wav").c_str());
+	soundChunks["player_shoot_1"] = Mix_LoadWAV(audio_path("sound/sfx_wpn_laser8.wav").c_str());
+	soundChunks["enemy_hit"]      = Mix_LoadWAV(audio_path("sound/sfx_movement_footsteps5.wav").c_str());
+	soundChunks["enemy_death"]    = Mix_LoadWAV(audio_path("sound/sfx_deathscream_android8.wav").c_str());
 
-	if (background_music == nullptr || player_dead_sound == nullptr || player_eat_sound == nullptr) {
-		fprintf(stderr, "Failed to load sounds\n %s\n %s\n %s\n make sure the data directory is present",
-			audio_path("Voxel Revolution.wav").c_str(),
-			audio_path("player_dead.wav").c_str(),
-			audio_path("player_eat.wav").c_str());
-		return nullptr;
+	// Check for failures
+	for (const auto& pair : backgroundMusic) {
+		if (pair.second == nullptr) {
+			fprintf(stderr, "Failed to load music make sure the data directory is present");
+			return nullptr;
+		}
 	}
+	for (const auto& pair : soundChunks) {
+		if (pair.second == nullptr) {
+			fprintf(stderr, "Failed to load sound chunk \'%s\' make sure the data directory is present", pair.first.c_str());
+			return nullptr;
+		}
+	}
+
+	// Assign channels
+	Mix_AllocateChannels(6);
+	chunkToChannel["player_hit"]     = 0;
+	chunkToChannel["player_dash"]    = 1;
+	chunkToChannel["player_death"]   = 2;
+	chunkToChannel["player_shoot_1"] = 3;
+	chunkToChannel["enemy_hit"]      = 4;
+	chunkToChannel["enemy_death"]    = 5;
+
+	// Adjust music and CHUNK volume in range [0,128]
+	Mix_VolumeMusic(45);
+	Mix_VolumeChunk(soundChunks["player_shoot_1"], 60);
+	Mix_VolumeChunk(soundChunks["player_dash"], 45);
+	Mix_VolumeChunk(soundChunks["enemy_hit"], 45);
+
 
 	return window;
 }
@@ -139,7 +169,7 @@ GLFWwindow* WorldSystem::create_window() {
 void WorldSystem::init(RenderSystem* renderer_arg) {
 	this->renderer = renderer_arg;
 	// Playing background music indefinitely
-	Mix_PlayMusic(background_music, -1);
+	Mix_FadeInMusic(backgroundMusic["main"], -1, 2000);
 	fprintf(stderr, "Loaded music\n");
 
 	// Create world entities that don't reset
@@ -198,11 +228,13 @@ void WorldSystem::step_health(float elapsed_ms) {
 				if (!registry.deathTimers.has(entity)) {
 					if (entity == player) {
 						isPaused = true;
+						Mix_PlayChannel(chunkToChannel["player_death"], soundChunks["player_death"], 0);
 					}
 					else {
 						// Immobilize enemy
 						assert(registry.motions.has(entity));
 						registry.motions.remove(entity);
+						Mix_PlayChannel(chunkToChannel["enemy_death"], soundChunks["enemy_death"], 0);
 					}
 					registry.deathTimers.emplace(entity);
 				}
@@ -290,6 +322,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	control_direction();
 	control_action();
 
+	handle_shooting_sound_effect();
+
 	return true;
 }
 
@@ -364,6 +398,8 @@ void WorldSystem::resolve_collisions() {
 			// Update player health
 			Health& playerHealth = registry.healthValues.get(entity);
 			playerHealth.health_pct -= 10.0;
+
+			Mix_PlayChannel(chunkToChannel["player_hit"], soundChunks["player_hit"], 0);
 		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_ENEMY) {
 			// When bullet collides with enemy, only enemy gets knocked back,
@@ -379,6 +415,8 @@ void WorldSystem::resolve_collisions() {
 			// Update enemy health
 			Health& enemyHealth = registry.healthValues.get(enemy_entity);
 			enemyHealth.health_pct -= 10.0;
+
+			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
 		}
 		else if (collision.collision_type == COLLISION_TYPE::ENEMY_WITH_ENEMY) {
 			// When two enemies collide, one enemy simply follows the movement of 
@@ -543,4 +581,34 @@ void WorldSystem::player_dash() {
 	playerDash.timer_ms = 600.f;
 	playerDash.active_dash_ms = 100.f;
 
+	Mix_PlayChannel(chunkToChannel["player_dash"], soundChunks["player_dash"], 0);
+}
+
+void WorldSystem::handle_shooting_sound_effect() {
+	Player& playerObject = registry.players.get(player);
+
+	auto play_or_queue_sound = [&]() {
+		if (!Mix_Playing(chunkToChannel["player_shoot_1"])) {
+			// duck volume if another sound is playing
+			int volume = Mix_Playing(-1) ? 40 : 128;
+			Mix_Volume(chunkToChannel["player_shoot_1"], volume);
+			Mix_PlayChannel(chunkToChannel["player_shoot_1"], soundChunks["player_shoot_1"], 0);
+		}
+		else {
+			// Queue sound if it's already playing
+			isShootingSoundQueued = true;
+		}
+	};
+
+	if (playerObject.attack_timer == ATTACK_DELAY) {
+		// We know player just attacked because attack_timer reset
+		play_or_queue_sound();
+	}
+	else if (isShootingSoundQueued && !Mix_Playing(chunkToChannel["player_shoot_1"])) {
+		// If attack_timer ticked down too much it's probably too late to play a sound
+		if (playerObject.attack_timer >= ATTACK_DELAY / 3.0) {
+			play_or_queue_sound();
+		}
+		isShootingSoundQueued = false;
+	}
 }
