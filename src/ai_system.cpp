@@ -8,10 +8,10 @@ void AISystem::step(float elapsed_ms)
 	if (!players.empty()) {
 		player = players.back();
 	}
-	move_enemies();
+	move_enemies(elapsed_ms);
 }
 
-void AISystem::move_enemies() {
+void AISystem::move_enemies(float elapsed_ms) {
 	for (Entity entity : registry.enemies.entities) {
 		if (registry.motions.has(entity)) {
 			assert(registry.transforms.has(entity));
@@ -23,8 +23,8 @@ void AISystem::move_enemies() {
 			}
 			vec2 playerposition = registry.transforms.get(player).position;
 			float angle = atan2(enemytransform.position.y - playerposition.y, enemytransform.position.x - playerposition.x);
-			enemymotion.velocity.x += -cos(angle) * enemymotion.max_velocity * enemymotion.acceleration_unit;
-			enemymotion.velocity.y += -sin(angle) * enemymotion.max_velocity * enemymotion.acceleration_unit;
+			enemymotion.velocity.x += -cos(angle) * elapsed_ms * enemymotion.acceleration_unit;
+			enemymotion.velocity.y += -sin(angle) * elapsed_ms * enemymotion.acceleration_unit;
 			enemytransform.angle = angle + M_PI + 0.8;
 
 			float magnitude = length(enemymotion.velocity);

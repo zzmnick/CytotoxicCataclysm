@@ -12,5 +12,5 @@ public:
 
 private:
 	Entity player; // Keep reference to player entity
-	void move_enemies();
+	void move_enemies(float elapsed_ms);
 };

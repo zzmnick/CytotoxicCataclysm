@@ -43,7 +43,7 @@ private:
 	void on_mouse_move(vec2 pos);
 
 	// User input handlers
-	void control_movement();
+	void control_movement(float elapsed_ms);
 	void control_direction();
 	void control_action();
 

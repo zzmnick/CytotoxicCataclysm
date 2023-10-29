@@ -156,8 +156,8 @@ struct Motion {
 	vec2 velocity = { 0.f, 0.f };
 	vec2 scale = { 10.f, 10.f };
 	float max_velocity = 400.f;
-	float acceleration_unit = 0.05f;
-	float deceleration_unit = 0.9f;
+	float acceleration_unit = 1.0f;
+	float deceleration_unit = 0.995f;
 	bool allow_accel = true;
 };
 

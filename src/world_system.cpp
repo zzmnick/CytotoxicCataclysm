@@ -11,7 +11,6 @@
 
 std::unordered_map < int, int > keys_pressed;
 vec2 mouse;
-float MAX_VELOCITY = 400;
 
 
 // Create the world
@@ -283,7 +282,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// Block velocity update for one step after collision to
 	// avoid going out of border / going through enemy
 	if (allow_accel) {
-		control_movement();
+		control_movement(elapsed_ms_since_last_update);
 	}
 	else {
 		allow_accel = true;
@@ -373,7 +372,7 @@ void WorldSystem::resolve_collisions() {
 			Transform& enemy_transform = registry.transforms.get(enemy_entity);
 			Motion& enemy_motion = registry.motions.get(enemy_entity);
 			vec2 knockback_direction = normalize(enemy_transform.position - transform.position);
-			enemy_motion.velocity = MAX_VELOCITY * knockback_direction;
+			enemy_motion.velocity = enemy_motion.max_velocity * knockback_direction;
 			enemy_motion.allow_accel = false;
 			garbage.push_back(entity);
 			
@@ -471,31 +470,30 @@ void WorldSystem::on_mouse_move(vec2 pos) {
 	mouse = pos;
 }
 
-void WorldSystem::control_movement() {
+void WorldSystem::control_movement(float elapsed_ms) {
 	Motion& playermovement = registry.motions.get(player);
-	Player& playerObject = registry.players.get(player);
 	Dash& playerDash = registry.dashes.get(player);
 
 	// Vertical movement
 	if (keys_pressed[GLFW_KEY_W]) {
-		playermovement.velocity.y += playermovement.max_velocity * playermovement.acceleration_unit;
+		playermovement.velocity.y += elapsed_ms * playermovement.acceleration_unit;
 	}
 	if (keys_pressed[GLFW_KEY_S]) {
-		playermovement.velocity.y -= playermovement.max_velocity * playermovement.acceleration_unit;
+		playermovement.velocity.y -= elapsed_ms * playermovement.acceleration_unit;
 	}
 	if ((!(keys_pressed[GLFW_KEY_S] || keys_pressed[GLFW_KEY_W])) || (keys_pressed[GLFW_KEY_S] && keys_pressed[GLFW_KEY_W])) {
-		playermovement.velocity.y *= playermovement.deceleration_unit;
+		playermovement.velocity.y *= pow(playermovement.deceleration_unit, elapsed_ms);
 	}
 
 	// Horizontal movement
 	if (keys_pressed[GLFW_KEY_D]) {
-		playermovement.velocity.x += playermovement.max_velocity * playermovement.acceleration_unit;
+		playermovement.velocity.x += elapsed_ms * playermovement.acceleration_unit;
 	}
 	if (keys_pressed[GLFW_KEY_A]) {
-		playermovement.velocity.x -= playermovement.max_velocity * playermovement.acceleration_unit;
+		playermovement.velocity.x -= elapsed_ms * playermovement.acceleration_unit;
 	}
 	if ((!(keys_pressed[GLFW_KEY_D] || keys_pressed[GLFW_KEY_A])) || (keys_pressed[GLFW_KEY_D] && keys_pressed[GLFW_KEY_A])) {
-		playermovement.velocity.x *= playermovement.deceleration_unit;
+		playermovement.velocity.x *= pow(playermovement.deceleration_unit, elapsed_ms);
 	}
 
 	float magnitude = length(playermovement.velocity);
