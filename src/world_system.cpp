@@ -222,10 +222,6 @@ void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
     			enemyCounts[type]--;
 				registry.remove_all_components_of(entity);
 			}
-			else {
-				// Enemy is dying -> dying animation
-				// TODO: @Shirley this may be a position to trigger or step the dying animation
-			}
 		}
 	}
 }
@@ -245,14 +241,50 @@ void WorldSystem::step_health(float elapsed_ms) {
 					if (entity == player) {
 						isPaused = true;
 						Mix_PlayChannel(chunkToChannel["player_death"], soundChunks["player_death"], 0);
+						/////////////////////////////
+						RenderSystem::animationSys_switchAnimation(player, 
+							ANIMATION_FRAME_COUNT::IMMUNITY_DYING, 
+							animation_geo_map_general, 
+							animation_texture_map_general,
+							ceil(DEATH_EFFECT_DURATION / (int)ANIMATION_FRAME_COUNT::IMMUNITY_DYING));
+						
+						//temporary: since enemies cannot be killed at the moment
+						for (int i = 0; i < registry.enemies.entities.size(); i++) {
+							Entity& enemyEntity = registry.enemies.entities[i];
+							Enemy& enemy = registry.enemies.components[i];
+							if (enemy.type == ENEMY_ID::GREEN) {
+								RenderSystem::animationSys_switchAnimation(enemyEntity,
+									ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
+									animation_geo_map_general, 
+									animation_texture_map_general, 
+									ceil(DEATH_EFFECT_DURATION / (int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING)
+								);
+
+							}
+							
+						}
+						registry.deathTimers.emplace(entity);
 					}
 					else {
 						// Immobilize enemy
 						assert(registry.motions.has(entity));
 						registry.motions.remove(entity);
 						Mix_PlayChannel(chunkToChannel["enemy_death"], soundChunks["enemy_death"], 0);
+
+						Enemy& enemy = registry.enemies.get(entity);
+						int buffer = 20; // buffer to fix miss-timing between animation and death
+						if (enemy.type == ENEMY_ID::GREEN) {
+							RenderSystem::animationSys_switchAnimation(entity, 
+								ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
+								animation_geo_map_general, 
+								animation_texture_map_general,
+								ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / (int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING)
+							);
+
+						}
+						DeathTimer& dt = registry.deathTimers.emplace(entity);
+						dt.timer_ms = DEATH_EFFECT_DURATION_ENEMY;
 					}
-					registry.deathTimers.emplace(entity);
 				}
 			}
 		}
@@ -291,7 +323,7 @@ void WorldSystem::step_invincibility(float elapsed_ms) {
 		}
 		else {
 			// Flash once every 200ms
-			color.a = mod(floor(timer / 100.f), 2.f);
+			color.a = mod(ceil(timer / 100.f), 2.f);
 		}
 	}
 }

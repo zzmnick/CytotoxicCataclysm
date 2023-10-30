@@ -27,6 +27,8 @@ public:
 	ComponentContainer<Weapon> weapons;
 	ComponentContainer<Invincibility> invincibility;
 	ComponentContainer<Dash> dashes;
+	ComponentContainer<Animation> animations;
+	
 
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
@@ -47,6 +49,7 @@ public:
 		registry_list.push_back(&healthValues);
 		registry_list.push_back(&weapons);
 		registry_list.push_back(&invincibility);
+		registry_list.push_back(&animations);
 		registry_list.push_back(&dashes);
 
 	}

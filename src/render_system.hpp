@@ -30,6 +30,7 @@ class RenderSystem {
 
 	// Make sure these paths remain in sync with the associated enumerators.
 	const std::array<std::string, texture_count> texture_paths = {
+		textures_path("empty.png"),
 		textures_path("immunity.png"),
 		textures_path("red_enemy.png"),
 		textures_path("green_enemy.png"),
@@ -40,6 +41,12 @@ class RenderSystem {
 		textures_path("skeletal_bg.png"),
 		textures_path("cutaneous_bg.png"),
 		textures_path("healthbarframe.png"),
+		textures_path("gun.png"),
+		textures_path("immunity_moving.png"),
+		textures_path("immunity_dying.png"),
+		textures_path("green_enemy_moving.png"),
+		textures_path("green_enemy_dying.png"),
+		textures_path("immunity_blink.png")
 	};
 
 	std::array<GLuint, effect_count> effects;
@@ -86,8 +93,16 @@ public:
 	mat3 createViewMatrix();
 	vec2 offset;
 
-
-
+	//animation system
+	void initAnimation(GEOMETRY_BUFFER_ID gid, ANIMATION_FRAME_COUNT fcount);
+	void animationSys_step(float elapsed_ms);
+	void animationSys_init();
+	static void animationSys_switchAnimation(Entity& entity, 
+		ANIMATION_FRAME_COUNT animationType, 
+		std::unordered_map<ANIMATION_FRAME_COUNT, 
+		GEOMETRY_BUFFER_ID> geo_map, std::unordered_map<ANIMATION_FRAME_COUNT, TEXTURE_ASSET_ID> tex_map,
+		int update_period_ms);
+	
 private:
 	Entity player; // Keep reference to player entity
 
@@ -118,6 +133,7 @@ private:
 	GLuint off_screen_render_buffer_depth;
 
 	Entity screen_state_entity;
+	
 };
 
 

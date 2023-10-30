@@ -122,6 +122,18 @@ void step_movement(float elapsed_ms) {
 		Motion& motion = motion_container.components[i];
 		float step_seconds = elapsed_ms / 1000.f;
 		transform.position += motion.velocity * step_seconds;
+
+		if (registry.animations.has(entity) && registry.players.has(entity)) {
+			bool speed_above_threshold = (abs(length(motion.velocity)) - play_animation_threshold) > 0.0f;
+			Animation& animation = registry.animations.get(entity);
+			if (!speed_above_threshold && animation.total_frame != (int)ANIMATION_FRAME_COUNT::IMMUNITY_BLINKING) {
+				RenderSystem::animationSys_switchAnimation(entity, ANIMATION_FRAME_COUNT::IMMUNITY_BLINKING, animation_geo_map_general, animation_texture_map_general, 120);
+			}
+			else if (speed_above_threshold && animation.total_frame != (int)ANIMATION_FRAME_COUNT::IMMUNITY_MOVING && animation.total_frame != (int)ANIMATION_FRAME_COUNT::IMMUNITY_DYING) {
+				RenderSystem::animationSys_switchAnimation(entity, ANIMATION_FRAME_COUNT::IMMUNITY_MOVING, animation_geo_map_general, animation_texture_map_general, 30);
+			}
+		}
+		
 	}
 }
 

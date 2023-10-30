@@ -56,6 +56,18 @@ void RenderSystem::setTexturedShaderVars(Entity entity) {
 	GLuint texture_id =
 		texture_gl_handles[(GLuint)registry.renderRequests.get(entity).used_texture];
 	glBindTexture(GL_TEXTURE_2D, texture_id);
+	GLint isAnimation_loc = glGetUniformLocation(program, "isAnimation");
+	if (registry.animations.has(entity)) {
+		glUniform1f(isAnimation_loc, 1.f);
+		GLint curr_frame_loc = glGetUniformLocation(program, "currFrame");
+		glUniform1f(curr_frame_loc, 1.f * registry.animations.get(entity).curr_frame);
+		GLint total_frame_loc = glGetUniformLocation(program, "totalFrames");
+		glUniform1f(total_frame_loc, 1.f * registry.animations.get(entity).total_frame);
+	}
+	else {
+		glUniform1f(isAnimation_loc, -1.f);
+	}
+
 	gl_has_errors();
 }
 

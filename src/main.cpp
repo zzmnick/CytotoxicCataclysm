@@ -35,6 +35,7 @@ int main()
 	// initialize the main systems
 	render_system.init(window);
 	world_system.init(&render_system);
+	render_system.animationSys_init();
 
 	// variable timestep loop
 	auto t = Clock::now();
@@ -49,12 +50,13 @@ int main()
 		t = now;
 
 		bool isNotPaused = world_system.step(elapsed_ms);
+		
 		if (isNotPaused) {
 			physics_system.step(elapsed_ms);
 			world_system.resolve_collisions();
 			ai_system.step(elapsed_ms);
 		}
-
+		render_system.animationSys_step(elapsed_ms);
 		render_system.draw();
 	}
 

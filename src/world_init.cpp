@@ -29,10 +29,13 @@ Entity createPlayer(RenderSystem* renderer, vec2 pos)
 	registry.dashes.emplace(entity);
 	registry.renderRequests.insert(
 		entity,
-		{ TEXTURE_ASSET_ID::IMMUNITY,
+		{ TEXTURE_ASSET_ID::IMMUNITY_BLINKING,
 			EFFECT_ASSET_ID::TEXTURED,
-			GEOMETRY_BUFFER_ID::SPRITE,
+			GEOMETRY_BUFFER_ID::SPRITESHEET_IMMUNITY_BLINKING,
 			RENDER_ORDER::OBJECTS_FR });
+	Animation& animation = registry.animations.emplace(entity);
+	animation.total_frame = (int)ANIMATION_FRAME_COUNT::IMMUNITY_BLINKING;
+	animation.update_period_ms = 120;
 
 	// Creat a brand new health with 100% health value
 	registry.healthValues.emplace(entity);
@@ -76,8 +79,10 @@ Entity createPlayer(RenderSystem* renderer, vec2 pos)
 Entity createRedEnemy(RenderSystem* renderer, vec2 pos) {
 	// Create enemy components
 	auto entity = Entity();
-	registry.enemies.emplace(entity);
-	Enemy& new_enemy = registry.enemies.get(entity);
+	
+	Enemy& new_enemy = registry.enemies.emplace(entity);
+	
+
 	Transform& transform = registry.transforms.emplace(entity);
 	Motion& motion = registry.motions.emplace(entity);
 	Health& health = registry.healthValues.emplace(entity);
@@ -105,8 +110,8 @@ Entity createRedEnemy(RenderSystem* renderer, vec2 pos) {
 Entity createGreenEnemy(RenderSystem* renderer, vec2 pos) {
 	// Create enemy components
 	auto entity = Entity();
-	registry.enemies.emplace(entity);
-	Enemy& new_enemy = registry.enemies.get(entity);
+	Enemy& new_enemy = registry.enemies.emplace(entity);
+	
 	Transform& transform = registry.transforms.emplace(entity);
 	Motion& motion = registry.motions.emplace(entity);
 	Health& health = registry.healthValues.emplace(entity);
@@ -124,11 +129,13 @@ Entity createGreenEnemy(RenderSystem* renderer, vec2 pos) {
 	// Add tp render_request
 	registry.renderRequests.insert(
 		entity,
-		{ TEXTURE_ASSET_ID::GREEN_ENEMY,
+		{ TEXTURE_ASSET_ID::GREEN_ENEMY_MOVING,
 			EFFECT_ASSET_ID::TEXTURED,
-			GEOMETRY_BUFFER_ID::SPRITE,
+			GEOMETRY_BUFFER_ID::SPRITESHEET_GREEN_ENEMY_MOVING,
 			RENDER_ORDER::OBJECTS_FR });
-
+	Animation& animation = registry.animations.emplace(entity);
+	animation.update_period_ms *= 2;
+	animation.total_frame = (int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_MOVING;
 	return entity;
 }
 
