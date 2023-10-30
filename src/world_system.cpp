@@ -479,6 +479,7 @@ void WorldSystem::restart_game() {
 	// Reset the game state
 	current_speed = 1.f;
 	isPaused = false;
+	isShootingSoundQueued = false;
 	// Create a new player
 	player = createPlayer(renderer, { 0, 0 });
 }
