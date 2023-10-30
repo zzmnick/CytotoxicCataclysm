@@ -7,6 +7,7 @@
 #include <vector>
 #include <random>
 #include <algorithm>
+#include <iostream>
 
 Entity createPlayer(RenderSystem* renderer, vec2 pos)
 {
@@ -42,10 +43,41 @@ Entity createPlayer(RenderSystem* renderer, vec2 pos)
 	return entity;
 }
 
+// Entity createBoss(RenderSystem* renderer, vec2 pos) {
+//     // Create boss components
+//     auto entity = Entity();
+//     registry.enemies.emplace(entity);  // Assuming boss is a type of enemy
+//	   Enemy& new_enemy = registry.enemies.get(entity);
+//     Transform& transform = registry.transforms.emplace(entity);
+//     Motion& motion = registry.motions.emplace(entity);
+//     Health& health = registry.healthValues.emplace(entity);
+//     Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+//     registry.meshPtrs.emplace(entity, &mesh);
+
+//     // Setting initial components values
+//	   new_enemy.type = ENEMY_ID::BOSS;
+//     transform.position = pos;
+//     transform.angle = M_PI;
+//     transform.scale = BOSS_TEXTURE_SIZE;
+//     motion.max_velocity = 300;
+//     health.previous_health_pct = 500.0;
+
+//     // Add to render_request with a placeholder texture
+//     registry.renderRequests.insert(
+//         entity,
+//         { TEXTURE_ASSET_ID::BOSS_PLACEHOLDER,
+//           EFFECT_ASSET_ID::TEXTURED,
+//           GEOMETRY_BUFFER_ID::SPRITE,
+//           RENDER_ORDER::OBJECTS_FR });
+
+//     return entity;
+// }
+
 Entity createRedEnemy(RenderSystem* renderer, vec2 pos) {
 	// Create enemy components
 	auto entity = Entity();
 	registry.enemies.emplace(entity);
+	Enemy& new_enemy = registry.enemies.get(entity);
 	Transform& transform = registry.transforms.emplace(entity);
 	Motion& motion = registry.motions.emplace(entity);
 	Health& health = registry.healthValues.emplace(entity);
@@ -53,6 +85,7 @@ Entity createRedEnemy(RenderSystem* renderer, vec2 pos) {
 	registry.meshPtrs.emplace(entity, &mesh);
 
 	// Setting initial components values
+	new_enemy.type = ENEMY_ID::RED;
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = RED_ENEMY_TEXTURE_SIZE * 2.f;
@@ -73,6 +106,7 @@ Entity createGreenEnemy(RenderSystem* renderer, vec2 pos) {
 	// Create enemy components
 	auto entity = Entity();
 	registry.enemies.emplace(entity);
+	Enemy& new_enemy = registry.enemies.get(entity);
 	Transform& transform = registry.transforms.emplace(entity);
 	Motion& motion = registry.motions.emplace(entity);
 	Health& health = registry.healthValues.emplace(entity);
@@ -80,6 +114,7 @@ Entity createGreenEnemy(RenderSystem* renderer, vec2 pos) {
 	registry.meshPtrs.emplace(entity, &mesh);
 
 	// Setting initial components values
+	new_enemy.type = ENEMY_ID::GREEN;
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = GREEN_ENEMY_TEXTURE_SIZE * 4.f;
@@ -96,6 +131,7 @@ Entity createGreenEnemy(RenderSystem* renderer, vec2 pos) {
 
 	return entity;
 }
+
 void createRandomRegions(RenderSystem* renderer, size_t num_regions) {
 	assert(region_theme_count >= num_regions);
 	assert(region_goal_count >= num_regions);
@@ -155,6 +191,19 @@ void createRandomRegions(RenderSystem* renderer, size_t num_regions) {
 			entity,
 			{ { 0.f, 0.f }, { MAP_RADIUS * 1.5f, MAP_RADIUS * 1.5f }, angle, false }
 		);
+
+		// Calculate interest point for the region
+		float interest_distance = MAP_RADIUS * 0.6;  // 75% of MAP_RADIUS
+		float center_angle = angle + (M_PI * 2 / num_regions) / 2; // Center of the angle span for the region
+		vec2 interest_point;
+		interest_point.x = interest_distance * cos(center_angle);
+		interest_point.y = interest_distance * sin(center_angle);
+		
+		// Store the interest point in the Region component
+		region.interest_point = interest_point;
+
+		std::cout << "Region " << i+1 << ": Interest Point (X, Y) = (" << interest_point.x << ", " << interest_point.y << ")\n";
+
 
 		// Update angle
 		angle += (M_PI * 2 / num_regions);

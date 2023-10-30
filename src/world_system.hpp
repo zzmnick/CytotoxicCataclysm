@@ -76,6 +76,10 @@ private:
 	std::default_random_engine rng;
 	std::uniform_real_distribution<float> uniform_dist; // number between 0..1
 
+	// Maintain enemy counts
+	std::unordered_map<ENEMY_ID, int> enemyCounts;
+	std::unordered_map<ENEMY_ID, int> maxEnemies;
+
 	bool allow_accel;
 
 	// Step different sub-systems
@@ -84,4 +88,9 @@ private:
 	void step_invincibility(float elapsed_ms);
 	void step_attack(float elapsed_ms);
 	void step_dash(float elapsed_ms);
+	void step_enemySpawn(float elapsed_ms);
+
+	void spawnEnemiesNearInterestPoint(vec2 player_position);
+	void spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 player_velocity);
+	int getMaxEnemiesForType(ENEMY_ID type);
 };

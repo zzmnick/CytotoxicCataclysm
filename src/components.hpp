@@ -27,7 +27,8 @@ enum class REGION_GOAL_ID {
 const int region_goal_count = (int)REGION_GOAL_ID::REGION_GOAL_COUNT;
 
 enum class ENEMY_ID {
-	GREEN = 0,
+	BOSS = 0,
+	GREEN = BOSS + 1,
 	RED = GREEN + 1,
 	ORANGE = RED + 1,
 	ENEMY_COUNT = ORANGE + 1
@@ -141,7 +142,9 @@ struct Player
 };
 
 // Enemy component
-struct Enemy {};
+struct Enemy {
+	ENEMY_ID type;
+};
 
 // Data relevant to the shape of entities
 struct Transform {
@@ -245,6 +248,7 @@ struct Region {
 	ENEMY_ID enemy = ENEMY_ID::ENEMY_COUNT;
 	BOSS_ID boss = BOSS_ID::BOSS_COUNT;
 	bool is_cleared = false;
+	vec2 interest_point;
 };
 
 struct Health {

@@ -221,8 +221,8 @@ void RenderSystem::initializeGlGeometryBuffers()
 	region_vertices[1].position = { 1.f, 0.f, 0.f };
 	region_vertices[2].position = { 0.f, 1.f, 0.f };
 	region_vertices[0].texcoord = { 0.f, 0.f };
-	region_vertices[1].texcoord = { 10.f, 0.f };
-	region_vertices[2].texcoord = { 0.f, 10.f };
+	region_vertices[1].texcoord = { 25.f, 0.f };
+	region_vertices[2].texcoord = { 0.f, 25.f };
 
 	const std::vector<uint16_t> region_indices = { 0, 1, 2 };
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::REGION_TRIANGLE, region_vertices, region_indices);

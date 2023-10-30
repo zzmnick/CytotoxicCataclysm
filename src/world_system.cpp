@@ -8,9 +8,20 @@
 
 #include "physics_system.hpp"
 #include <unordered_map>
+#include <iostream>
 
 std::unordered_map < int, int > keys_pressed;
 vec2 mouse;
+float MAX_VELOCITY = 400;
+const float SPAWN_RANGE = CONTENT_WIDTH_PX * 3.0f; // Example value; adjust as needed
+const int MAX_RED_ENEMIES = 10; // Example value; adjust as needed
+const int MAX_GREEN_ENEMIES = 5; // Example value; adjust as needed
+const float SCREEN_RADIUS = CONTENT_WIDTH_PX / 2.f; // Half of screen width
+const float ENEMY_SPAWN_PADDING = 50.f; // Padding to ensure off-screen spawn
+float enemy_spawn_cooldown = 5.f;
+const float INDIVIDUAL_SPAWN_INTERVAL = 1.0f;
+std::vector<ENEMY_ID> enemyTypes = { ENEMY_ID::RED, ENEMY_ID::GREEN }; // Add more types as needed
+
 
 
 // Create the world
@@ -18,7 +29,10 @@ WorldSystem::WorldSystem() {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
 	allow_accel = true;
-	isShootingSoundQueued = false;
+	enemyCounts[ENEMY_ID::RED] = 0;
+    enemyCounts[ENEMY_ID::GREEN] = 0;
+	maxEnemies[ENEMY_ID::RED] = MAX_RED_ENEMIES;
+    maxEnemies[ENEMY_ID::GREEN] = MAX_GREEN_ENEMIES;
 }
 
 WorldSystem::~WorldSystem() {
@@ -204,6 +218,8 @@ void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
 		else {
 			if (timer.timer_ms <= 0) {
 				// Enemy is dead -> remove
+				ENEMY_ID type = registry.enemies.get(entity).type;
+    			enemyCounts[type]--;
 				registry.remove_all_components_of(entity);
 			}
 			else {
@@ -294,6 +310,88 @@ void WorldSystem::step_dash(float elapsed_ms) {
 	playerDash.active_dash_ms -= elapsed_ms;
 	playerDash.timer_ms -= elapsed_ms;
 }
+
+void WorldSystem::spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 player_velocity) {
+    std::default_random_engine rng(std::random_device{}());
+    std::uniform_real_distribution<float> angle_randomness(-M_PI/4, M_PI/4);  // 45 degrees randomness
+
+    // Determine the angle for spawning based on player's velocity
+    float player_movement_angle = atan2(player_velocity.y, player_velocity.x);
+    float random_offset = angle_randomness(rng);
+    float angle = length(player_velocity) > 0.001f 
+        ? player_movement_angle + random_offset
+        : uniform_dist(rng) * 2 * M_PI;
+
+    // Calculate spawn position around the player, but off-screen
+    vec2 offset = {cos(angle) * (SCREEN_RADIUS + ENEMY_SPAWN_PADDING), sin(angle) * (SCREEN_RADIUS + ENEMY_SPAWN_PADDING)};
+    vec2 spawn_position = player_position + offset;
+
+    switch (type) {
+        case ENEMY_ID::RED:
+            std::cout << "Spawning Red Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
+            createRedEnemy(renderer, spawn_position);
+            enemyCounts[ENEMY_ID::RED]++;
+            break;
+        case ENEMY_ID::GREEN:
+            std::cout << "Spawning Green Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
+            createGreenEnemy(renderer, spawn_position);
+            enemyCounts[ENEMY_ID::GREEN]++;
+            break;
+        default:
+            break;
+    }
+}
+
+void WorldSystem::spawnEnemiesNearInterestPoint(vec2 player_position) {
+	vec2 player_velocity = registry.motions.get(player).velocity;
+
+    std::uniform_int_distribution<int> type_dist(0, enemyTypes.size() - 1);
+    ENEMY_ID randomType = enemyTypes[type_dist(rng)];
+
+    if (enemyCounts[randomType] < getMaxEnemiesForType(randomType)) {
+        spawnEnemyOfType(randomType, player_position, player_velocity);
+    }
+
+}
+
+int WorldSystem::getMaxEnemiesForType(ENEMY_ID type) {
+    auto it = maxEnemies.find(type);
+    if (it != maxEnemies.end()) {
+        return it->second;
+    }
+    return 0;
+}
+
+float calculateSpawnProbability(vec2 player_position) {
+    float nearest_distance = FLT_MAX;
+    for (const Region& region : registry.regions.components) {
+        float distance = length(player_position - region.interest_point);
+        nearest_distance = std::min(nearest_distance, distance);
+    }
+    // Convert distance to a probability (closer to interest point = higher probability)
+    return 1.0f - (nearest_distance / SPAWN_RANGE);
+}
+
+void WorldSystem::step_enemySpawn(float elapsed_ms) {
+    float elapsed_seconds = elapsed_ms / 1000.f; // Convert milliseconds to seconds
+
+    // Decrease the spawn cooldown timer
+    enemy_spawn_cooldown -= elapsed_seconds;
+
+    if (enemy_spawn_cooldown <= 0.f) {
+        vec2 player_position = registry.transforms.get(player).position;
+        float spawn_probability = calculateSpawnProbability(player_position);
+        
+        std::uniform_real_distribution<float> spawn_chance(0.f, 1.f);
+        if (spawn_chance(rng) < spawn_probability) {
+            spawnEnemiesNearInterestPoint(player_position);
+        }
+
+        // Reset the cooldown timer for the next individual enemy spawn
+        enemy_spawn_cooldown = INDIVIDUAL_SPAWN_INTERVAL;
+    }
+}
+
 // Update our game world
 bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// Remove debug info from the last step
@@ -303,7 +401,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// Processing the player state
 	assert(registry.screenStates.components.size() <= 1);
 	ScreenState& screen = registry.screenStates.components[0];
-
+	
+	step_enemySpawn(elapsed_ms_since_last_update);
 	step_deathTimer(screen, elapsed_ms_since_last_update);
 	if (isPaused) return false;
 	step_health(elapsed_ms_since_last_update);
@@ -337,6 +436,10 @@ void WorldSystem::restart_game() {
 	// All that have a motion
 	while (registry.motions.entities.size() > 0)
 		registry.remove_all_components_of(registry.transforms.entities.back());
+	// Reset enemy counts
+    for (auto &count : enemyCounts) {
+        count.second = 0;
+    }
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
@@ -346,17 +449,6 @@ void WorldSystem::restart_game() {
 	isPaused = false;
 	// Create a new player
 	player = createPlayer(renderer, { 0, 0 });
-
-	// Create multiple instances of the Red Enemy (new addition)
-	int num_enemies = 5; // Adjust this number as desired
-	for (int i = 0; i < num_enemies; ++i) {
-		vec2 enemy_position = { 50.f + uniform_dist(rng) * (CONTENT_WIDTH_PX - 100.f), 50.f + uniform_dist(rng) * (CONTENT_HEIGHT_PX - 100.f) };
-		createRedEnemy(renderer, enemy_position);
-	}
-	for (int i = 0; i < num_enemies; ++i) {
-		vec2 enemy_position = { 50.f + uniform_dist(rng) * (CONTENT_WIDTH_PX - 100.f), 50.f + uniform_dist(rng) * (CONTENT_HEIGHT_PX - 100.f) };
-		createGreenEnemy(renderer, enemy_position);
-	}
 }
 
 // Compute collisions between entities
