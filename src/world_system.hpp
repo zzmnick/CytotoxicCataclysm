@@ -93,4 +93,6 @@ private:
 	void spawnEnemiesNearInterestPoint(vec2 player_position);
 	void spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 player_velocity);
 	int getMaxEnemiesForType(ENEMY_ID type);
+
+	void remove_garbage();
 };

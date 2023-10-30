@@ -185,10 +185,6 @@ void RenderSystem::initializeGlGeometryBuffers()
 
 	// Two triangles
 	line_indices = { 0, 1, 3, 1, 2, 3 };
-
-	int geom_index = (int)GEOMETRY_BUFFER_ID::DEBUG_LINE;
-	meshes[geom_index].vertices = line_vertices;
-	meshes[geom_index].vertex_indices = line_indices;
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::DEBUG_LINE, line_vertices, line_indices);
 
 	///////////////////////////////////////////////////////
@@ -244,10 +240,7 @@ void RenderSystem::initializeGlGeometryBuffers()
 		bullet_indices.push_back((uint16_t)((i + 1) % NUM_TRIANGLES));
 		bullet_indices.push_back((uint16_t)NUM_TRIANGLES);
 	}
-	geom_index = (int)GEOMETRY_BUFFER_ID::BULLET;
-	meshes[geom_index].vertices = bullet_vertices;
-	meshes[geom_index].vertex_indices = bullet_indices;
-	bindVBOandIBO(GEOMETRY_BUFFER_ID::BULLET, meshes[geom_index].vertices, meshes[geom_index].vertex_indices);
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::BULLET, bullet_vertices, bullet_indices);
 }
 
 RenderSystem::~RenderSystem()

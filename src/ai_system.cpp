@@ -21,6 +21,11 @@ void AISystem::move_enemies(float elapsed_ms) {
 				enemymotion.allow_accel = true;
 				continue;
 			}
+			// Do not move boss for now. More sophisticated AI for boss will be added later
+			Enemy& enemyAttribute = registry.enemies.get(entity);
+			if (enemyAttribute.type == ENEMY_ID::BOSS) {
+				continue;
+			}
 			vec2 playerposition = registry.transforms.get(player).position;
 			float angle = atan2(enemytransform.position.y - playerposition.y, enemytransform.position.x - playerposition.x);
 			enemymotion.velocity.x += -cos(angle) * elapsed_ms * enemymotion.acceleration_unit;

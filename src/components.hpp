@@ -94,7 +94,8 @@ enum class TEXTURE_ASSET_ID {
 	GREEN_ENEMY_MOVING = IMMUNITY_DYING +1,
 	GREEN_ENEMY_DYING = GREEN_ENEMY_MOVING + 1,
 	IMMUNITY_BLINKING = GREEN_ENEMY_DYING + 1,
-	TEXTURE_COUNT = IMMUNITY_BLINKING + 1 // TEXTURE_COUNT indicates that no txture is needed
+	BACTERIOPHAGE = IMMUNITY_BLINKING + 1,
+	TEXTURE_COUNT = BACTERIOPHAGE + 1 // TEXTURE_COUNT indicates that no txture is needed
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
@@ -120,7 +121,8 @@ enum class GEOMETRY_BUFFER_ID {
 	SPRITESHEET_GREEN_ENEMY_DYING = SPRITESHEET_GREEN_ENEMY_MOVING + 1,
 	SPRITESHEET_IMMUNITY_DYING = SPRITESHEET_GREEN_ENEMY_DYING + 1,
 	SPRITESHEET_IMMUNITY_BLINKING = SPRITESHEET_IMMUNITY_DYING + 1,
-	GEOMETRY_COUNT = SPRITESHEET_IMMUNITY_BLINKING + 1,
+	BACTERIOPHAGE = SPRITESHEET_IMMUNITY_BLINKING + 1,
+	GEOMETRY_COUNT = BACTERIOPHAGE + 1
 };
 const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 
@@ -128,7 +130,8 @@ enum class RENDER_ORDER {
 	BACKGROUND = 0,
 	OBJECTS_BK = BACKGROUND + 1,
 	OBJECTS_FR = OBJECTS_BK + 1,
-	UI = OBJECTS_FR + 1,
+	BOSS = OBJECTS_FR + 1,
+	UI = BOSS + 1,
 	RENDER_ORDER_COUNT = UI + 1
 };
 const int render_order_count = (int)RENDER_ORDER::RENDER_ORDER_COUNT;
@@ -274,9 +277,9 @@ struct TexturedVertex {
 
 // Mesh datastructure for storing vertex and index buffers
 struct Mesh {
-	static bool loadFromOBJFile(std::string obj_path, std::vector<ColoredVertex>& out_vertices, std::vector<uint16_t>& out_vertex_indices, vec2& out_size);
+	static bool loadFromOBJFile(std::string obj_path, std::vector<TexturedVertex>& out_vertices, std::vector<uint16_t>& out_vertex_indices, vec2& out_size);
 	vec2 original_size = { 1,1 };
-	std::vector<ColoredVertex> vertices;
+	std::vector<TexturedVertex> vertices;
 	std::vector<uint16_t> vertex_indices;
 };
 

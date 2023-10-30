@@ -24,7 +24,7 @@ class RenderSystem {
 	// Associated id with .obj path
 	const std::vector < std::pair<GEOMETRY_BUFFER_ID, std::string>> mesh_paths =
 	{
-		  // std::pair<GEOMETRY_BUFFER_ID, std::string>(GEOMETRY_BUFFER_ID::EXAMPLE, mesh_path("example.obj"))
+		  std::pair<GEOMETRY_BUFFER_ID, std::string>(GEOMETRY_BUFFER_ID::BACTERIOPHAGE, mesh_path("bacteriophage.obj"))
 		  // specify meshes of other assets here
 	};
 
@@ -46,7 +46,8 @@ class RenderSystem {
 		textures_path("immunity_dying.png"),
 		textures_path("green_enemy_moving.png"),
 		textures_path("green_enemy_dying.png"),
-		textures_path("immunity_blink.png")
+		textures_path("immunity_blink.png"),
+		textures_path("bacteriophage.png"),
 	};
 
 	std::array<GLuint, effect_count> effects;

@@ -9,13 +9,9 @@
 #include <algorithm>
 #include <iostream>
 
-Entity createPlayer(RenderSystem* renderer, vec2 pos)
+Entity createPlayer(vec2 pos)
 {
 	auto entity = Entity();
-
-	// Store a reference to the potentially re-used mesh object
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-	registry.meshPtrs.emplace(entity, &mesh);
 
 	// Setting initial bullet_transform values
 	Transform& transform = registry.transforms.emplace(entity);
@@ -46,37 +42,33 @@ Entity createPlayer(RenderSystem* renderer, vec2 pos)
 	return entity;
 }
 
-// Entity createBoss(RenderSystem* renderer, vec2 pos) {
-//     // Create boss components
-//     auto entity = Entity();
-//     registry.enemies.emplace(entity);  // Assuming boss is a type of enemy
-//	   Enemy& new_enemy = registry.enemies.get(entity);
-//     Transform& transform = registry.transforms.emplace(entity);
-//     Motion& motion = registry.motions.emplace(entity);
-//     Health& health = registry.healthValues.emplace(entity);
-//     Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-//     registry.meshPtrs.emplace(entity, &mesh);
+Entity createBoss(RenderSystem* renderer, vec2 pos) {
+	// Create boss components
+	auto entity = Entity();
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::BACTERIOPHAGE);
+	registry.meshPtrs.emplace(entity, &mesh);
+	// Assuming boss is a type of enemy
+	Enemy& new_enemy = registry.enemies.emplace(entity);
+	Transform& transform = registry.transforms.emplace(entity);
+	Motion& motion = registry.motions.emplace(entity);
+	registry.healthValues.emplace(entity);
+	// Setting initial components values
+	new_enemy.type = ENEMY_ID::BOSS;
+	transform.position = pos;
+	transform.angle = M_PI;
+	transform.scale = BACTERIOPHAGE_TEXTURE_SIZE * 0.8f;
+	motion.max_velocity = 0.f; // TODO: Dummy boss for now, change this later
+	// Add to render_request
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::BACTERIOPHAGE,
+		  EFFECT_ASSET_ID::TEXTURED,
+		  GEOMETRY_BUFFER_ID::BACTERIOPHAGE,
+		  RENDER_ORDER::BOSS });
+	return entity;
+}
 
-//     // Setting initial components values
-//	   new_enemy.type = ENEMY_ID::BOSS;
-//     transform.position = pos;
-//     transform.angle = M_PI;
-//     transform.scale = BOSS_TEXTURE_SIZE;
-//     motion.max_velocity = 300;
-//     health.previous_health_pct = 500.0;
-
-//     // Add to render_request with a placeholder texture
-//     registry.renderRequests.insert(
-//         entity,
-//         { TEXTURE_ASSET_ID::BOSS_PLACEHOLDER,
-//           EFFECT_ASSET_ID::TEXTURED,
-//           GEOMETRY_BUFFER_ID::SPRITE,
-//           RENDER_ORDER::OBJECTS_FR });
-
-//     return entity;
-// }
-
-Entity createRedEnemy(RenderSystem* renderer, vec2 pos) {
+Entity createRedEnemy(vec2 pos) {
 	// Create enemy components
 	auto entity = Entity();
 	
@@ -86,8 +78,6 @@ Entity createRedEnemy(RenderSystem* renderer, vec2 pos) {
 	Transform& transform = registry.transforms.emplace(entity);
 	Motion& motion = registry.motions.emplace(entity);
 	Health& health = registry.healthValues.emplace(entity);
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-	registry.meshPtrs.emplace(entity, &mesh);
 
 	// Setting initial components values
 	new_enemy.type = ENEMY_ID::RED;
@@ -107,7 +97,7 @@ Entity createRedEnemy(RenderSystem* renderer, vec2 pos) {
 	return entity;
 }
 
-Entity createGreenEnemy(RenderSystem* renderer, vec2 pos) {
+Entity createGreenEnemy(vec2 pos) {
 	// Create enemy components
 	auto entity = Entity();
 	Enemy& new_enemy = registry.enemies.emplace(entity);
@@ -115,8 +105,6 @@ Entity createGreenEnemy(RenderSystem* renderer, vec2 pos) {
 	Transform& transform = registry.transforms.emplace(entity);
 	Motion& motion = registry.motions.emplace(entity);
 	Health& health = registry.healthValues.emplace(entity);
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-	registry.meshPtrs.emplace(entity, &mesh);
 
 	// Setting initial components values
 	new_enemy.type = ENEMY_ID::GREEN;
@@ -139,7 +127,7 @@ Entity createGreenEnemy(RenderSystem* renderer, vec2 pos) {
 	return entity;
 }
 
-void createRandomRegions(RenderSystem* renderer, size_t num_regions) {
+void createRandomRegions(size_t num_regions) {
 	assert(region_theme_count >= num_regions);
 	assert(region_goal_count >= num_regions);
 
@@ -166,8 +154,6 @@ void createRandomRegions(RenderSystem* renderer, size_t num_regions) {
 
 	for (int i = 0; i < num_regions; i++) {
 		auto entity = Entity();
-		Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::REGION_TRIANGLE);
-		registry.meshPtrs.emplace(entity, &mesh);
 		Region& region = registry.regions.emplace(entity);
 
 		// Set region unique theme

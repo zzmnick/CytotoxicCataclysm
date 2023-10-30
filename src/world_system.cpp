@@ -13,10 +13,10 @@
 std::unordered_map < int, int > keys_pressed;
 vec2 mouse;
 float MAX_VELOCITY = 400;
-const float SPAWN_RANGE = CONTENT_WIDTH_PX * 3.0f; // Example value; adjust as needed
+const float SPAWN_RANGE = MAP_RADIUS *0.6f; // Example value; adjust as needed
 const int MAX_RED_ENEMIES = 10; // Example value; adjust as needed
 const int MAX_GREEN_ENEMIES = 5; // Example value; adjust as needed
-const float SCREEN_RADIUS = CONTENT_WIDTH_PX / 2.f; // Half of screen width
+const float SCREEN_RADIUS = sqrt(CONTENT_WIDTH_PX * CONTENT_WIDTH_PX + CONTENT_HEIGHT_PX * CONTENT_HEIGHT_PX) / 2.f; // Half of screen diagonal
 const float ENEMY_SPAWN_PADDING = 50.f; // Padding to ensure off-screen spawn
 float enemy_spawn_cooldown = 5.f;
 const float INDIVIDUAL_SPAWN_INTERVAL = 1.0f;
@@ -187,7 +187,7 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	fprintf(stderr, "Loaded music\n");
 
 	// Create world entities that don't reset
-	createRandomRegions(renderer, NUM_REGIONS);
+	createRandomRegions(NUM_REGIONS);
 	healthbar = createHealthbar({ -CONTENT_WIDTH_PX * 0.35, -CONTENT_HEIGHT_PX * 0.45 }, STATUSBAR_SCALE);
 
 	// Set all states to default
@@ -361,12 +361,12 @@ void WorldSystem::spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 pla
     switch (type) {
         case ENEMY_ID::RED:
             std::cout << "Spawning Red Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
-            createRedEnemy(renderer, spawn_position);
+            createRedEnemy(spawn_position);
             enemyCounts[ENEMY_ID::RED]++;
             break;
         case ENEMY_ID::GREEN:
             std::cout << "Spawning Green Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
-            createGreenEnemy(renderer, spawn_position);
+            createGreenEnemy(spawn_position);
             enemyCounts[ENEMY_ID::GREEN]++;
             break;
         default:
@@ -424,6 +424,18 @@ void WorldSystem::step_enemySpawn(float elapsed_ms) {
     }
 }
 
+void WorldSystem::remove_garbage() {
+	Transform player_transform = registry.transforms.get(player);
+	vec2 player_pos = player_transform.position;
+	// Remove off-screen bullets to improve performance
+	for (Entity bullet : registry.weapons.entities) {
+		Transform transform = registry.transforms.get(bullet);
+		if (length(transform.position - player_pos) > SCREEN_RADIUS + 200.f) {
+			registry.remove_all_components_of(bullet);
+		}
+	}
+}
+
 // Update our game world
 bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// Remove debug info from the last step
@@ -455,6 +467,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 
 	handle_shooting_sound_effect();
 
+	remove_garbage();
+
 	return true;
 }
 
@@ -481,7 +495,10 @@ void WorldSystem::restart_game() {
 	isPaused = false;
 	isShootingSoundQueued = false;
 	// Create a new player
-	player = createPlayer(renderer, { 0, 0 });
+	player = createPlayer({ 0, 0 });
+	// hardcode the boss position to upper right region, randomize later
+	Region boss_region = registry.regions.components[0];
+	createBoss(renderer, boss_region.interest_point);
 }
 
 // Compute collisions between entities
@@ -539,16 +556,14 @@ void WorldSystem::resolve_collisions() {
 			
 			// Update enemy health
 			Health& enemyHealth = registry.healthValues.get(enemy_entity);
-			enemyHealth.health_pct -= 10.0;
+			Enemy enemyAttrib = registry.enemies.get(enemy_entity);
+			if (enemyAttrib.type == ENEMY_ID::BOSS) {
+				enemyHealth.health_pct -= 2.0;
+			} else {
+				enemyHealth.health_pct -= 10.0;
+			}
 
 			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
-		}
-		else if (collision.collision_type == COLLISION_TYPE::ENEMY_WITH_ENEMY) {
-			// When two enemies collide, one enemy simply follows the movement of 
-			// the other. One of the enemies is considered rigid body in this case
-			Entity other_enemy_entity = collision.other_entity;
-			Motion& other_enemy_motion = registry.motions.get(other_enemy_entity);
-			motion.velocity = other_enemy_motion.velocity;
 		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_BOUNDARY) {
 			garbage.push_back(entity);
