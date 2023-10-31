@@ -201,7 +201,6 @@ struct Player
 {
 	float attack_timer = ATTACK_DELAY;
 
-
 };
 
 // Enemy component
@@ -341,5 +340,6 @@ struct Dash
 	float timer_ms = 400.f;
 	float active_dash_ms = 0.f;
 	float dash_speed = 5.f;
+	float max_dash_velocity = 2000.f;
 };
 #pragma endregion

@@ -13,7 +13,6 @@
 
 std::unordered_map < int, int > keys_pressed;
 vec2 mouse;
-float MAX_VELOCITY = 400;
 const float SPAWN_RANGE = MAP_RADIUS *0.6f; // Example value; adjust as needed
 const int MAX_RED_ENEMIES = 10; // Example value; adjust as needed
 const int MAX_GREEN_ENEMIES = 5; // Example value; adjust as needed
@@ -733,7 +732,13 @@ void WorldSystem::player_dash() {
 	if (playerDash.timer_ms > 0) { //make sure player dash cooldown is 0 if not don't allow them to dash
 		return;
 	}
+
 	playerMovement.velocity *= playerDash.dash_speed;
+	if (length(playerMovement.velocity) > playerDash.max_dash_velocity) {
+		vec2 direction = normalize(playerMovement.velocity);
+		playerMovement.velocity = direction * playerDash.max_dash_velocity;
+	}
+
 	playerDash.timer_ms = 600.f;
 	playerDash.active_dash_ms = 100.f;
 
