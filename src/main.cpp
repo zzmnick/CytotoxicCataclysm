@@ -55,8 +55,8 @@ int main()
 			physics_system.step(elapsed_ms);
 			world_system.resolve_collisions();
 			ai_system.step(elapsed_ms);
+			render_system.animationSys_step(elapsed_ms);
 		}
-		render_system.animationSys_step(elapsed_ms);
 		render_system.draw();
 	}
 

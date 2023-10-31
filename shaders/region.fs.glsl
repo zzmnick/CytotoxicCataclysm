@@ -16,7 +16,7 @@ layout(location = 0) out vec4 color;
 
 void main()
 {
-	float brightness = 1.f;
+	float brightness = 0.9f;
 	float origin_dist = length(worldcoord);
 	if (origin_dist > mapRadius) {
 		discard;

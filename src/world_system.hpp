@@ -2,6 +2,8 @@
 
 // internal
 #include "common.hpp"
+#include "render_system.hpp"
+#include "./sub_systems/dialog_system.hpp"
 
 // stlib
 #include <vector>
@@ -76,6 +78,8 @@ private:
 	std::default_random_engine rng;
 	std::uniform_real_distribution<float> uniform_dist; // number between 0..1
 
+	DialogSystem* dialog_system = nullptr;
+	
 	// Maintain enemy counts
 	std::unordered_map<ENEMY_ID, int> enemyCounts;
 	std::unordered_map<ENEMY_ID, int> maxEnemies;

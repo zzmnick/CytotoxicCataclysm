@@ -1,6 +1,7 @@
 // Header
 #include "world_system.hpp"
 #include "world_init.hpp"
+#include "sub_systems/dialog_system.hpp"
 
 // stlib
 #include <cassert>
@@ -140,12 +141,12 @@ GLFWwindow* WorldSystem::create_window() {
 	*/
 
 	backgroundMusic["main"] = Mix_LoadMUS(audio_path("music/Voxel Revolution.wav").c_str());
-	soundChunks["player_hit"]     = Mix_LoadWAV(audio_path("sound/sfx_sounds_damage1.wav").c_str());
-	soundChunks["player_dash"]    = Mix_LoadWAV(audio_path("sound/sfx_sound_nagger2.wav").c_str());
-	soundChunks["player_death"]   = Mix_LoadWAV(audio_path("sound/sfx_sounds_falling3.wav").c_str());
+	soundChunks["player_hit"] = Mix_LoadWAV(audio_path("sound/sfx_sounds_damage1.wav").c_str());
+	soundChunks["player_dash"] = Mix_LoadWAV(audio_path("sound/sfx_sound_nagger2.wav").c_str());
+	soundChunks["player_death"] = Mix_LoadWAV(audio_path("sound/sfx_sounds_falling3.wav").c_str());
 	soundChunks["player_shoot_1"] = Mix_LoadWAV(audio_path("sound/sfx_wpn_laser8.wav").c_str());
-	soundChunks["enemy_hit"]      = Mix_LoadWAV(audio_path("sound/sfx_movement_footsteps5.wav").c_str());
-	soundChunks["enemy_death"]    = Mix_LoadWAV(audio_path("sound/sfx_deathscream_android8.wav").c_str());
+	soundChunks["enemy_hit"] = Mix_LoadWAV(audio_path("sound/sfx_movement_footsteps5.wav").c_str());
+	soundChunks["enemy_death"] = Mix_LoadWAV(audio_path("sound/sfx_deathscream_android8.wav").c_str());
 
 	// Check for failures
 	for (const auto& pair : backgroundMusic) {
@@ -163,12 +164,12 @@ GLFWwindow* WorldSystem::create_window() {
 
 	// Assign channels
 	Mix_AllocateChannels(6);
-	chunkToChannel["player_hit"]     = 0;
-	chunkToChannel["player_dash"]    = 1;
-	chunkToChannel["player_death"]   = 2;
+	chunkToChannel["player_hit"] = 0;
+	chunkToChannel["player_dash"] = 1;
+	chunkToChannel["player_death"] = 2;
 	chunkToChannel["player_shoot_1"] = 3;
-	chunkToChannel["enemy_hit"]      = 4;
-	chunkToChannel["enemy_death"]    = 5;
+	chunkToChannel["enemy_hit"] = 4;
+	chunkToChannel["enemy_death"] = 5;
 
 	// Adjust music and CHUNK volume in range [0,128]
 	Mix_VolumeMusic(45);
@@ -189,6 +190,11 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	// Create world entities that don't reset
 	createRandomRegions(NUM_REGIONS);
 	healthbar = createHealthbar({ -CONTENT_WIDTH_PX * 0.35, -CONTENT_HEIGHT_PX * 0.45 }, STATUSBAR_SCALE);
+
+	// Create dialog_system
+	if (SHOW_DIALOGS) {
+		dialog_system = new DialogSystem(keys_pressed, mouse);
+	}
 
 	// Set all states to default
 	restart_game();
@@ -445,14 +451,29 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// Processing the player state
 	assert(registry.screenStates.components.size() <= 1);
 	ScreenState& screen = registry.screenStates.components[0];
-	
-	step_enemySpawn(elapsed_ms_since_last_update);
+
+	// Step dialog if active
+	if (dialog_system != nullptr) {
+		if (dialog_system->is_finished()) {
+			delete dialog_system;
+			dialog_system = nullptr;
+		}
+		else {
+			isPaused = !dialog_system->step(elapsed_ms_since_last_update);
+		}
+	}
 	step_deathTimer(screen, elapsed_ms_since_last_update);
+	
 	if (isPaused) return false;
+	/*************************[ gameplay ]*************************/
+	// Code bellow this line will happen only if not paused
+
+
 	step_health(elapsed_ms_since_last_update);
 	step_invincibility(elapsed_ms_since_last_update);
 	step_attack(elapsed_ms_since_last_update);
 	step_dash(elapsed_ms_since_last_update);
+	step_enemySpawn(elapsed_ms_since_last_update);
 
 	// Block velocity update for one step after collision to
 	// avoid going out of border / going through enemy
@@ -468,7 +489,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	handle_shooting_sound_effect();
 
 	remove_garbage();
-
 	return true;
 }
 
@@ -524,8 +544,8 @@ void WorldSystem::resolve_collisions() {
 				allow_accel = false;
 			}
 		}
-		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_ENEMY &&
-				 !registry.invincibility.has(entity)) {
+		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_ENEMY
+			&& !registry.invincibility.has(entity)) {
 			registry.invincibility.emplace(entity);
 
 			// When player collides with enemy, only player gets knocked back,
@@ -553,7 +573,7 @@ void WorldSystem::resolve_collisions() {
 			enemy_motion.velocity = enemy_motion.max_velocity * knockback_direction;
 			enemy_motion.allow_accel = false;
 			garbage.push_back(entity);
-			
+
 			// Update enemy health
 			Health& enemyHealth = registry.healthValues.get(enemy_entity);
 			Enemy enemyAttrib = registry.enemies.get(enemy_entity);
@@ -699,14 +719,14 @@ void WorldSystem::control_direction() {
 
 	float right = (float)CONTENT_WIDTH_PX;
 	float bottom = (float)CONTENT_HEIGHT_PX;
-	float angle = atan2(-bottom / 2 + mouse.y, right / 2 - mouse.x) + M_PI + 0.70;
+	float angle = atan2(-bottom / 2 + mouse.y, right / 2 - mouse.x) + M_PI + 0.7f;
 	registry.transforms.get(player).angle = angle;
 }
 
 void WorldSystem::player_shoot() {
 	Player& playerObject = registry.players.get(player);
 	if (playerObject.attack_timer <= 0) {
-		createBullet(player, { 10.f, 10.f }, {1.f, 0.2f, 0.2f, 1.f});
+		createBullet(player, { 10.f, 10.f }, { 1.f, 1.2f, 0.2f, 1.f });
 		playerObject.attack_timer = ATTACK_DELAY;
 	}
 }
@@ -738,7 +758,7 @@ void WorldSystem::handle_shooting_sound_effect() {
 			// Queue sound if it's already playing
 			isShootingSoundQueued = true;
 		}
-	};
+		};
 
 	if (playerObject.attack_timer == ATTACK_DELAY) {
 		// We know player just attacked because attack_timer reset

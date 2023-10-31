@@ -30,16 +30,12 @@ class RenderSystem {
 
 	// Make sure these paths remain in sync with the associated enumerators.
 	const std::array<std::string, texture_count> texture_paths = {
+		
+		// Game Objects
 		textures_path("empty.png"),
 		textures_path("immunity.png"),
 		textures_path("red_enemy.png"),
 		textures_path("green_enemy.png"),
-		textures_path("nervous_bg.png"),
-		textures_path("respiratory_bg.png"),
-		textures_path("urinary_bg.png"),
-		textures_path("muscular_bg.png"),
-		textures_path("skeletal_bg.png"),
-		textures_path("cutaneous_bg.png"),
 		textures_path("healthbarframe.png"),
 		textures_path("gun.png"),
 		textures_path("immunity_moving.png"),
@@ -48,6 +44,25 @@ class RenderSystem {
 		textures_path("green_enemy_dying.png"),
 		textures_path("immunity_blink.png"),
 		textures_path("bacteriophage.png"),
+
+		// Background
+		textures_path("background/nervous_bg.png"),
+		textures_path("background/respiratory_bg.png"),
+		textures_path("background/urinary_bg.png"),
+		textures_path("background/muscular_bg.png"),
+		textures_path("background/skeletal_bg.png"),
+		textures_path("background/cutaneous_bg.png"),
+
+		// UI
+		textures_path("ui/dialog1_this-is.png"),
+		textures_path("ui/dialog2_until-one-day.png"),
+		textures_path("ui/dialog3_im-gonna.png"),
+		textures_path("ui/tutorial1_movement.png"),
+		textures_path("ui/tutorial2_rotate.png"),
+		// textures_path("ui/tutorial3_dash.png"),
+		textures_path("ui/tutorial4_shoot.png"),
+		textures_path("ui/tutorial5_pause.png"),
+		textures_path("ui/tutorial6_end.png"),
 	};
 
 	std::array<GLuint, effect_count> effects;
