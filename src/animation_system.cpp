@@ -49,9 +49,8 @@ void RenderSystem::animationSys_step(float elapsed_ms) {
     }
 }
 
-void RenderSystem::animationSys_switchAnimation(Entity& entity, ANIMATION_FRAME_COUNT animationType,
-    std::unordered_map<ANIMATION_FRAME_COUNT, GEOMETRY_BUFFER_ID> geo_map, 
-    std::unordered_map<ANIMATION_FRAME_COUNT, TEXTURE_ASSET_ID> tex_map, 
+void RenderSystem::animationSys_switchAnimation(Entity& entity, 
+    ANIMATION_FRAME_COUNT animationType,
     int update_period_ms) {
 
     TEXTURE_ASSET_ID tid = animation_texture_map_general.at(animationType);

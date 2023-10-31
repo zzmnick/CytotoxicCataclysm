@@ -115,8 +115,6 @@ public:
 	void animationSys_init();
 	static void animationSys_switchAnimation(Entity& entity, 
 		ANIMATION_FRAME_COUNT animationType, 
-		std::unordered_map<ANIMATION_FRAME_COUNT, 
-		GEOMETRY_BUFFER_ID> geo_map, std::unordered_map<ANIMATION_FRAME_COUNT, TEXTURE_ASSET_ID> tex_map,
 		int update_period_ms);
 	
 private:

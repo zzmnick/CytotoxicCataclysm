@@ -57,6 +57,7 @@ int main()
 			ai_system.step(elapsed_ms);
 			render_system.animationSys_step(elapsed_ms);
 		}
+		
 		render_system.draw();
 	}
 

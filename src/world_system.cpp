@@ -244,15 +244,14 @@ void WorldSystem::step_health(float elapsed_ms) {
 			}
 			if (health.previous_health_pct <= 0) {
 				if (!registry.deathTimers.has(entity)) {
+					int buffer = 20; // buffer to fix miss-timing between animation and death
 					if (entity == player) {
-						isPaused = true;
+						//isPaused = true;
 						Mix_PlayChannel(chunkToChannel["player_death"], soundChunks["player_death"], 0);
 						/////////////////////////////
 						RenderSystem::animationSys_switchAnimation(player, 
 							ANIMATION_FRAME_COUNT::IMMUNITY_DYING, 
-							animation_geo_map_general, 
-							animation_texture_map_general,
-							ceil(DEATH_EFFECT_DURATION / (int)ANIMATION_FRAME_COUNT::IMMUNITY_DYING));
+							ceil((DEATH_EFFECT_DURATION+buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::IMMUNITY_DYING)));
 						
 						//temporary: since enemies cannot be killed at the moment
 						for (int i = 0; i < registry.enemies.entities.size(); i++) {
@@ -261,9 +260,7 @@ void WorldSystem::step_health(float elapsed_ms) {
 							if (enemy.type == ENEMY_ID::GREEN) {
 								RenderSystem::animationSys_switchAnimation(enemyEntity,
 									ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
-									animation_geo_map_general, 
-									animation_texture_map_general, 
-									ceil(DEATH_EFFECT_DURATION / (int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING)
+									ceil((DEATH_EFFECT_DURATION + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING))
 								);
 
 							}
@@ -278,13 +275,10 @@ void WorldSystem::step_health(float elapsed_ms) {
 						Mix_PlayChannel(chunkToChannel["enemy_death"], soundChunks["enemy_death"], 0);
 
 						Enemy& enemy = registry.enemies.get(entity);
-						int buffer = 20; // buffer to fix miss-timing between animation and death
 						if (enemy.type == ENEMY_ID::GREEN) {
 							RenderSystem::animationSys_switchAnimation(entity, 
 								ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
-								animation_geo_map_general, 
-								animation_texture_map_general,
-								ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / (int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING)
+								ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / (1.f*(int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING))
 							);
 
 						}
