@@ -57,7 +57,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = BACTERIOPHAGE_TEXTURE_SIZE * 0.8f;
-	motion.max_velocity = 0.f; // TODO: Dummy boss for now, change this later
+	motion.max_velocity = 250.f; // TODO: Dummy boss for now, change this later
 	// Add to render_request
 	registry.renderRequests.insert(
 		entity,

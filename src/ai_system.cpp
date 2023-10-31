@@ -21,16 +21,30 @@ void AISystem::move_enemies(float elapsed_ms) {
 				enemymotion.allow_accel = true;
 				continue;
 			}
-			// Do not move boss for now. More sophisticated AI for boss will be added later
+			// Boss chases player when player is close. More sophisticated AI for boss will be added later
 			Enemy& enemyAttribute = registry.enemies.get(entity);
-			if (enemyAttribute.type == ENEMY_ID::BOSS) {
-				continue;
-			}
 			vec2 playerposition = registry.transforms.get(player).position;
-			float angle = atan2(enemytransform.position.y - playerposition.y, enemytransform.position.x - playerposition.x);
-			enemymotion.velocity.x += -cos(angle) * elapsed_ms * enemymotion.acceleration_unit;
-			enemymotion.velocity.y += -sin(angle) * elapsed_ms * enemymotion.acceleration_unit;
-			enemytransform.angle = angle + M_PI + 0.8;
+			float angle;
+			if (enemyAttribute.type == ENEMY_ID::BOSS) {
+				float distance = length(playerposition - enemytransform.position);
+				vec2 interest_point = registry.regions.components[0].interest_point;
+				if (distance > CONTENT_WIDTH_PX / 2) {					
+					angle = atan2(enemytransform.position.y - interest_point.y, enemytransform.position.x - interest_point.x);
+				} else {
+					angle = atan2(enemytransform.position.y - playerposition.y, enemytransform.position.x - playerposition.x);
+				}
+				enemymotion.velocity.x += -cos(angle) * elapsed_ms * enemymotion.acceleration_unit;
+				enemymotion.velocity.y += -sin(angle) * elapsed_ms * enemymotion.acceleration_unit;
+				float interest_distance = length(enemytransform.position - interest_point);
+				if (distance > CONTENT_WIDTH_PX / 2 && interest_distance < 50.f) {
+					enemymotion.velocity = { 0, 0 };
+				}
+			} else {
+				angle = atan2(enemytransform.position.y - playerposition.y, enemytransform.position.x - playerposition.x);
+				enemymotion.velocity.x += -cos(angle) * elapsed_ms * enemymotion.acceleration_unit;
+				enemymotion.velocity.y += -sin(angle) * elapsed_ms * enemymotion.acceleration_unit;
+				enemytransform.angle = angle + M_PI + 0.8;
+			}
 
 			float magnitude = length(enemymotion.velocity);
 

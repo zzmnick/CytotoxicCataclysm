@@ -567,16 +567,18 @@ void WorldSystem::resolve_collisions() {
 			// When bullet collides with enemy, only enemy gets knocked back,
 			// towards its relative direction from the enemy
 			Entity enemy_entity = collision.other_entity;
-			Transform& enemy_transform = registry.transforms.get(enemy_entity);
-			Motion& enemy_motion = registry.motions.get(enemy_entity);
-			vec2 knockback_direction = normalize(enemy_transform.position - transform.position);
-			enemy_motion.velocity = enemy_motion.max_velocity * knockback_direction;
-			enemy_motion.allow_accel = false;
+			Enemy enemyAttrib = registry.enemies.get(enemy_entity);
+			if (enemyAttrib.type != ENEMY_ID::BOSS) {
+				Transform& enemy_transform = registry.transforms.get(enemy_entity);
+				Motion& enemy_motion = registry.motions.get(enemy_entity);
+				vec2 knockback_direction = normalize(enemy_transform.position - transform.position);
+				enemy_motion.velocity = enemy_motion.max_velocity * knockback_direction;
+				enemy_motion.allow_accel = false;
+			}
 			garbage.push_back(entity);
 
 			// Update enemy health
 			Health& enemyHealth = registry.healthValues.get(enemy_entity);
-			Enemy enemyAttrib = registry.enemies.get(enemy_entity);
 			if (enemyAttrib.type == ENEMY_ID::BOSS) {
 				enemyHealth.health_pct -= 2.0;
 			} else {
