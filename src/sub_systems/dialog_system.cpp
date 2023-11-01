@@ -2,6 +2,8 @@
 #include "dialog_system.hpp"
 #include "world_init.hpp"
 
+const float ACTION_DELAY = 3000.f;	// Time during which user is trying the action
+
 DialogSystem::DialogSystem(std::unordered_map<int, int>& keys_pressed, const vec2& mouse)
 	: keys_pressed(keys_pressed), mouse(mouse) {
 	rendered_entity = Entity();

@@ -40,7 +40,6 @@ private:
 	std::unordered_map<int, int>& keys_pressed;
 	const vec2& mouse;
 	vec2 previous_mouse = { 0,0 };
-	const float ACTION_DELAY = 3000.f;	// Time during which user is trying the action
 	uint current_dialog_idx;
 	DIALOG_STATUS current_status;
 	Entity rendered_entity;
