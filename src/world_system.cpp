@@ -728,16 +728,40 @@ void WorldSystem::player_shoot() {
 
 void WorldSystem::player_dash() {
 	Dash& playerDash = registry.dashes.get(player);
-	Motion& playerMovement = registry.motions.get(player);
 	if (playerDash.timer_ms > 0) { //make sure player dash cooldown is 0 if not don't allow them to dash
 		return;
 	}
 
-	playerMovement.velocity *= playerDash.dash_speed;
-	if (length(playerMovement.velocity) > playerDash.max_dash_velocity) {
-		vec2 direction = normalize(playerMovement.velocity);
-		playerMovement.velocity = direction * playerDash.max_dash_velocity;
+	Motion& playerMovement = registry.motions.get(player);
+	vec2 dashDirection;
+
+	if (keys_pressed[GLFW_KEY_W] || keys_pressed[GLFW_KEY_A] || keys_pressed[GLFW_KEY_S] || keys_pressed[GLFW_KEY_D]) {
+		// prioritize direction of key presses (players intended direction)
+		dashDirection.x = keys_pressed[GLFW_KEY_D] - keys_pressed[GLFW_KEY_A];
+		dashDirection.y = keys_pressed[GLFW_KEY_W] - keys_pressed[GLFW_KEY_S];
+
+
+		// handle conflicting key-presses
+		bool leftAndRight = keys_pressed[GLFW_KEY_D] && keys_pressed[GLFW_KEY_A];
+		bool upAndDown = keys_pressed[GLFW_KEY_W] && keys_pressed[GLFW_KEY_S];
+		if ((leftAndRight != upAndDown) || (leftAndRight && upAndDown)) {
+			dashDirection = normalize(playerMovement.velocity);
+		}
+
+		dashDirection = normalize(dashDirection);
 	}
+	else if (length(playerMovement.velocity) < 10.f) {
+		// If player is barely moving, dash in mouse direction
+		float alignment = -0.70; // player texture is tilted
+		float playerAngle = registry.transforms.get(player).angle + alignment;
+		dashDirection = normalize(vec2(cos(playerAngle), sin(playerAngle)));
+	}
+	else {
+		// otherwise dash in direction of player movement
+		dashDirection = normalize(playerMovement.velocity);
+	}
+
+	playerMovement.velocity += playerDash.max_dash_velocity * dashDirection;
 
 	playerDash.timer_ms = 600.f;
 	playerDash.active_dash_ms = 100.f;
