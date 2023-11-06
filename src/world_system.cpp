@@ -190,13 +190,13 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	createRandomRegions(NUM_REGIONS);
 	healthbar = createHealthbar({ -CONTENT_WIDTH_PX * 0.35, -CONTENT_HEIGHT_PX * 0.45 }, STATUSBAR_SCALE);
 
+	// Set all states to default
+	restart_game();
+
 	// Create dialog_system
 	if (SHOW_DIALOGS) {
 		dialog_system = new DialogSystem(keys_pressed, mouse);
 	}
-
-	// Set all states to default
-	restart_game();
 }
 
 void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
@@ -459,7 +459,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	
 	if (isPaused) return false;
 	/*************************[ gameplay ]*************************/
-	// Code bellow this line will happen only if not paused
+	// Code below this line will happen only if not paused
 
 
 	step_health(elapsed_ms_since_last_update);
@@ -507,6 +507,7 @@ void WorldSystem::restart_game() {
 	current_speed = 1.f;
 	isPaused = false;
 	isShootingSoundQueued = false;
+	dialog_system = nullptr;
 	// Create a new player
 	player = createPlayer({ 0, 0 });
 	// hardcode the boss position to upper right region, randomize later
