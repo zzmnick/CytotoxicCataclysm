@@ -30,8 +30,8 @@ enum class ENEMY_ID {
 	BOSS = 0,
 	GREEN = BOSS + 1,
 	RED = GREEN + 1,
-	ORANGE = RED + 1,
-	ENEMY_COUNT = ORANGE + 1
+	YELLOW = RED + 1,
+	ENEMY_COUNT = YELLOW + 1
 };
 const int enemy_type_count = (int)ENEMY_ID::ENEMY_COUNT;
 
@@ -81,7 +81,8 @@ enum class TEXTURE_ASSET_ID {
 	IMMUNITY = EMPTY + 1,
 	RED_ENEMY = IMMUNITY + 1,
 	GREEN_ENEMY = RED_ENEMY + 1,
-	HEALTHBAR_FRAME = GREEN_ENEMY + 1,
+	YELLOW_ENEMY = GREEN_ENEMY+ 1,
+	HEALTHBAR_FRAME = YELLOW_ENEMY + 1,
 	GUN = HEALTHBAR_FRAME + 1,
 	IMMUNITY_MOVING = GUN + 1,
 	IMMUNITY_DYING = IMMUNITY_MOVING + 1,
@@ -199,7 +200,6 @@ static std::unordered_map <REGION_THEME_ID, TEXTURE_ASSET_ID> region_texture_map
 // Player component
 struct Player
 {
-	float attack_timer = ATTACK_DELAY;
 
 };
 
@@ -213,6 +213,7 @@ struct Transform {
 	vec2 position = { 0.f, 0.f };
 	vec2 scale = { 10.f, 10.f };
 	float angle = 0.f;
+	float angle_offset = 0.f;
 	bool is_screen_coord = false;
 };
 
@@ -325,6 +326,12 @@ struct Invincibility {
 
 struct Weapon {
 	float damage = 10.f;
+	float attack_timer = ATTACK_DELAY;
+
+};
+
+struct Projectile {
+	float damage = 10.f;
 };
 
 struct Animation {
@@ -333,6 +340,10 @@ struct Animation {
 	float timer_ms = 0.f;
 	int update_period_ms = 30;
 	bool pauseAnimation = false;
+};
+
+struct NoRotate {
+
 };
 
 struct Dash

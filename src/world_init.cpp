@@ -18,11 +18,13 @@ Entity createPlayer(vec2 pos)
 	transform.position = pos;
 	transform.angle = 0.f;
 	transform.scale = IMMUNITY_TEXTURE_SIZE * 3.f;
+	transform.angle_offset = M_PI + 0.7f;
 	registry.motions.insert(entity, { { 0.f, 0.f } });
 
 	// Create an (empty) Player component to be able to refer to all players
 	registry.players.emplace(entity);
 	registry.dashes.emplace(entity);
+	registry.weapons.emplace(entity);
 	registry.renderRequests.insert(
 		entity,
 		{ TEXTURE_ASSET_ID::IMMUNITY_BLINKING,
@@ -111,6 +113,7 @@ Entity createGreenEnemy(vec2 pos) {
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = GREEN_ENEMY_TEXTURE_SIZE * 4.f;
+	transform.angle_offset = M_PI + 0.8;
 	motion.max_velocity = 200;
 	health.previous_health_pct = 200.0;
 
@@ -124,6 +127,36 @@ Entity createGreenEnemy(vec2 pos) {
 	Animation& animation = registry.animations.emplace(entity);
 	animation.update_period_ms *= 2;
 	animation.total_frame = (int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_MOVING;
+	return entity;
+}
+
+
+Entity createYellowEnemy(vec2 pos) {
+	// Create enemy components
+	auto entity = Entity();
+	Enemy& new_enemy = registry.enemies.emplace(entity);
+
+	Transform& transform = registry.transforms.emplace(entity);
+	Motion& motion = registry.motions.emplace(entity);
+	Health& health = registry.healthValues.emplace(entity);
+	registry.weapons.emplace(entity);
+	registry.noRotates.emplace(entity);
+
+	// Setting initial components values
+	new_enemy.type = ENEMY_ID::YELLOW;
+	transform.position = pos;
+	transform.scale = YELLOW_ENEMY_TEXTURE_SIZE * 1.5f;
+	transform.angle_offset = M_PI;
+	motion.max_velocity = 0.0f;
+	health.previous_health_pct = 50.0;
+
+	// Add tp render_request
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::YELLOW_ENEMY,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE,
+			RENDER_ORDER::OBJECTS_FR });
 	return entity;
 }
 
@@ -257,25 +290,25 @@ Entity createHealthbar(vec2 position, vec2 scale) {
 }
 
 // Can be used for either player or enemy
-Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
+Entity createBullet(Entity shooter, vec2 scale, vec4 color,vec2 offset, float angleoffset) {
 	assert(registry.transforms.has(shooter));
 	Transform& shooter_transform = registry.transforms.get(shooter);
 
 	// Create bullet's components
 	auto bullet_entity = Entity();
-	registry.weapons.emplace(bullet_entity);
+	registry.projectiles.emplace(bullet_entity);
 	Transform& bullet_transform = registry.transforms.emplace(bullet_entity);
 	Motion& bullet_motion = registry.motions.emplace(bullet_entity);
 	registry.colors.insert(bullet_entity, color);
 
 	// Set initial position and velocity
 	bullet_transform.position = {
-		shooter_transform.position.x + 60 * cos(shooter_transform.angle),
-		shooter_transform.position.y + 60 * sin(shooter_transform.angle)
+		shooter_transform.position.x + offset.x * cos(shooter_transform.angle),
+		shooter_transform.position.y + offset.y * sin(shooter_transform.angle)
 	};
 	bullet_transform.scale = scale;
 	bullet_transform.angle = 0.0;
-	bullet_motion.velocity = { cos(shooter_transform.angle - 0.70) * 500, sin(shooter_transform.angle - 0.70) * 500 };
+	bullet_motion.velocity = { cos(shooter_transform.angle - angleoffset) * 500, sin(shooter_transform.angle - angleoffset) * 500 };
 
 	// Add bullet to render request
 	registry.renderRequests.insert(

@@ -24,12 +24,12 @@ public:
 	ComponentContainer<vec4> colors;
 	ComponentContainer<Region> regions;
 	ComponentContainer<Health> healthValues;
-	ComponentContainer<Weapon> weapons;
+	ComponentContainer<Projectile> projectiles;
 	ComponentContainer<Invincibility> invincibility;
 	ComponentContainer<Dash> dashes;
 	ComponentContainer<Animation> animations;
-	
-
+	ComponentContainer<NoRotate> noRotates;
+	ComponentContainer<Weapon> weapons;
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
 	ECSRegistry()
@@ -47,10 +47,12 @@ public:
 		registry_list.push_back(&colors);
 		registry_list.push_back(&regions);
 		registry_list.push_back(&healthValues);
-		registry_list.push_back(&weapons);
+		registry_list.push_back(&projectiles);
 		registry_list.push_back(&invincibility);
 		registry_list.push_back(&animations);
 		registry_list.push_back(&dashes);
+		registry_list.push_back(&noRotates);
+		registry_list.push_back(&weapons);
 
 	}
 

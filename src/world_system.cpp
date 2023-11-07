@@ -16,11 +16,12 @@ vec2 mouse;
 const float SPAWN_RANGE = MAP_RADIUS *0.6f; // Example value; adjust as needed
 const int MAX_RED_ENEMIES = 10; // Example value; adjust as needed
 const int MAX_GREEN_ENEMIES = 5; // Example value; adjust as needed
+const int MAX_YELLOW_ENEMIES = 3;
 const float SCREEN_RADIUS = sqrt(CONTENT_WIDTH_PX * CONTENT_WIDTH_PX + CONTENT_HEIGHT_PX * CONTENT_HEIGHT_PX) / 2.f; // Half of screen diagonal
 const float ENEMY_SPAWN_PADDING = 50.f; // Padding to ensure off-screen spawn
 float enemy_spawn_cooldown = 5.f;
 const float INDIVIDUAL_SPAWN_INTERVAL = 1.0f;
-std::vector<ENEMY_ID> enemyTypes = { ENEMY_ID::RED, ENEMY_ID::GREEN }; // Add more types as needed
+std::vector<ENEMY_ID> enemyTypes = { ENEMY_ID::RED, ENEMY_ID::GREEN, ENEMY_ID::YELLOW }; // Add more types as needed
 
 
 
@@ -31,8 +32,10 @@ WorldSystem::WorldSystem() {
 	allow_accel = true;
 	enemyCounts[ENEMY_ID::RED] = 0;
     enemyCounts[ENEMY_ID::GREEN] = 0;
+	enemyCounts[ENEMY_ID::YELLOW] = 0;
 	maxEnemies[ENEMY_ID::RED] = MAX_RED_ENEMIES;
     maxEnemies[ENEMY_ID::GREEN] = MAX_GREEN_ENEMIES;
+	maxEnemies[ENEMY_ID::YELLOW] = MAX_YELLOW_ENEMIES;
 }
 
 WorldSystem::~WorldSystem() {
@@ -328,15 +331,13 @@ void WorldSystem::step_invincibility(float elapsed_ms) {
 }
 
 void WorldSystem::step_attack(float elapsed_ms) {
-	assert(registry.players.has(player));
-	Player& playerObject = registry.players.get(player);
-	playerObject.attack_timer = max(playerObject.attack_timer - elapsed_ms, 0.f);
+	assert(registry.weapons.has(player));
+	Weapon& playerWeapon = registry.weapons.get(player);
+	playerWeapon.attack_timer = max(playerWeapon.attack_timer - elapsed_ms, 0.f);
 }
 
 void WorldSystem::step_dash(float elapsed_ms) {
 	assert(registry.dashes.has(player));
-	Player& playerObject = registry.players.get(player);
-	playerObject.attack_timer -= elapsed_ms;
 	Dash& playerDash = registry.dashes.get(player);
 	playerDash.active_dash_ms -= elapsed_ms;
 	playerDash.timer_ms -= elapsed_ms;
@@ -368,6 +369,9 @@ void WorldSystem::spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 pla
             createGreenEnemy(spawn_position);
             enemyCounts[ENEMY_ID::GREEN]++;
             break;
+		case ENEMY_ID::YELLOW:
+			createYellowEnemy(spawn_position);
+			enemyCounts[ENEMY_ID::YELLOW]++;
         default:
             break;
     }
@@ -427,7 +431,7 @@ void WorldSystem::remove_garbage() {
 	Transform player_transform = registry.transforms.get(player);
 	vec2 player_pos = player_transform.position;
 	// Remove off-screen bullets to improve performance
-	for (Entity bullet : registry.weapons.entities) {
+	for (Entity bullet : registry.projectiles.entities) {
 		Transform transform = registry.transforms.get(bullet);
 		if (length(transform.position - player_pos) > SCREEN_RADIUS + 200.f) {
 			registry.remove_all_components_of(bullet);
@@ -711,18 +715,19 @@ void WorldSystem::control_action() {
 
 void WorldSystem::control_direction() {
 	assert(registry.transforms.has(player));
+	Transform& playertransform = registry.transforms.get(player);
 
 	float right = (float)CONTENT_WIDTH_PX;
 	float bottom = (float)CONTENT_HEIGHT_PX;
-	float angle = atan2(-bottom / 2 + mouse.y, right / 2 - mouse.x) + M_PI + 0.7f;
-	registry.transforms.get(player).angle = angle;
+	float angle = atan2(-bottom / 2 + mouse.y, right / 2 - mouse.x) + playertransform.angle_offset;
+	playertransform.angle = angle;
 }
 
 void WorldSystem::player_shoot() {
-	Player& playerObject = registry.players.get(player);
-	if (playerObject.attack_timer <= 0) {
-		createBullet(player, { 10.f, 10.f }, { 1.f, 1.2f, 0.2f, 1.f });
-		playerObject.attack_timer = ATTACK_DELAY;
+	Weapon& playerWeapon = registry.weapons.get(player);
+	if (playerWeapon.attack_timer <= 0) {
+		createBullet(player, { 10.f, 10.f }, { 1.f, 1.2f, 0.2f, 1.f },{60.f,60.f},0.7f);
+		playerWeapon.attack_timer = ATTACK_DELAY;
 	}
 }
 
@@ -746,7 +751,7 @@ void WorldSystem::player_dash() {
 }
 
 void WorldSystem::handle_shooting_sound_effect() {
-	Player& playerObject = registry.players.get(player);
+	Weapon& playerWeapon = registry.weapons.get(player);
 
 	auto play_or_queue_sound = [&]() {
 		if (!Mix_Playing(chunkToChannel["player_shoot_1"])) {
@@ -761,13 +766,13 @@ void WorldSystem::handle_shooting_sound_effect() {
 		}
 		};
 
-	if (playerObject.attack_timer == ATTACK_DELAY) {
+	if (playerWeapon.attack_timer == ATTACK_DELAY) {
 		// We know player just attacked because attack_timer reset
 		play_or_queue_sound();
 	}
 	else if (isShootingSoundQueued && !Mix_Playing(chunkToChannel["player_shoot_1"])) {
 		// If attack_timer ticked down too much it's probably too late to play a sound
-		if (playerObject.attack_timer >= ATTACK_DELAY / 3.0) {
+		if (playerWeapon.attack_timer >= ATTACK_DELAY / 3.0) {
 			play_or_queue_sound();
 		}
 		isShootingSoundQueued = false;

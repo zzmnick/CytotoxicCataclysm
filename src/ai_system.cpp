@@ -9,6 +9,7 @@ void AISystem::step(float elapsed_ms)
 		player = players.back();
 	}
 	move_enemies(elapsed_ms);
+	enemy_shoot(elapsed_ms);
 }
 
 void AISystem::move_enemies(float elapsed_ms) {
@@ -43,7 +44,7 @@ void AISystem::move_enemies(float elapsed_ms) {
 				angle = atan2(enemytransform.position.y - playerposition.y, enemytransform.position.x - playerposition.x);
 				enemymotion.velocity.x += -cos(angle) * elapsed_ms * enemymotion.acceleration_unit;
 				enemymotion.velocity.y += -sin(angle) * elapsed_ms * enemymotion.acceleration_unit;
-				enemytransform.angle = angle + M_PI + 0.8;
+				enemytransform.angle = angle + enemytransform.angle_offset;
 			}
 
 			float magnitude = length(enemymotion.velocity);
@@ -52,6 +53,23 @@ void AISystem::move_enemies(float elapsed_ms) {
 				enemymotion.velocity *= (enemymotion.max_velocity / magnitude);
 			}
 		}
+	}
+
+}
+
+
+void AISystem::enemy_shoot(float elapsed_ms) {
+	for (Entity entity : registry.weapons.entities) {
+		Weapon& enemyWeapon = registry.weapons.get(entity);
+		if (registry.enemies.has(entity)) {
+			if (enemyWeapon.attack_timer <= 0) {
+				createBullet(entity, { 10.f, 10.f }, { 1.f, 1.2f, 0.2f, 1.f },{0.f,0.f},0.f);
+				enemyWeapon.attack_timer = ATTACK_DELAY;
+			}
+		}
+		enemyWeapon.attack_timer = max(enemyWeapon.attack_timer - elapsed_ms, 0.f);
+			
+
 	}
 
 }

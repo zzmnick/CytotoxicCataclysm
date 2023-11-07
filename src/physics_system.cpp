@@ -154,13 +154,13 @@ bool collides_with_mesh(Mesh *mesh, Transform transform_1, Transform transform_2
 // Adds collision events to be handled in world_system's resolve_collisions()
 void collisionhelper(Entity entity_1, Entity entity_2) {
 	// Bullet Collisions
-	if (registry.weapons.has(entity_1)) {
-		if (registry.weapons.has(entity_2)) {
+	if (registry.projectiles.has(entity_1)) {
+		if (registry.projectiles.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_BULLET, entity_2);
 		} else if (registry.players.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_PLAYER, entity_2);
 		} else if (registry.enemies.has(entity_2)) {
-			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_ENEMY, entity_2);
+			//registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_ENEMY, entity_2);
 		}
 	// Player Collisions
 	} else if (registry.players.has(entity_1)) {
@@ -243,7 +243,7 @@ void check_collision() {
 
 		// Check for collisions with the map boundary
 		if (collides_with_boundary(transform_i)) {
-			if (registry.weapons.has(entity_i)) {
+			if (registry.projectiles.has(entity_i)) {
 				registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::BULLET_WITH_BOUNDARY);
 			}
 			else {
