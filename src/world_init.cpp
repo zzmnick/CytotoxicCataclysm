@@ -292,7 +292,6 @@ Entity createHealthbar(vec2 position, vec2 scale) {
 // Can be used for either player or enemy
 Entity createBullet(Entity shooter, vec2 scale, vec4 color,vec2 offset, float angleoffset) {
 	assert(registry.transforms.has(shooter));
-	Transform& shooter_transform = registry.transforms.get(shooter);
 
 	// Create bullet's components
 	auto bullet_entity = Entity();
@@ -302,6 +301,7 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color,vec2 offset, float an
 	registry.colors.insert(bullet_entity, color);
 
 	// Set initial position and velocity
+	Transform& shooter_transform = registry.transforms.get(shooter);
 	bullet_transform.position = {
 		shooter_transform.position.x + offset.x * cos(shooter_transform.angle),
 		shooter_transform.position.y + offset.y * sin(shooter_transform.angle)

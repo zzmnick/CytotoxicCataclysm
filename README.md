@@ -23,188 +23,165 @@ the linked branch of the task can be retrieved.
 		<tr class="header">
 			<th><strong>Category</strong></th>
 			<th><strong>Task</strong></th>
-			<th><strong>Details (optional)</strong></th>
+			<th><strong>Details</strong></th>
 		</tr>
 		<tr>
-			<th rowspan="3">Rendering</th>
+			<th rowspan="5">Improved Gameplay</th>
 			<th>
-			<p>Textured geometry</p>
+			<p>Game logic response to user input</p>
 			</th>
 			<th><ul>
 			<li>
-			<p>Ticket #7</p>
+			<p>Ticket #41, #33</p>
 			</li>
 			<li>
-			<p>Art part:</p>
-			<ul>
+			<p>Enemies chase player (AISystem::move_enemies) and deals damage to player when they collide (WorldSystem::resolve_collisions)</p>
 			<li>
-			<p>Come up with a few prototypes of a regular enemy and take feedback
-			from everyone.</p>
+			<p>Enemies are spawned offscreen with a frequency based on the player’s proximity to point of interest (point with game objectives). Handled by WorldSystem::step_enemySpawn</p>
 			</li>
 			<li>
-			<p>Draw them in Krita while keeping the resolution and size consistent
-			with the main character. (use separate layer in the All.kra file)</p>
-			</li>
-			</ul></li>
+			<p>Player can shoot bullets to enemies and dash (WorldSystem::control_action()). </p>
+			</li></li>
 			<li>
-			<p>Code part:</p>
-			<ul>
+			<p>When player shoots enemies enough they die</p>
+			</th>
+		</tr>
+		<tr>
+			<th>
+			<p>Sprite sheet animation </p>
+			</th>
+			<th><ul>
 			<li>
-			<p>Load the sprite in the game.</p>
-			</li>
-			<li>
-			<p>Add an enemy entity.</p>
-			</li>
-			<li>
-			<p>Register enemy's basic required components (including the sprite) in
-			the ECS system.</p>
+			<p>Ticket #32</p>
 			</li>
 			<li>
-			<p>Add one enemy to the main scene.</p>
+			<p>Created a generalized interface for playing sprite sheet animations (functions in animation_system.cpp)</p>
 			</li>
-			</ul></li>
+			<li>
+			<p>Created assets for several animations: player/enemy moving, player blinking, and player/enemy death. Textures for these are located in data/textures</p>
+			</li>
+			<li>
+			<p>Integrated the above animations into the game (handled in PhysicsSystem::step_movement and WorldSystem::step_health) </p>
+			</li>
+			</th>
+		</tr>
+		<tr>
+			<th>
+			<p>New integrated assets</p>
+			</th>
+			<th><ul>
+			<li>
+			<p>Ticket #34</p>
+			</li>
+			<li>
+			<p>Added background music to the game</p>
+			</li>
+			<li>
+			<p>Handled in WorldSystem::create_window()
+</p>
+			</li>
+			<li>
+			<p>Ticket #46</p>
+			</li>
+			<li>
+			<p>Added boss bacteriophage mesh created in Blender. Located in ‘data/meshes/
+</p>
+			</li>
 			</ul>
 			</th>
 		</tr>
 		<tr>
 			<th>
-			<p>Basic 2D transformations</p>
+			<p>Mesh-based collision</p>
 			</th>
 			<th><ul>
 			<li>
-			<p>Rotation is handled by <a
-			href="https://github.students.cs.ubc.ca/CPSC427-2023W-T1/Team03CytotoxicCataclysm/blob/9bdbff0afb2642b8617121bd22d0e65af641abb6/src/world_system.cpp#L354-L363"><u>this</u></a></p>
+			<p>Ticket #46
+</p>
 			</li>
 			<li>
-			<p>Translation is handled by <a
-			href="https://github.students.cs.ubc.ca/CPSC427-2023W-T1/Team03CytotoxicCataclysm/blob/9bdbff0afb2642b8617121bd22d0e65af641abb6/src/world_system.cpp#L309-L345"><u>this</u></a>
-			and <a
-			href="https://github.students.cs.ubc.ca/CPSC427-2023W-T1/Team03CytotoxicCataclysm/blob/9bdbff0afb2642b8617121bd22d0e65af641abb6/src/physics_system.cpp#L93-L99"><u>this</u></a></p>
+			<p>Mesh::loadFromObjFile() loads a mesh with uv coordinates stored in obj file format into the game.</p>
+			</li>
+			<li>
+			<p>createBoss() in world_init.cpp creates a boss entity with the mesh and corresponding texture. The mesh and uv coordinates are passed to textured shaders to draw the boss</p>
+			</li>
+			<li>
+			<p>In physics_system.cpp, collides_with_mesh() function checks if a mesh collides with circles.</p>
 			</li>
 			</ul>
 			</th>
 		</tr>
 		<tr>
 			<th>
-			<p>Key-frame/state interpolation</p>
+			<p>Basic tutorial/help</p>
 			</th>
 			<th><ul>
 			<li>
-			<p>Ticket #28</p>
+			<p>Ticket #38</p>
 			</li>
 			<li>
-			<p>Health component</p>
+			<p>Added a dialog sub-system to handle any dialogs or interactive tutorials. Class definition in sub_systems/dialog_system.hpp</p>
 			</li>
 			<li>
-			<p>Links to the player entity.</p>
+			<p>Added cutscenes at the beginning of the game to tell the story
+</p>
 			</li>
 			<li>
-			<p>Health value will be checked at each frame.</p>
+			<p>Added interactive instructions after the cutscenes to guide the player</p>
 			</li>
 			<li>
-			<p>If the health value is changed, start the timer to render the health
-			bar to the target value.</p>
-			</li>
-			<li>
-			<p>The render effects use function C(t) = x_0<em>t +
-			x_1</em>(1-t/300).</p>
+			<p>Created assets for the cutscenes, visual guidance and texts</p>
 			</li>
 			</ul>
 			</th>
 		</tr>
 		<tr>
-			<th rowspan="4">Gameplay</th>
+			<th rowspan="1">Playability</th>
 			<th>
-			<p>Keyboard/mouse control</p>
+			<p>2 minutes of non-repetitive gameplay</p>
 			</th>
 			<th><ul>
 			<li>
-			<p>Ticket #2</p>
+			<p>This is a collaborative result from completing all other features
+</p>
 			</li>
 			<li>
-			<p>Functions:</p>
+			<p>The player will encounter two different enemy types over four regions before finding and fighting the boss</p>
+			</li>
+			</ul>
+			</th>
+		</tr>
+		<tr>
+			<th rowspan="3">Stability</th>
+			<th>
+			<p>Minimal lag</p>
+			</th>
+			<th><ul>
+			<li>
+			<p>Runtimes of each step of the subsystems are measured to identify the performance bottleneck</p>
 			</li>
 			<li>
-			<p>[Keyboard/mouse control]: Player character movement and
-			orientation</p>
-			</li>
-			<li>
-			<p>Keyboard handled by <a
-			href="https://github.students.cs.ubc.ca/CPSC427-2023W-T1/Team03CytotoxicCataclysm/blob/9bdbff0afb2642b8617121bd22d0e65af641abb6/src/world_system.cpp#L271-L307"><u>this</u></a></p>
-			</li>
-			<li>
-			<p>Mouse handled by <a
-			href="https://github.students.cs.ubc.ca/CPSC427-2023W-T1/Team03CytotoxicCataclysm/blob/9bdbff0afb2642b8617121bd22d0e65af641abb6/src/world_system.cpp#L347-L352"><u>this</u></a></p>
+			<p>Potential performance issues are optimized to avoid frame loss</p>
 			</li>
 			</ul>
 			</th>
 		</tr>
 		<tr class="odd">
 			<th>
-			<p>Random/coded action</p>
+			<p>Consistent game resolution</p>
 			</th>
 			<th><ul>
 			<li>
-			<p>Ticket #6</p>
+			<p>Ticket #40</p>
 			</li>
 			<li>
-			<p>Four sections randomly located in the map</p>
-			</li>
-			</ul>
-			</th>
-		</tr>
-		<tr>
-			<th>
-			<p>Well-defined game-space boundaries</p>
-			</th>
-			<th><ul>
-			<li>
-			<p>Common::MAP_RADIUS</p>
+			<p>Made the game run in fullscreen mode with 1080p resolution and 60Hz frame rate by default to make sure that the game resolution looks consistent across different machines.</p>
 			</li>
 			<li>
-			<p>Both Render_system and Physics_system responds to this value of the
-			boundary</p>
-			</li>
-			</ul>
-			</th>
-		</tr>
-		<tr>
-			<th>Correct collision processing</th>
-			<th><ul>
-			<li>
-			<p>Ticket #8</p>
+			<p>16:9 aspect ratio is enforced with letterboxing on different screen dimensions while maintaining a consistent FOV and scale</p>
 			</li>
 			<li>
-			<p>Functions:</p>
-			<ul>
-			<li>
-			<p>get_collision_circles()</p>
-			</li>
-			<li>
-			<p>collides()</p>
-			</li>
-			<li>
-			<p>collides_with_boundary()</p>
-			</li>
-			<li>
-			<p>(all in physics_system.cpp)</p>
-			</li>
-			</ul></li>
-			<li>
-			<p>Detects if: two moving entities collide with each other; a moving
-			entity collides with the border</p>
-			</li>
-			</ul>
-			</th>
-		</tr>
-		<tr>
-			<th rowspan="2">Stability</th>
-			<th>
-			<p>Minimal lag</p>
-			</th>
-			<th><ul>
-			<li>
-			<p>Not an issue</p>
+			<p>Handled in WorldSystem::create_window()</p>
 			</li>
 			</ul>
 			</th>
@@ -222,42 +199,31 @@ the linked branch of the task can be retrieved.
 		</tr>
 		<tr>
 			<th rowspan="2">Creative</th>
-			<th>[21][basic][Camera controls]:</th>
+			<th>[Creative][basic][Basic integrated assets][24]:</th>
 			<th><ul>
 			<li>
-			<p>Ticket #4</p>
+			<p>Ticket #5, #46, #38, #81 etc.</p>
 			</li>
 			<li>
-			<p>Functions: Render_system::createProjectionMatrix();
-			Render_system::createViewMatrix(); <a
-			href="https://github.students.cs.ubc.ca/CPSC427-2023W-T1/Team03CytotoxicCataclysm/commit/8869999e7b5a55e54ea7dca3d79a03addfe99d8c?diff=unified#diff-a0a82052c3d34154647fcfa7520d884895e8ad1a51a67f277d0f73b656d711a0">textured.vs.glsl</a></p>
+			<p>Created background textures, cutscenes, player, enemy and boss textures, and fully integrated these textures into the game</p>
 			</li>
 			<li>
-			<p>Implement a camera following the player.</p>
-			</li>
-			<li>
-			<p>Handled <a
-			href="https://github.students.cs.ubc.ca/CPSC427-2023W-T1/Team03CytotoxicCataclysm/blob/9bdbff0afb2642b8617121bd22d0e65af641abb6/src/render_system.cpp#L415-L432"><u>here</u></a></p>
+			<p>All textures are stored under data/textures folder. RenderSystem::initializeGlTextures() loads these textures and they are mapped to different geometries in the game to be used for different purposes</p>
 			</li>
 			</ul>
 			</th>
 		</tr>
 		<tr>
-			<th>[8][basic][Basic physics]</th>
+			<th>[Creative][basic][23][Audio feedback]</th>
 			<th><ul>
 			<li>
-			<p>Ticket #2 &amp; #8</p>
+			<p>Ticket #65</p>
 			</li>
 			<li>
-			<p>Functions: WorldSystem::handle_collisions(),
-			WorldSystem::movement()</p>
+			<p>Added sound effects for various interactions in the game (e.g. player shoot or enemies get hit) to provide audio feedback</p>
 			</li>
 			<li>
-			<p>Add inertia to character movement</p>
-			</li>
-			<li>
-			<p>Elastic collision when moving entities collide with the map
-			boundary</p>
+			<p>Handled by WorldSystem::create_window() and WorldSystem::handle_shooting_sound_effect()</p>
 			</li>
 			</ul>
 			</th>
@@ -266,7 +232,8 @@ the linked branch of the task can be retrieved.
 </table>
 
 ## Alignment with development plan
-All the features that we have planned for MS1 have been completed. In
-addition, the camera control feature has been pulled from MS2 into MS1
-because it was needed in the early stage for us to test everything else.
-The updated version of the proposal has been included in the submission.
+We had the following discrepancies in Milestone 2 compared to the development plan in the original proposal:
+* “Complex geometry” (advanced creative feature) is removed because it now overlaps with the new mandatory mesh-based collision requirement. After confirming with TA, this feature will not count.
+* “Audio feedback” (basic creative feature) is pulled from Milestone 4 into Milestone 2 to compensate for complex geometry.
+* “Basic integrated assets” (basic creative feature) is revisited and completed in Milestone 2 also to compensate for complex geometry
+* “Start and pause menus” is pushed to Milestone 3 as it is not required for Milestone 2.

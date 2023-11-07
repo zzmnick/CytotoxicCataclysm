@@ -91,7 +91,7 @@ bool collides_with_boundary(const Transform& transform)
 bool line_interesect_with_circle(vec2 point_1, vec2 point_2, CollisionCircle circle) {
 	point_1 -= circle.position;
 	point_2 -= circle.position;
-	float a = pow(point_2.x - point_1.x, 2) + pow(point_2.y - point_1.y, 2);
+	float a = pow(point_2.x - point_1.x, 2.f) + pow(point_2.y - point_1.y, 2.f);
 	float b = 2 * (point_1.x * (point_2.x - point_1.x) + point_1.y * (point_2.y - point_1.y));
 	float c = point_1.x * point_1.x + point_1.y * point_1.y - circle.radius * circle.radius;
 	float d = b * b - 4 * a * c;

@@ -32,8 +32,9 @@ void AISystem::move_enemies(float elapsed_ms) {
 				if (distance > CONTENT_WIDTH_PX / 2) {					
 					angle = atan2(enemytransform.position.y - interest_point.y, enemytransform.position.x - interest_point.x);
 				} else {
-					angle = atan2(enemytransform.position.y - playerposition.y, enemytransform.position.x - playerposition.x);
+					angle = atan2(enemytransform.position.y - playerposition.y, enemytransform.position.x - playerposition.x);	
 				}
+				enemytransform.angle = angle + M_PI/2;
 				enemymotion.velocity.x += -cos(angle) * elapsed_ms * enemymotion.acceleration_unit;
 				enemymotion.velocity.y += -sin(angle) * elapsed_ms * enemymotion.acceleration_unit;
 				float interest_distance = length(enemytransform.position - interest_point);
