@@ -62,7 +62,10 @@ void AISystem::move_enemies(float elapsed_ms) {
 void AISystem::enemy_shoot(float elapsed_ms) {
 	for (Entity entity : registry.weapons.entities) {
 		Weapon& enemyWeapon = registry.weapons.get(entity);
-		if (registry.enemies.has(entity)) {
+		vec2 playerposition = registry.transforms.get(player).position;
+		vec2 enemyposition = registry.transforms.get(entity).position;
+		float distance = length(playerposition - enemyposition);
+		if (registry.enemies.has(entity) && distance<= CONTENT_WIDTH_PX/2) {
 			if (enemyWeapon.attack_timer <= 0) {
 				createBullet(entity, { 10.f, 10.f }, { 1.f, 1.2f, 0.2f, 1.f },{0.f,0.f},0.f);
 				enemyWeapon.attack_timer = enemyWeapon.attack_delay;
