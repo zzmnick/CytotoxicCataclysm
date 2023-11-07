@@ -213,8 +213,8 @@ struct Transform {
 	vec2 position = { 0.f, 0.f };
 	vec2 scale = { 10.f, 10.f };
 	float angle = 0.f;
-	float angle_offset = 0.f;
 	bool is_screen_coord = false;
+	float angle_offset = 0.f;
 };
 
 // Data relevant to the movement of entities
