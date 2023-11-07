@@ -583,6 +583,27 @@ void WorldSystem::resolve_collisions() {
 
 			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
 		}
+		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_PLAYER 
+			&& !registry.invincibility.has(player)) {
+
+			registry.invincibility.emplace(player);
+
+			Transform& player_transform = registry.transforms.get(player);
+			Motion& player_motion = registry.motions.get(player);
+			vec2 knockback_direction = normalize(player_transform.position - transform.position);
+
+			player_motion.velocity = (motion.max_velocity + 1000) * knockback_direction;
+			allow_accel = false;
+			Projectile& projectile = registry.projectiles.get(entity);
+
+			// Update player health
+			Health& playerHealth = registry.healthValues.get(player);
+			playerHealth.health_pct -= projectile.damage;
+
+
+			Mix_PlayChannel(chunkToChannel["player_hit"], soundChunks["player_hit"], 0);
+			garbage.push_back(entity);
+		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_BOUNDARY) {
 			garbage.push_back(entity);
 		}
@@ -726,7 +747,7 @@ void WorldSystem::player_shoot() {
 	Weapon& playerWeapon = registry.weapons.get(player);
 	if (playerWeapon.attack_timer <= 0) {
 		createBullet(player, { 10.f, 10.f }, { 1.f, 1.2f, 0.2f, 1.f },{60.f,60.f},0.7f);
-		playerWeapon.attack_timer = ATTACK_DELAY;
+		playerWeapon.attack_timer = playerWeapon.attack_delay;
 	}
 }
 
@@ -789,13 +810,13 @@ void WorldSystem::handle_shooting_sound_effect() {
 		}
 		};
 
-	if (playerWeapon.attack_timer == ATTACK_DELAY) {
+	if (playerWeapon.attack_timer == playerWeapon.attack_delay) {
 		// We know player just attacked because attack_timer reset
 		play_or_queue_sound();
 	}
 	else if (isShootingSoundQueued && !Mix_Playing(chunkToChannel["player_shoot_1"])) {
 		// If attack_timer ticked down too much it's probably too late to play a sound
-		if (playerWeapon.attack_timer >= ATTACK_DELAY / 3.0) {
+		if (playerWeapon.attack_timer >= playerWeapon.attack_delay / 3.0) {
 			play_or_queue_sound();
 		}
 		isShootingSoundQueued = false;
