@@ -35,7 +35,6 @@ void RenderSystem::animationSys_step(float elapsed_ms) {
     
     for (uint i = 0; i < registry.animations.components.size(); i++) {
         Animation& animation = registry.animations.components[i];
-        Entity& entity = registry.animations.entities[i];
         
         if(!animation.pauseAnimation){
             animation.timer_ms += elapsed_ms;

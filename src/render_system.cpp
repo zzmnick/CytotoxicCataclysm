@@ -72,6 +72,7 @@ void RenderSystem::setTexturedShaderVars(Entity entity) {
 }
 
 void RenderSystem::setColouredShaderVars(Entity entity) {
+	(void)entity; // silence unused warning for now
 	GLint program;
 	glGetIntegerv(GL_CURRENT_PROGRAM, &program);
 
@@ -91,6 +92,7 @@ void RenderSystem::setColouredShaderVars(Entity entity) {
 }
 
 void RenderSystem::setRegionShaderVars(Entity entity) {
+	(void)entity; // silence unused warning for now
 	GLint program;
 	glGetIntegerv(GL_CURRENT_PROGRAM, &program);
 

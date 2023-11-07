@@ -43,7 +43,7 @@ void AISystem::move_enemies(float elapsed_ms) {
 				angle = atan2(enemytransform.position.y - playerposition.y, enemytransform.position.x - playerposition.x);
 				enemymotion.velocity.x += -cos(angle) * elapsed_ms * enemymotion.acceleration_unit;
 				enemymotion.velocity.y += -sin(angle) * elapsed_ms * enemymotion.acceleration_unit;
-				enemytransform.angle = angle + M_PI + 0.8;
+				enemytransform.angle = angle + M_PI + 0.8f;
 			}
 
 			float magnitude = length(enemymotion.velocity);

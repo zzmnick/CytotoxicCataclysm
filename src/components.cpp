@@ -39,7 +39,7 @@ bool Mesh::loadFromOBJFile(std::string obj_path, std::vector<TexturedVertex>& ou
 
 		if (strcmp(lineHeader, "v") == 0) {
 			TexturedVertex vertex;
-			int matches = fscanf(file, "%f %f %f\n", &vertex.position.x, &vertex.position.y, &vertex.position.z);
+			fscanf(file, "%f %f %f\n", &vertex.position.x, &vertex.position.y, &vertex.position.z);
 			out_vertices.push_back(vertex);
 		}
 		else if (strcmp(lineHeader, "vt") == 0) {

@@ -16,7 +16,7 @@ vec2 mouse;
 const float SPAWN_RANGE = MAP_RADIUS *0.6f; // Example value; adjust as needed
 const int MAX_RED_ENEMIES = 10; // Example value; adjust as needed
 const int MAX_GREEN_ENEMIES = 5; // Example value; adjust as needed
-const float SCREEN_RADIUS = sqrt(CONTENT_WIDTH_PX * CONTENT_WIDTH_PX + CONTENT_HEIGHT_PX * CONTENT_HEIGHT_PX) / 2.f; // Half of screen diagonal
+const float SCREEN_RADIUS = sqrtf(CONTENT_WIDTH_PX * CONTENT_WIDTH_PX + CONTENT_HEIGHT_PX * CONTENT_HEIGHT_PX) / 2.f; // Half of screen diagonal
 const float ENEMY_SPAWN_PADDING = 50.f; // Padding to ensure off-screen spawn
 float enemy_spawn_cooldown = 5.f;
 const float INDIVIDUAL_SPAWN_INTERVAL = 1.0f;
@@ -200,7 +200,6 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 }
 
 void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
-	float min_timer_ms = DEATH_EFFECT_DURATION;
 	for (uint i = 0; i < registry.deathTimers.components.size(); i++) {
 		DeathTimer& timer = registry.deathTimers.components[i];
 		Entity entity = registry.deathTimers.entities[i];
@@ -250,16 +249,16 @@ void WorldSystem::step_health(float elapsed_ms) {
 						/////////////////////////////
 						RenderSystem::animationSys_switchAnimation(player, 
 							ANIMATION_FRAME_COUNT::IMMUNITY_DYING, 
-							ceil((DEATH_EFFECT_DURATION+buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::IMMUNITY_DYING)));
+							static_cast<int>(ceil((DEATH_EFFECT_DURATION+buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::IMMUNITY_DYING))));
 						
 						//temporary: since enemies cannot be killed at the moment
-						for (int i = 0; i < registry.enemies.entities.size(); i++) {
-							Entity& enemyEntity = registry.enemies.entities[i];
-							Enemy& enemy = registry.enemies.components[i];
+						for (int j = 0; j < registry.enemies.entities.size(); j++) {
+							Entity& enemyEntity = registry.enemies.entities[j];
+							Enemy& enemy = registry.enemies.components[j];
 							if (enemy.type == ENEMY_ID::GREEN) {
 								RenderSystem::animationSys_switchAnimation(enemyEntity,
 									ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
-									ceil((DEATH_EFFECT_DURATION + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING))
+									static_cast<int>(ceil((DEATH_EFFECT_DURATION + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING)))
 								);
 
 							}
@@ -277,7 +276,7 @@ void WorldSystem::step_health(float elapsed_ms) {
 						if (enemy.type == ENEMY_ID::GREEN) {
 							RenderSystem::animationSys_switchAnimation(entity, 
 								ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
-								ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / (1.f*(int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING))
+								static_cast<int>(ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / (1.f*(int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING)))
 							);
 
 						}
@@ -343,7 +342,6 @@ void WorldSystem::step_dash(float elapsed_ms) {
 }
 
 void WorldSystem::spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 player_velocity) {
-    std::default_random_engine rng(std::random_device{}());
     std::uniform_real_distribution<float> angle_randomness(-M_PI/4, M_PI/4);  // 45 degrees randomness
 
     // Determine the angle for spawning based on player's velocity
@@ -376,7 +374,7 @@ void WorldSystem::spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 pla
 void WorldSystem::spawnEnemiesNearInterestPoint(vec2 player_position) {
 	vec2 player_velocity = registry.motions.get(player).velocity;
 
-    std::uniform_int_distribution<int> type_dist(0, enemyTypes.size() - 1);
+    std::uniform_int_distribution<int> type_dist(0, static_cast<int>(enemyTypes.size()) - 1);
     ENEMY_ID randomType = enemyTypes[type_dist(rng)];
 
     if (enemyCounts[randomType] < getMaxEnemiesForType(randomType)) {
@@ -738,8 +736,8 @@ void WorldSystem::player_dash() {
 
 	if (keys_pressed[GLFW_KEY_W] || keys_pressed[GLFW_KEY_A] || keys_pressed[GLFW_KEY_S] || keys_pressed[GLFW_KEY_D]) {
 		// prioritize direction of key presses (players intended direction)
-		dashDirection.x = keys_pressed[GLFW_KEY_D] - keys_pressed[GLFW_KEY_A];
-		dashDirection.y = keys_pressed[GLFW_KEY_W] - keys_pressed[GLFW_KEY_S];
+		dashDirection.x = static_cast<float> (keys_pressed[GLFW_KEY_D] - keys_pressed[GLFW_KEY_A]);
+		dashDirection.y = static_cast<float> (keys_pressed[GLFW_KEY_W] - keys_pressed[GLFW_KEY_S]);
 
 
 		// handle conflicting key-presses
@@ -753,7 +751,7 @@ void WorldSystem::player_dash() {
 	}
 	else if (length(playerMovement.velocity) < 10.f) {
 		// If player is barely moving, dash in mouse direction
-		float alignment = -0.70; // player texture is tilted
+		float alignment = -0.70f; // player texture is tilted
 		float playerAngle = registry.transforms.get(player).angle + alignment;
 		dashDirection = normalize(vec2(cos(playerAngle), sin(playerAngle)));
 	}

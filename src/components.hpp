@@ -219,7 +219,6 @@ struct Transform {
 // Data relevant to the movement of entities
 struct Motion {
 	vec2 velocity = { 0.f, 0.f };
-	vec2 scale = { 10.f, 10.f };
 	float max_velocity = 400.f;
 	float acceleration_unit = 1.0f;
 	float deceleration_unit = 0.995f;
