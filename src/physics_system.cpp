@@ -157,10 +157,10 @@ void collisionhelper(Entity entity_1, Entity entity_2) {
 	if (registry.projectiles.has(entity_1)) {
 		if (registry.projectiles.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_BULLET, entity_2);
-		} else if (registry.players.has(entity_2)) {
+		} else if (registry.players.has(entity_2) && registry.collidePlayers.has(entity_1)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_PLAYER, entity_2);
-		} else if (registry.enemies.has(entity_2)) {
-			//registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_ENEMY, entity_2);
+		} else if (registry.enemies.has(entity_2) && registry.collideEnemies.has(entity_1)) {
+			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_ENEMY, entity_2);
 		}
 	// Player Collisions
 	} else if (registry.players.has(entity_1)) {

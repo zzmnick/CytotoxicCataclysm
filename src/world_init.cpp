@@ -19,12 +19,14 @@ Entity createPlayer(vec2 pos)
 	transform.angle = 0.f;
 	transform.scale = IMMUNITY_TEXTURE_SIZE * 3.f;
 	transform.angle_offset = M_PI + 0.7f;
+
 	registry.motions.insert(entity, { { 0.f, 0.f } });
 
 	// Create an (empty) Player component to be able to refer to all players
 	registry.players.emplace(entity);
 	registry.dashes.emplace(entity);
 	registry.weapons.emplace(entity);
+	registry.collideEnemies.emplace(entity);
 	registry.renderRequests.insert(
 		entity,
 		{ TEXTURE_ASSET_ID::IMMUNITY_BLINKING,
@@ -49,17 +51,21 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 	auto entity = Entity();
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::BACTERIOPHAGE);
 	registry.meshPtrs.emplace(entity, &mesh);
-	// Assuming boss is a type of enemy
-	Enemy& new_enemy = registry.enemies.emplace(entity);
-	Transform& transform = registry.transforms.emplace(entity);
+
 	Motion& motion = registry.motions.emplace(entity);
+	motion.max_velocity = 250.f; // TODO: Dummy boss for now, change this later
+
 	registry.healthValues.emplace(entity);
-	// Setting initial components values
+	registry.collidePlayers.emplace(entity);
+
+	Enemy& new_enemy = registry.enemies.emplace(entity);
 	new_enemy.type = ENEMY_ID::BOSS;
+
+	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = BACTERIOPHAGE_TEXTURE_SIZE * 0.8f;
-	motion.max_velocity = 250.f; // TODO: Dummy boss for now, change this later
+
 	// Add to render_request
 	registry.renderRequests.insert(
 		entity,
@@ -73,21 +79,21 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 Entity createRedEnemy(vec2 pos) {
 	// Create enemy components
 	auto entity = Entity();
-	
+
 	Enemy& new_enemy = registry.enemies.emplace(entity);
-	
+	new_enemy.type = ENEMY_ID::RED;
 
 	Transform& transform = registry.transforms.emplace(entity);
-	Motion& motion = registry.motions.emplace(entity);
-	Health& health = registry.healthValues.emplace(entity);
-
-	// Setting initial components values
-	new_enemy.type = ENEMY_ID::RED;
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = RED_ENEMY_TEXTURE_SIZE * 2.f;
+
+	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 400;
+
+	Health& health = registry.healthValues.emplace(entity);
 	health.previous_health_pct = 200.0;
+
 
 	registry.renderRequests.insert(
 		entity,
@@ -103,18 +109,18 @@ Entity createGreenEnemy(vec2 pos) {
 	// Create enemy components
 	auto entity = Entity();
 	Enemy& new_enemy = registry.enemies.emplace(entity);
-	
-	Transform& transform = registry.transforms.emplace(entity);
-	Motion& motion = registry.motions.emplace(entity);
-	Health& health = registry.healthValues.emplace(entity);
-
-	// Setting initial components values
 	new_enemy.type = ENEMY_ID::GREEN;
+
+	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = GREEN_ENEMY_TEXTURE_SIZE * 4.f;
 	transform.angle_offset = M_PI + 0.8;
+
+	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 200;
+
+	Health& health = registry.healthValues.emplace(entity);
 	health.previous_health_pct = 200.0;
 
 	// Add tp render_request
@@ -134,20 +140,25 @@ Entity createGreenEnemy(vec2 pos) {
 Entity createYellowEnemy(vec2 pos) {
 	// Create enemy components
 	auto entity = Entity();
+
+	registry.noRotates.emplace(entity);
+	registry.collidePlayers.emplace(entity);
+
+	Weapon& weapon = registry.weapons.emplace(entity);
+	weapon.attack_delay = 900.f;
+
 	Enemy& new_enemy = registry.enemies.emplace(entity);
+	new_enemy.type = ENEMY_ID::YELLOW;
 
 	Transform& transform = registry.transforms.emplace(entity);
-	Motion& motion = registry.motions.emplace(entity);
-	Health& health = registry.healthValues.emplace(entity);
-	registry.weapons.emplace(entity);
-	registry.noRotates.emplace(entity);
-
-	// Setting initial components values
-	new_enemy.type = ENEMY_ID::YELLOW;
 	transform.position = pos;
 	transform.scale = YELLOW_ENEMY_TEXTURE_SIZE * 1.5f;
 	transform.angle_offset = M_PI;
+
+	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 0.0f;
+
+	Health& health = registry.healthValues.emplace(entity);
 	health.previous_health_pct = 50.0;
 
 	// Add tp render_request
@@ -293,6 +304,7 @@ Entity createHealthbar(vec2 position, vec2 scale) {
 Entity createBullet(Entity shooter, vec2 scale, vec4 color,vec2 offset, float angleoffset) {
 	assert(registry.transforms.has(shooter));
 
+
 	// Create bullet's components
 	auto bullet_entity = Entity();
 	registry.projectiles.emplace(bullet_entity);
@@ -309,6 +321,13 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color,vec2 offset, float an
 	bullet_transform.scale = scale;
 	bullet_transform.angle = 0.0;
 	bullet_motion.velocity = { cos(shooter_transform.angle - angleoffset) * 500, sin(shooter_transform.angle - angleoffset) * 500 };
+
+	if (registry.collideEnemies.has(shooter)) {
+		registry.collideEnemies.emplace(bullet_entity);
+	}
+	if (registry.collidePlayers.has(shooter)) {
+		registry.collidePlayers.emplace(bullet_entity);
+	}
 
 	// Add bullet to render request
 	registry.renderRequests.insert(

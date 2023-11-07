@@ -65,7 +65,7 @@ void AISystem::enemy_shoot(float elapsed_ms) {
 		if (registry.enemies.has(entity)) {
 			if (enemyWeapon.attack_timer <= 0) {
 				createBullet(entity, { 10.f, 10.f }, { 1.f, 1.2f, 0.2f, 1.f },{0.f,0.f},0.f);
-				enemyWeapon.attack_timer = ATTACK_DELAY;
+				enemyWeapon.attack_timer = enemyWeapon.attack_delay;
 			}
 		}
 		enemyWeapon.attack_timer = max(enemyWeapon.attack_timer - elapsed_ms, 0.f);

@@ -30,6 +30,8 @@ public:
 	ComponentContainer<Animation> animations;
 	ComponentContainer<NoRotate> noRotates;
 	ComponentContainer<Weapon> weapons;
+	ComponentContainer<CollidePlayer> collidePlayers;
+	ComponentContainer<CollideEnemy> collideEnemies;
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
 	ECSRegistry()
@@ -53,6 +55,8 @@ public:
 		registry_list.push_back(&dashes);
 		registry_list.push_back(&noRotates);
 		registry_list.push_back(&weapons);
+		registry_list.push_back(&collidePlayers);
+		registry_list.push_back(&collideEnemies);
 
 	}
 

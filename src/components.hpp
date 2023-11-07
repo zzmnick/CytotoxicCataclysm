@@ -326,6 +326,7 @@ struct Invincibility {
 struct Weapon {
 	float damage = 10.f;
 	float attack_timer = ATTACK_DELAY;
+	float attack_delay = ATTACK_DELAY;
 
 };
 
@@ -351,5 +352,13 @@ struct Dash
 	float active_dash_ms = 0.f;
 	float dash_speed = 5.f;
 	float max_dash_velocity = 2000.f;
+};
+
+struct CollidePlayer {
+
+};
+
+struct CollideEnemy {
+
 };
 #pragma endregion
