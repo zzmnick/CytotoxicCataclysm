@@ -34,7 +34,7 @@ void AISystem::move_enemies(float elapsed_ms) {
 				} else {
 					angle = atan2(enemytransform.position.y - playerposition.y, enemytransform.position.x - playerposition.x);	
 				}
-				enemytransform.angle = angle + M_PI/2;
+				enemytransform.angle = angle + enemytransform.angle_offset;
 				enemymotion.velocity.x += -cos(angle) * elapsed_ms * enemymotion.acceleration_unit;
 				enemymotion.velocity.y += -sin(angle) * elapsed_ms * enemymotion.acceleration_unit;
 				float interest_distance = length(enemytransform.position - interest_point);
@@ -67,7 +67,14 @@ void AISystem::enemy_shoot(float elapsed_ms) {
 		float distance = length(playerposition - enemyposition);
 		if (registry.enemies.has(entity) && distance<= CONTENT_WIDTH_PX/2) {
 			if (enemyWeapon.attack_timer <= 0) {
-				createBullet(entity, { 10.f, 10.f }, { 1.f, 1.2f, 0.2f, 1.f },{0.f,0.f},0.f);
+				Enemy& enemy = registry.enemies.get(entity);
+				if (enemy.type == ENEMY_ID::BOSS) {
+					createBullet(entity, { 20.f, 20.f }, { 1.f, 0.58f, 0.f, 1.f });
+
+				}
+				else {
+					createBullet(entity, { 10.f, 10.f }, { 0.f, .98f, 1.f, 1.f });
+				}
 				enemyWeapon.attack_timer = enemyWeapon.attack_delay;
 			}
 		}

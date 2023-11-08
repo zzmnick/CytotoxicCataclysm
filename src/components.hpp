@@ -327,7 +327,10 @@ struct Weapon {
 	float damage = 10.f;
 	float attack_timer = ATTACK_DELAY;
 	float attack_delay = ATTACK_DELAY;
-
+	float angle_offset = 0.0f;
+	float bullet_speed = 500.f;
+	vec2 offset = { 0.f, 0.f };
+	
 };
 
 struct Projectile {

@@ -196,6 +196,7 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	// Set all states to default
 	restart_game();
 
+
 	// Create dialog_system
 	if (SHOW_DIALOGS) {
 		dialog_system = new DialogSystem(keys_pressed, mouse);
@@ -746,7 +747,7 @@ void WorldSystem::control_direction() {
 void WorldSystem::player_shoot() {
 	Weapon& playerWeapon = registry.weapons.get(player);
 	if (playerWeapon.attack_timer <= 0) {
-		createBullet(player, { 10.f, 10.f }, { 1.f, 1.2f, 0.2f, 1.f },{60.f,60.f},0.7f);
+		createBullet(player, { 10.f, 10.f }, { 1.f, 1.2f, 0.2f, 1.f });
 		playerWeapon.attack_timer = playerWeapon.attack_delay;
 	}
 }

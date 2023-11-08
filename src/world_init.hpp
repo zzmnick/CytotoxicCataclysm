@@ -27,7 +27,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos);
 /*************************[ environment ]*************************/
 // the random regions
 void createRandomRegions(size_t num_regions);
-Entity createBullet(Entity shooter, vec2 scale, vec4 color,vec2 offset, float angleoffset);
+Entity createBullet(Entity shooter, vec2 scale, vec4 color);
 
 /*************************[ UI ]*************************/
 // a red line for debugging purposes

@@ -25,7 +25,9 @@ Entity createPlayer(vec2 pos)
 	// Create an (empty) Player component to be able to refer to all players
 	registry.players.emplace(entity);
 	registry.dashes.emplace(entity);
-	registry.weapons.emplace(entity);
+	Weapon& weapon = registry.weapons.emplace(entity);
+	weapon.angle_offset = 0.7f;
+	weapon.offset = { 60.f,60.f };
 	registry.collideEnemies.emplace(entity);
 	registry.renderRequests.insert(
 		entity,
@@ -57,6 +59,10 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 
 	registry.healthValues.emplace(entity);
 	registry.collidePlayers.emplace(entity);
+	Weapon& weapon = registry.weapons.emplace(entity);
+	weapon.damage = 15.f;
+	weapon.angle_offset = M_PI+M_PI/2;
+	weapon.bullet_speed = 1000.f;
 
 	Enemy& new_enemy = registry.enemies.emplace(entity);
 	new_enemy.type = ENEMY_ID::BOSS;
@@ -65,6 +71,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = BACTERIOPHAGE_TEXTURE_SIZE * 0.8f;
+	transform.angle_offset = M_PI / 2;
 
 	// Add to render_request
 	registry.renderRequests.insert(
@@ -301,9 +308,8 @@ Entity createHealthbar(vec2 position, vec2 scale) {
 }
 
 // Can be used for either player or enemy
-Entity createBullet(Entity shooter, vec2 scale, vec4 color,vec2 offset, float angleoffset) {
+Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 	assert(registry.transforms.has(shooter));
-
 
 	// Create bullet's components
 	auto bullet_entity = Entity();
@@ -314,13 +320,14 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color,vec2 offset, float an
 
 	// Set initial position and velocity
 	Transform& shooter_transform = registry.transforms.get(shooter);
+	Weapon& weapon = registry.weapons.get(shooter);
 	bullet_transform.position = {
-		shooter_transform.position.x + offset.x * cos(shooter_transform.angle),
-		shooter_transform.position.y + offset.y * sin(shooter_transform.angle)
+		shooter_transform.position.x + weapon.offset.x * cos(shooter_transform.angle),
+		shooter_transform.position.y + weapon.offset.y * sin(shooter_transform.angle)
 	};
 	bullet_transform.scale = scale;
 	bullet_transform.angle = 0.0;
-	bullet_motion.velocity = { cos(shooter_transform.angle - angleoffset) * 500, sin(shooter_transform.angle - angleoffset) * 500 };
+	bullet_motion.velocity = { cos(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed, sin(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed };
 
 	if (registry.collideEnemies.has(shooter)) {
 		registry.collideEnemies.emplace(bullet_entity);
