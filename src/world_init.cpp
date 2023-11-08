@@ -259,7 +259,6 @@ Entity createHealthbar(vec2 position, vec2 scale) {
 // Can be used for either player or enemy
 Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 	assert(registry.transforms.has(shooter));
-
 	// Create bullet's components
 	auto bullet_entity = Entity();
 	registry.weapons.emplace(bullet_entity);
@@ -286,4 +285,10 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 			RENDER_ORDER::OBJECTS_BK });
 
 	return bullet_entity;
+}
+
+Entity createCamera(vec2 pos) {
+	Entity camera = Entity();
+	registry.camera.insert(camera, { pos });
+	return camera;
 }

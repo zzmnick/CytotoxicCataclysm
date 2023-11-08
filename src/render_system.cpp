@@ -314,11 +314,11 @@ mat3 RenderSystem::createProjectionMatrix()
 mat3 RenderSystem::createViewMatrix()
 {
 	offset = vec2(0.f, 0.f);
+	
+	assert(registry.camera.size() == 1);
+	vec2 cameraPos = registry.camera.components[0].position;
+	offset.x = -cameraPos.x;
+	offset.y = cameraPos.y;
 
-	if (registry.transforms.has(player)) {
-		Transform& transform = registry.transforms.get(player);
-		offset.x = -transform.position.x;
-		offset.y = transform.position.y;
-	}
 	return { {1.f, 0.f, 0.f}, {0.f, -1.f, 0.f}, {offset.x, offset.y, 1.f} };
 }

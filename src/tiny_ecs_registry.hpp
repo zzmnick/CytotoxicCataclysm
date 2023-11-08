@@ -28,6 +28,7 @@ public:
 	ComponentContainer<Invincibility> invincibility;
 	ComponentContainer<Dash> dashes;
 	ComponentContainer<Animation> animations;
+	ComponentContainer<Camera> camera;
 	
 
 	// constructor that adds all containers for looping over them

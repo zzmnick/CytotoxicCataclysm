@@ -16,7 +16,6 @@ vec2 mouse;
 const float SPAWN_RANGE = MAP_RADIUS *0.6f; // Example value; adjust as needed
 const int MAX_RED_ENEMIES = 10; // Example value; adjust as needed
 const int MAX_GREEN_ENEMIES = 5; // Example value; adjust as needed
-const float SCREEN_RADIUS = sqrtf(CONTENT_WIDTH_PX * CONTENT_WIDTH_PX + CONTENT_HEIGHT_PX * CONTENT_HEIGHT_PX) / 2.f; // Half of screen diagonal
 const float ENEMY_SPAWN_PADDING = 50.f; // Padding to ensure off-screen spawn
 float enemy_spawn_cooldown = 5.f;
 const float INDIVIDUAL_SPAWN_INTERVAL = 1.0f;
@@ -189,6 +188,7 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	// Create world entities that don't reset
 	createRandomRegions(NUM_REGIONS);
 	healthbar = createHealthbar({ -CONTENT_WIDTH_PX * 0.35, -CONTENT_HEIGHT_PX * 0.45 }, STATUSBAR_SCALE);
+	createCamera({ 0.f, 0.f });
 
 	// Set all states to default
 	restart_game();
@@ -421,6 +421,10 @@ void WorldSystem::step_enemySpawn(float elapsed_ms) {
     }
 }
 
+void WorldSystem::update_camera() {
+	registry.camera.components[0].position = registry.transforms.get(player).position;
+}
+
 void WorldSystem::remove_garbage() {
 	Transform player_transform = registry.transforms.get(player);
 	vec2 player_pos = player_transform.position;
@@ -456,6 +460,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	step_deathTimer(screen, elapsed_ms_since_last_update);
 	
 	if (isPaused) return false;
+
 	/*************************[ gameplay ]*************************/
 	// Code below this line will happen only if not paused
 

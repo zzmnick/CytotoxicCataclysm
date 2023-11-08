@@ -203,6 +203,10 @@ struct Player
 
 };
 
+struct Camera {
+	vec2 position;
+};
+
 // Enemy component
 struct Enemy {
 	ENEMY_ID type;

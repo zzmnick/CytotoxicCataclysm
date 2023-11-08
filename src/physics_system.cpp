@@ -203,6 +203,13 @@ void step_movement(float elapsed_ms) {
 	}
 }
 
+bool is_outside_screen(vec2 entityPos) {
+	assert(registry.camera.size() == 1);
+	vec2 camPos = registry.camera.components[0].position;
+
+	return length(entityPos - camPos) > SCREEN_RADIUS * 1.5;
+}
+
 // Check collision for all entities with Motion component
 void check_collision() {
 	auto& motion_container = registry.motions;
@@ -213,12 +220,33 @@ void check_collision() {
 		assert(registry.transforms.has(entity_i));
 		Transform& transform_i = registry.transforms.get(entity_i);
 
+		// Check for collisions with the map boundary
+		if (collides_with_boundary(transform_i)) {
+			if (registry.weapons.has(entity_i)) {
+				registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::BULLET_WITH_BOUNDARY);
+			}
+			else {
+				registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::WITH_BOUNDARY);
+			}
+		}
+
+		// skip if outside screen after checking boundary
+		if (is_outside_screen(transform_i.position)) {
+			continue;
+		}
+
 		// note starting j at i+1 to compare all (i,j) pairs only once (and to not compare with itself)
 		for (uint j = i + 1; j < motion_container.components.size(); j++)
 		{
 			Entity entity_j = motion_container.entities[j];
 			assert(registry.transforms.has(entity_j));
 			Transform& transform_j = registry.transforms.get(entity_j);
+
+			// skip if outside screen
+			if (is_outside_screen(transform_j.position)) {
+				continue;
+			}
+
 			if (registry.meshPtrs.has(entity_i)) {
 				if (collides_with_mesh(registry.meshPtrs.get(entity_i), transform_i, transform_j)) {
 					collisionhelper(entity_i, entity_j);
@@ -238,16 +266,6 @@ void check_collision() {
 					collisionhelper(entity_i, entity_j);
 					collisionhelper(entity_j, entity_i);
 				}
-			}
-		}
-
-		// Check for collisions with the map boundary
-		if (collides_with_boundary(transform_i)) {
-			if (registry.weapons.has(entity_i)) {
-				registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::BULLET_WITH_BOUNDARY);
-			}
-			else {
-				registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::WITH_BOUNDARY);
 			}
 		}
 	}

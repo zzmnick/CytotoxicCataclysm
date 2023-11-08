@@ -34,6 +34,9 @@ public:
 	// Steps the game ahead by ms milliseconds
 	bool step(float elapsed_ms);
 
+
+	void update_camera();
+
 	// Check for collisions
 	void resolve_collisions();
 
