@@ -21,6 +21,8 @@ Entity createPlayer(vec2 pos);
 Entity createRedEnemy(vec2 pos);
 Entity createGreenEnemy(vec2 pos);
 Entity createBoss(RenderSystem* renderer, vec2 pos);
+//dashing
+Entity createDashing(Entity& playerEntity);
 
 /*************************[ environment ]*************************/
 // the random regions

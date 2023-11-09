@@ -692,14 +692,33 @@ void WorldSystem::control_movement(float elapsed_ms) {
 	if ((!(keys_pressed[GLFW_KEY_D] || keys_pressed[GLFW_KEY_A])) || (keys_pressed[GLFW_KEY_D] && keys_pressed[GLFW_KEY_A])) {
 		playermovement.velocity.x *= pow(playermovement.deceleration_unit, elapsed_ms);
 	}
-
+	
+	Entity& dashingAnimationEntity = getPlayerBelonging(PLAYER_BELONGING_ID::DASHING);
 	float magnitude = length(playermovement.velocity);
 	//If player is dashing then it can go over the max velocity
 	if (playerDash.active_dash_ms <= 0) {
 		if (magnitude > playermovement.max_velocity || magnitude < -playermovement.max_velocity) {
 			playermovement.velocity *= (playermovement.max_velocity / magnitude);
 		}
+		
+		//make dashing animation invisible
+		vec4& color = registry.colors.get(dashingAnimationEntity);
+		color = no_color;
 	}
+	else {
+		vec4& color = registry.colors.get(dashingAnimationEntity);
+		color = dashing_default_color;
+	}
+
+	
+}
+
+Entity& WorldSystem::getPlayerBelonging(PLAYER_BELONGING_ID id) {
+	for (uint i = 0; i < registry.playerBelongings.size(); i++) {
+		PlayerBelonging& pb = registry.playerBelongings.components[i];
+		if(pb.id == id) return registry.playerBelongings.entities[i];
+	}
+	return player;
 }
 
 void WorldSystem::control_action() {
@@ -758,6 +777,7 @@ void WorldSystem::player_dash() {
 		// If player is barely moving, dash in mouse direction
 		float alignment = -0.70f; // player texture is tilted
 		float playerAngle = registry.transforms.get(player).angle + alignment;
+
 		dashDirection = normalize(vec2(cos(playerAngle), sin(playerAngle)));
 	}
 	else {

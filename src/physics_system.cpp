@@ -185,7 +185,13 @@ void step_movement(float elapsed_ms) {
 		Entity entity = motion_container.entities[i];
 		assert(registry.transforms.has(entity));
 		Transform& transform = registry.transforms.get(entity);
+		
 		Motion& motion = motion_container.components[i];
+		if (registry.playerBelongings.has(entity)) {//can be used to update the weapons as well
+			Entity playerEntity = registry.players.entities[0];
+			motion.velocity = registry.motions.get(playerEntity).velocity;
+			transform.angle = atan2(motion.velocity.y, motion.velocity.x);
+		}
 		float step_seconds = elapsed_ms / 1000.f;
 		transform.position += motion.velocity * step_seconds;
 

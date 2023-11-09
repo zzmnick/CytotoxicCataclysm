@@ -44,6 +44,7 @@ class RenderSystem {
 		textures_path("green_enemy_dying.png"),
 		textures_path("immunity_blink.png"),
 		textures_path("bacteriophage.png"),
+		textures_path("dashing.png"),
 
 		// Background
 		textures_path("background/nervous_bg.png"),
@@ -116,6 +117,7 @@ public:
 	static void animationSys_switchAnimation(Entity& entity, 
 		ANIMATION_FRAME_COUNT animationType, 
 		int update_period_ms);
+	void initAnimation_dashing();
 	
 private:
 	Entity player; // Keep reference to player entity

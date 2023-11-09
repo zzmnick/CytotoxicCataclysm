@@ -28,6 +28,7 @@ public:
 	ComponentContainer<Invincibility> invincibility;
 	ComponentContainer<Dash> dashes;
 	ComponentContainer<Animation> animations;
+	ComponentContainer<PlayerBelonging> playerBelongings; 
 	ComponentContainer<Camera> camera;
 	
 
@@ -52,6 +53,7 @@ public:
 		registry_list.push_back(&invincibility);
 		registry_list.push_back(&animations);
 		registry_list.push_back(&dashes);
+		registry_list.push_back(&playerBelongings);
 
 	}
 

@@ -102,4 +102,6 @@ private:
 	int getMaxEnemiesForType(ENEMY_ID type);
 
 	void remove_garbage();
+
+	Entity& getPlayerBelonging(PLAYER_BELONGING_ID id);
 };

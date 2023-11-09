@@ -64,3 +64,5 @@ const float DEATH_EFFECT_DURATION = 600.0;
 const float DEATH_EFFECT_DURATION_ENEMY = 400.0;
 const float ATTACK_DELAY = 300.0;
 const float play_animation_threshold = 40.0f;
+const vec4 dashing_default_color = vec4(1, 100, 10, 1.f);
+const vec4 no_color = vec4(0, 0, 0, 0);

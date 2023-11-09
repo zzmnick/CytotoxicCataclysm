@@ -38,8 +38,36 @@ Entity createPlayer(vec2 pos)
 
 	// Add color for player
 	registry.colors.insert(entity, { 1.f,1.f,1.f,1.f });
-
+	createDashing(entity);
 	return entity;
+}
+
+Entity createDashing(Entity& playerEntity) {
+	auto placeHolder = Entity();
+	PlayerBelonging& pb = registry.playerBelongings.emplace(placeHolder);
+	pb.id = PLAYER_BELONGING_ID::DASHING;
+	registry.renderRequests.insert(
+		placeHolder,
+		{ TEXTURE_ASSET_ID::DASHING,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITESHEET_DASHING,
+			RENDER_ORDER::OBJECTS_BK });
+
+	Animation& animation = registry.animations.emplace(placeHolder);
+	animation.total_frame = (int)ANIMATION_FRAME_COUNT::DASHING;
+	animation.update_period_ms = 50;
+
+	//same as player's
+	Motion& playerMotion_copy = registry.motions.get(playerEntity);
+	registry.motions.insert(placeHolder, playerMotion_copy);
+
+	Transform& playerTrans_copy = registry.transforms.get(playerEntity);
+	registry.transforms.insert(placeHolder, playerTrans_copy);
+
+	vec4& color = registry.colors.emplace(placeHolder);
+	color = dashing_default_color;
+
+	return placeHolder;
 }
 
 Entity createBoss(RenderSystem* renderer, vec2 pos) {
