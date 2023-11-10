@@ -91,7 +91,8 @@ private:
 
 	// Step different sub-systems
 	void step_deathTimer(ScreenState& screen, float elapsed_ms);
-	void step_health(float elapsed_ms);
+	void step_health();
+	void step_healthbar(float elapsed_ms);
 	void step_invincibility(float elapsed_ms);
 	void step_attack(float elapsed_ms);
 	void step_dash(float elapsed_ms);

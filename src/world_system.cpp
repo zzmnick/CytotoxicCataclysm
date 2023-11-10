@@ -186,7 +186,7 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	fprintf(stderr, "Loaded music\n");
 
 	// Create world entities that don't reset
-	createRandomRegions(NUM_REGIONS);
+	createRandomRegions(NUM_REGIONS, rng);
 	healthbar = createHealthbar({ -CONTENT_WIDTH_PX * 0.35, -CONTENT_HEIGHT_PX * 0.45 }, STATUSBAR_SCALE);
 	createCamera({ 0.f, 0.f });
 
@@ -219,7 +219,7 @@ void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
 				screen.screen_darken_factor = 1 - timer.timer_ms / DEATH_EFFECT_DURATION;
 			}
 		}
-		else {
+		else if (registry.enemies.has(entity)) {
 			if (timer.timer_ms <= 0) {
 				// Enemy is dead -> remove
 				ENEMY_ID type = registry.enemies.get(entity).type;
@@ -230,80 +230,71 @@ void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
 	}
 }
 
-void WorldSystem::step_health(float elapsed_ms) {
+void WorldSystem::step_health() {
 	for (uint i = 0; i < registry.healthValues.components.size(); i++) {
 		Health& health = registry.healthValues.components[i];
 		Entity entity = registry.healthValues.entities[i];
-		if (health.previous_health_pct != health.health_pct) {
-			health.timer_ms -= elapsed_ms;
-			if (health.timer_ms <= 0) {
-				health.previous_health_pct = health.health_pct;
-				health.timer_ms = HEALTH_BAR_UPDATE_TIME_SLAP;
+
+		if (health.health <= 0 && !registry.deathTimers.has(entity)) {
+			DeathTimer& dt = registry.deathTimers.emplace(entity);
+			int buffer = 20; // to fix timing between animation and death
+
+			if (entity == player) {
+				dt.timer_ms = DEATH_EFFECT_DURATION;
+
+				Mix_PlayChannel(chunkToChannel["player_death"], soundChunks["player_death"], 0);
+				
+				RenderSystem::animationSys_switchAnimation(player, 
+					ANIMATION_FRAME_COUNT::IMMUNITY_DYING, 
+					static_cast<int>(ceil((DEATH_EFFECT_DURATION+buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::IMMUNITY_DYING))));			
 			}
-			if (health.previous_health_pct <= 0) {
-				if (!registry.deathTimers.has(entity)) {
-					int buffer = 20; // buffer to fix miss-timing between animation and death
-					if (entity == player) {
-						//isPaused = true;
-						Mix_PlayChannel(chunkToChannel["player_death"], soundChunks["player_death"], 0);
-						/////////////////////////////
-						RenderSystem::animationSys_switchAnimation(player, 
-							ANIMATION_FRAME_COUNT::IMMUNITY_DYING, 
-							static_cast<int>(ceil((DEATH_EFFECT_DURATION+buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::IMMUNITY_DYING))));
-						
-						//temporary: since enemies cannot be killed at the moment
-						for (int j = 0; j < registry.enemies.entities.size(); j++) {
-							Entity& enemyEntity = registry.enemies.entities[j];
-							Enemy& enemy = registry.enemies.components[j];
-							if (enemy.type == ENEMY_ID::GREEN) {
-								RenderSystem::animationSys_switchAnimation(enemyEntity,
-									ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
-									static_cast<int>(ceil((DEATH_EFFECT_DURATION + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING)))
-								);
+			else if (registry.enemies.has(entity)) {
+				// Immobilize enemy
+				assert(registry.motions.has(entity));
+				registry.motions.remove(entity);
 
-							}
-							
-						}
-						registry.deathTimers.emplace(entity);
-					}
-					else {
-						// Immobilize enemy
-						assert(registry.motions.has(entity));
-						registry.motions.remove(entity);
-						Mix_PlayChannel(chunkToChannel["enemy_death"], soundChunks["enemy_death"], 0);
+				dt.timer_ms = DEATH_EFFECT_DURATION_ENEMY;
 
-						Enemy& enemy = registry.enemies.get(entity);
-						if (enemy.type == ENEMY_ID::GREEN) {
-							RenderSystem::animationSys_switchAnimation(entity, 
-								ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
-								static_cast<int>(ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / (1.f*(int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING)))
-							);
+				Mix_PlayChannel(chunkToChannel["enemy_death"], soundChunks["enemy_death"], 0);
 
-						}
-						DeathTimer& dt = registry.deathTimers.emplace(entity);
-						dt.timer_ms = DEATH_EFFECT_DURATION_ENEMY;
-					}
+				Enemy& enemy = registry.enemies.get(entity);
+				if (enemy.type == ENEMY_ID::GREEN) {
+					RenderSystem::animationSys_switchAnimation(entity, 
+						ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
+						static_cast<int>(ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING))));
 				}
 			}
 		}
-		if (entity == player) {
-			// Interpolate to get value of displayed healthbar
-			float healthbar_scale = 0.f;
-			float normalized_time = health.timer_ms / HEALTH_BAR_UPDATE_TIME_SLAP;
-			float new_health_pct = health.previous_health_pct * normalized_time + health.health_pct * (1.f - normalized_time);
-			healthbar_scale = max(0.f, new_health_pct / 100.f);
+	}
+}
 
-			// Update the scale of the healthbar
-			assert(registry.transforms.has(healthbar));
-			Transform& transform = registry.transforms.get(healthbar);
-			transform.scale.x = HEALTHBAR_TEXTURE_SIZE.x * 0.72f * STATUSBAR_SCALE.x * healthbar_scale;
+void WorldSystem::step_healthbar(float elapsed_ms) {
+	PlayerHealthbar& bar = registry.healthbar.get(healthbar);
+	float current_health = registry.healthValues.get(player).health;
 
-			// Update the color of the healthbar
-			assert(registry.colors.has(healthbar));
-			vec4& color = registry.colors.get(healthbar);
-			color.g = healthbar_scale;
-			color.r = 1.f - healthbar_scale;
+	if (bar.previous_health != current_health) {
+		bar.timer_ms -= elapsed_ms;
+		if (bar.timer_ms <= 0) {
+			bar.previous_health = current_health;
+			bar.timer_ms = HEALTH_BAR_UPDATE_TIME_SLAP;
 		}
+
+		// Interpolate to get value of displayed healthbar
+		float healthbar_scale = 0.f;
+		float normalized_time = bar.timer_ms / HEALTH_BAR_UPDATE_TIME_SLAP;
+		float new_health_pct = bar.previous_health * normalized_time + current_health * (1.f - normalized_time);
+		healthbar_scale = max(0.f, new_health_pct / 100.f);
+
+		// Update the scale of the healthbar
+		assert(registry.transforms.has(healthbar));
+		Transform& transform = registry.transforms.get(healthbar);
+		transform.scale.x = HEALTHBAR_TEXTURE_SIZE.x * 0.72f * STATUSBAR_SCALE.x * healthbar_scale;
+
+		// Update the color of the healthbar
+		assert(registry.colors.has(healthbar));
+		vec4& color = registry.colors.get(healthbar);
+		color.g = healthbar_scale;
+		color.r = 1.f - healthbar_scale;
 	}
 }
 
@@ -465,7 +456,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// Code below this line will happen only if not paused
 
 
-	step_health(elapsed_ms_since_last_update);
+	step_health();
+	step_healthbar(elapsed_ms_since_last_update);
 	step_invincibility(elapsed_ms_since_last_update);
 	step_attack(elapsed_ms_since_last_update);
 	step_dash(elapsed_ms_since_last_update);
@@ -556,7 +548,7 @@ void WorldSystem::resolve_collisions() {
 
 			// Update player health
 			Health& playerHealth = registry.healthValues.get(entity);
-			playerHealth.health_pct -= 10.0;
+			playerHealth.health -= 10.0;
 
 			Mix_PlayChannel(chunkToChannel["player_hit"], soundChunks["player_hit"], 0);
 		}
@@ -572,17 +564,13 @@ void WorldSystem::resolve_collisions() {
 				enemy_motion.velocity = enemy_motion.max_velocity * knockback_direction;
 				enemy_motion.allow_accel = false;
 			}
-			garbage.push_back(entity);
 
-			// Update enemy health
+			// Deal damage to enemy based on weapon damage
 			Health& enemyHealth = registry.healthValues.get(enemy_entity);
-			if (enemyAttrib.type == ENEMY_ID::BOSS) {
-				enemyHealth.health_pct -= 2.0;
-			} else {
-				enemyHealth.health_pct -= 10.0;
-			}
+			enemyHealth.health -= registry.weapons.get(entity).damage;
 
 			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
+			garbage.push_back(entity);
 		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_BOUNDARY) {
 			garbage.push_back(entity);
@@ -631,7 +619,7 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 	// temporary: test health bar. decrease by 10%
 	if (action == GLFW_RELEASE && key == GLFW_KEY_H) {
 		Health& playerHealth = registry.healthValues.get(player);
-		playerHealth.health_pct -= 1.0;
+		playerHealth.health -= 1.0;
 	}
 
 	if (action == GLFW_PRESS) {

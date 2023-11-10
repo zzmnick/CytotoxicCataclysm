@@ -4,6 +4,9 @@
 #include "tiny_ecs.hpp"
 #include "render_system.hpp"
 
+#include <random>
+
+
 // These are hard coded to the dimensions of the entity texture
 const vec2 IMMUNITY_TEXTURE_SIZE = { 30.f, 30.f };
 const vec2 RED_ENEMY_TEXTURE_SIZE = { 41.f, 40.f };
@@ -26,7 +29,7 @@ Entity createDashing(Entity& playerEntity);
 
 /*************************[ environment ]*************************/
 // the random regions
-void createRandomRegions(size_t num_regions);
+void createRandomRegions(size_t num_regions, std::default_random_engine rng);
 Entity createBullet(Entity shooter, vec2 scale, vec4 color);
 
 /*************************[ UI ]*************************/

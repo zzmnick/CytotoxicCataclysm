@@ -33,7 +33,7 @@ Entity createPlayer(vec2 pos)
 	animation.total_frame = (int)ANIMATION_FRAME_COUNT::IMMUNITY_BLINKING;
 	animation.update_period_ms = 120;
 
-	// Creat a brand new health with 100% health value
+	// Create a brand new health with 100 health value
 	registry.healthValues.emplace(entity);
 
 	// Add color for player
@@ -79,13 +79,16 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 	Enemy& new_enemy = registry.enemies.emplace(entity);
 	Transform& transform = registry.transforms.emplace(entity);
 	Motion& motion = registry.motions.emplace(entity);
-	registry.healthValues.emplace(entity);
+	Health& health = registry.healthValues.emplace(entity);
+
 	// Setting initial components values
 	new_enemy.type = ENEMY_ID::BOSS;
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = BACTERIOPHAGE_TEXTURE_SIZE * 0.8f;
 	motion.max_velocity = 250.f; // TODO: Dummy boss for now, change this later
+	health.health = 500.f;
+
 	// Add to render_request
 	registry.renderRequests.insert(
 		entity,
@@ -113,7 +116,7 @@ Entity createRedEnemy(vec2 pos) {
 	transform.angle = M_PI;
 	transform.scale = RED_ENEMY_TEXTURE_SIZE * 2.f;
 	motion.max_velocity = 400;
-	health.previous_health_pct = 200.0;
+	health.health = 100.0;
 
 	registry.renderRequests.insert(
 		entity,
@@ -140,9 +143,9 @@ Entity createGreenEnemy(vec2 pos) {
 	transform.angle = M_PI;
 	transform.scale = GREEN_ENEMY_TEXTURE_SIZE * 4.f;
 	motion.max_velocity = 200;
-	health.previous_health_pct = 200.0;
+	health.health = 200.0;
 
-	// Add tp render_request
+	// Add to render_request
 	registry.renderRequests.insert(
 		entity,
 		{ TEXTURE_ASSET_ID::GREEN_ENEMY_MOVING,
@@ -155,12 +158,9 @@ Entity createGreenEnemy(vec2 pos) {
 	return entity;
 }
 
-void createRandomRegions(size_t num_regions) {
+void createRandomRegions(size_t num_regions, std::default_random_engine rng) {
 	assert(region_theme_count >= num_regions);
 	assert(region_goal_count >= num_regions);
-
-	// C++ random number generator
-	std::default_random_engine rng = std::default_random_engine(std::random_device()());
 
 	std::vector<REGION_THEME_ID> unused_themes;
 	for (uint i = 0; i < region_theme_count; i++) {
@@ -257,6 +257,8 @@ Entity createHealthbar(vec2 position, vec2 scale) {
 	Entity bar = Entity();
 	Entity frame = Entity();
 
+	registry.healthbar.emplace(bar);
+
 	// Add the components to the renderRequest in order
 	registry.renderRequests.insert(
 		bar,
@@ -271,7 +273,7 @@ Entity createHealthbar(vec2 position, vec2 scale) {
 			GEOMETRY_BUFFER_ID::SPRITE,
 			RENDER_ORDER::UI });
 
-	// Create bullet_transform for bar and frame
+	// Create transform for bar and frame
 	vec2 frameScale = HEALTHBAR_TEXTURE_SIZE * scale;
 	registry.transforms.insert(frame, { position, frameScale, 0.f, true });
 	vec2 barPosition = position - vec2(frameScale.x * 0.25, 0.f);

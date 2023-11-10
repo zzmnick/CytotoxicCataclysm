@@ -24,6 +24,7 @@ public:
 	ComponentContainer<vec4> colors;
 	ComponentContainer<Region> regions;
 	ComponentContainer<Health> healthValues;
+	ComponentContainer<PlayerHealthbar> healthbar;
 	ComponentContainer<Weapon> weapons;
 	ComponentContainer<Invincibility> invincibility;
 	ComponentContainer<Dash> dashes;

@@ -333,8 +333,11 @@ struct Region {
 };
 
 struct Health {
-	float health_pct = 100.f;
-	float previous_health_pct = 100.f;
+	float health = 100.f;
+};
+
+struct PlayerHealthbar {
+	float previous_health = 100.f;
 	float timer_ms = HEALTH_BAR_UPDATE_TIME_SLAP;
 };
 
