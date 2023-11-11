@@ -69,11 +69,11 @@ void AISystem::enemy_shoot(float elapsed_ms) {
 			if (enemyWeapon.attack_timer <= 0) {
 				Enemy& enemy = registry.enemies.get(entity);
 				if (enemy.type == ENEMY_ID::BOSS) {
-					createBullet(entity, { 20.f, 20.f }, { 1.f, 0.58f, 0.f, 1.f });
+					createBullet(entity, { 20.f, 20.f }, { 0.f, 0.992f, 1.f, 1.f });
 
 				}
 				else {
-					createBullet(entity, { 10.f, 10.f }, { 0.f, .98f, 1.f, 1.f });
+					createBullet(entity, { 13.f, 13.f }, { 0.718f, 1.f, 0.f, 1.f });
 				}
 				enemyWeapon.attack_timer = enemyWeapon.attack_delay;
 			}
