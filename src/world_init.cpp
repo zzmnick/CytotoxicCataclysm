@@ -86,6 +86,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 	Health& health = registry.healthValues.emplace(entity);
 
 	// Setting initial components values
+	Enemy& new_enemy = registry.enemies.emplace(entity);
 	new_enemy.type = ENEMY_ID::BOSS;
 
 	Transform& transform = registry.transforms.emplace(entity);
@@ -95,6 +96,11 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 	motion.max_velocity = 250.f; // TODO: Dummy boss for now, change this later
 	health.health = 500.f;
 	transform.angle_offset = M_PI / 2;
+
+	Weapon& weapon = registry.weapons.emplace(entity);
+	weapon.damage = 15.f;
+	weapon.angle_offset = M_PI + M_PI / 2;
+	weapon.bullet_speed = 1000.f;
 
 	// Add to render_request
 	registry.renderRequests.insert(
@@ -120,7 +126,8 @@ Entity createRedEnemy(vec2 pos) {
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 400;
-	health.previous_health_pct = 200.0;
+	Health& health = registry.healthValues.emplace(entity);
+	health.health = 200.0;
 
 
 	registry.renderRequests.insert(
@@ -147,6 +154,7 @@ Entity createGreenEnemy(vec2 pos) {
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 200;
+	Health& health = registry.healthValues.emplace(entity);
 	health.health = 200.0;
 
 	// Add to render_request
@@ -186,7 +194,7 @@ Entity createYellowEnemy(vec2 pos) {
 	motion.max_velocity = 0.0f;
 
 	Health& health = registry.healthValues.emplace(entity);
-	health.previous_health_pct = 50.0;
+	health.health = 50.0;
 
 	// Add tp render_request
 	registry.renderRequests.insert(
@@ -414,6 +422,7 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 	// Set initial position and velocity
 	Transform& shooter_transform = registry.transforms.get(shooter);
 	Weapon& weapon = registry.weapons.get(shooter);
+
 	bullet_transform.position = {
 		shooter_transform.position.x + weapon.offset.x * cos(shooter_transform.angle),
 		shooter_transform.position.y + weapon.offset.y * sin(shooter_transform.angle)

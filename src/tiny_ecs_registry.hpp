@@ -31,7 +31,6 @@ public:
 	ComponentContainer<Dash> dashes;
 	ComponentContainer<Animation> animations;
 	ComponentContainer<NoRotate> noRotates;
-	ComponentContainer<Weapon> weapons;
 	ComponentContainer<CollidePlayer> collidePlayers;
 	ComponentContainer<CollideEnemy> collideEnemies;
 	ComponentContainer<PlayerBelonging> playerBelongings;

@@ -17,7 +17,6 @@ const float SPAWN_RANGE = MAP_RADIUS *0.6f; // Example value; adjust as needed
 const int MAX_RED_ENEMIES = 10; // Example value; adjust as needed
 const int MAX_GREEN_ENEMIES = 5; // Example value; adjust as needed
 const int MAX_YELLOW_ENEMIES = 3;
-const float SCREEN_RADIUS = sqrtf(CONTENT_WIDTH_PX * CONTENT_WIDTH_PX + CONTENT_HEIGHT_PX * CONTENT_HEIGHT_PX) / 2.f; // Half of screen diagonal
 const float ENEMY_SPAWN_PADDING = 50.f; // Padding to ensure off-screen spawn
 float enemy_spawn_cooldown = 5.f;
 const float INDIVIDUAL_SPAWN_INTERVAL = 1.0f;
@@ -583,7 +582,7 @@ void WorldSystem::resolve_collisions() {
 
 			// Deal damage to enemy based on weapon damage
 			Health& enemyHealth = registry.healthValues.get(enemy_entity);
-			enemyHealth.health -= registry.weapons.get(entity).damage;
+			enemyHealth.health -= registry.projectiles.get(entity).damage;
 
 			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
 			garbage.push_back(entity);
@@ -593,7 +592,7 @@ void WorldSystem::resolve_collisions() {
 
 			// Deal damage to enemy based on weapon damage
 			Health& health = registry.healthValues.get(cyst);
-			health.health -= registry.weapons.get(entity).damage;
+			health.health -= registry.projectiles.get(entity).damage;
 
 			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
 			garbage.push_back(entity);
@@ -621,7 +620,7 @@ void WorldSystem::resolve_collisions() {
 
 			// Update player health
 			Health& playerHealth = registry.healthValues.get(player);
-			playerHealth.health_pct -= projectile.damage;
+			playerHealth.health -= projectile.damage;
 
 
 			Mix_PlayChannel(chunkToChannel["player_hit"], soundChunks["player_hit"], 0);
