@@ -38,11 +38,13 @@ class RenderSystem {
 		textures_path("green_enemy.png"),
 		textures_path("healthbarframe.png"),
 		textures_path("gun.png"),
+		textures_path("cyst.png"),
 		textures_path("immunity_moving.png"),
 		textures_path("immunity_dying.png"),
 		textures_path("green_enemy_moving.png"),
 		textures_path("green_enemy_dying.png"),
 		textures_path("immunity_blink.png"),
+		textures_path("cyst_animation.png"),
 		textures_path("bacteriophage.png"),
 		textures_path("dashing.png"),
 
@@ -109,6 +111,9 @@ public:
 
 	mat3 createViewMatrix();
 	vec2 offset;
+
+	bool is_outside_screen(vec2 entityPos);
+
 
 	//animation system
 	void initAnimation(GEOMETRY_BUFFER_ID gid, ANIMATION_FRAME_COUNT fcount);

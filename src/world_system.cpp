@@ -175,7 +175,6 @@ GLFWwindow* WorldSystem::create_window() {
 	Mix_VolumeChunk(soundChunks["player_dash"], 45);
 	Mix_VolumeChunk(soundChunks["enemy_hit"], 45);
 
-
 	return window;
 }
 
@@ -219,13 +218,15 @@ void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
 				screen.screen_darken_factor = 1 - timer.timer_ms / DEATH_EFFECT_DURATION;
 			}
 		}
-		else if (registry.enemies.has(entity)) {
-			if (timer.timer_ms <= 0) {
+		else if (timer.timer_ms <= 0) {
+			// Remove other entities (enemies, cysts, etc.)
+
+			if (registry.enemies.has(entity)) {
 				// Enemy is dead -> remove
 				ENEMY_ID type = registry.enemies.get(entity).type;
-    			enemyCounts[type]--;
-				registry.remove_all_components_of(entity);
+				enemyCounts[type]--;
 			}
+			registry.remove_all_components_of(entity);
 		}
 	}
 }
@@ -263,6 +264,14 @@ void WorldSystem::step_health() {
 						ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
 						static_cast<int>(ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING))));
 				}
+			}
+			else if (registry.cysts.has(entity)) {
+				dt.timer_ms = 100.f; // TODO set based on animation length
+
+				// Sound effect
+
+				// Animation
+
 			}
 		}
 	}
@@ -508,6 +517,7 @@ void WorldSystem::restart_game() {
 	// hardcode the boss position to upper right region, randomize later
 	Region boss_region = registry.regions.components[0];
 	createBoss(renderer, boss_region.interest_point);
+	createRandomCysts(rng);
 }
 
 // Compute collisions between entities
@@ -571,6 +581,24 @@ void WorldSystem::resolve_collisions() {
 
 			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
 			garbage.push_back(entity);
+		}
+		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_CYST) {
+			Entity cyst = collision.other_entity;
+
+			// Deal damage to enemy based on weapon damage
+			Health& health = registry.healthValues.get(cyst);
+			health.health -= registry.weapons.get(entity).damage;
+
+			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
+			garbage.push_back(entity);
+		}
+		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_CYST
+			&& !registry.invincibility.has(entity)) {
+			Entity cyst = collision.other_entity;
+			Transform& cyst_transform = registry.transforms.get(cyst);
+			vec2 knockback_direction = normalize(transform.position - cyst_transform.position);
+			motion.velocity = 150.f * knockback_direction;
+			allow_accel = false;
 		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_BOUNDARY) {
 			garbage.push_back(entity);

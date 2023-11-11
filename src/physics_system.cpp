@@ -161,11 +161,15 @@ void collisionhelper(Entity entity_1, Entity entity_2) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_PLAYER, entity_2);
 		} else if (registry.enemies.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_ENEMY, entity_2);
+		} else if (registry.cysts.has(entity_2)) {
+			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_CYST, entity_2);
 		}
 	// Player Collisions
 	} else if (registry.players.has(entity_1)) {
 		if (registry.enemies.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::PLAYER_WITH_ENEMY, entity_2);
+		} else if (registry.cysts.has(entity_2)) {
+			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::PLAYER_WITH_CYST, entity_2);
 		}
 	// Enemy Collisions
 	} else if (registry.enemies.has(entity_1)) {
@@ -209,11 +213,12 @@ void step_movement(float elapsed_ms) {
 	}
 }
 
+// duplicate of the one in render_system.cpp
 bool is_outside_screen(vec2 entityPos) {
 	assert(registry.camera.size() == 1);
 	vec2 camPos = registry.camera.components[0].position;
 
-	return length(entityPos - camPos) > SCREEN_RADIUS * 1.5;
+	return length(entityPos - camPos) > SCREEN_RADIUS * 1;
 }
 
 // Check collision for all entities with Motion component
@@ -227,7 +232,7 @@ void check_collision() {
 		Transform& transform_i = registry.transforms.get(entity_i);
 
 		// Check for collisions with the map boundary
-		if (collides_with_boundary(transform_i)) {
+		if (!registry.cysts.has(entity_i) && collides_with_boundary(transform_i)) {
 			if (registry.weapons.has(entity_i)) {
 				registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::BULLET_WITH_BOUNDARY);
 			}

@@ -31,6 +31,7 @@ public:
 	ComponentContainer<Animation> animations;
 	ComponentContainer<PlayerBelonging> playerBelongings; 
 	ComponentContainer<Camera> camera;
+	ComponentContainer<Cyst> cysts;
 	
 
 	// constructor that adds all containers for looping over them
@@ -54,8 +55,8 @@ public:
 		registry_list.push_back(&invincibility);
 		registry_list.push_back(&animations);
 		registry_list.push_back(&dashes);
+		registry_list.push_back(&cysts);
 		registry_list.push_back(&playerBelongings);
-
 	}
 
 	void clear_all_components() {

@@ -14,6 +14,7 @@ const vec2 GREEN_ENEMY_TEXTURE_SIZE = { 40.f, 40.f };
 const vec2 HEALTHBAR_TEXTURE_SIZE = { 530.f, 80.f };
 const vec2 BACTERIOPHAGE_TEXTURE_SIZE = { 750.f, 900.f };
 const vec2 DIALOG_TEXTURE_SIZE = { 1920.f, 1080.f };
+const vec2 CYST_TEXTURE_SIZE = { 23.f, -22.f };
 
 const vec2 STATUSBAR_SCALE = { 1.f, 1.f };
 
@@ -29,7 +30,9 @@ Entity createDashing(Entity& playerEntity);
 
 /*************************[ environment ]*************************/
 // the random regions
-void createRandomRegions(size_t num_regions, std::default_random_engine rng);
+void createRandomRegions(size_t num_regions, std::default_random_engine& rng);
+void createRandomCysts(std::default_random_engine& rng);
+void createCyst(vec2 pos);
 Entity createBullet(Entity shooter, vec2 scale, vec4 color);
 
 /*************************[ UI ]*************************/

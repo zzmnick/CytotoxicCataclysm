@@ -152,13 +152,14 @@ Entity createGreenEnemy(vec2 pos) {
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITESHEET_GREEN_ENEMY_MOVING,
 			RENDER_ORDER::OBJECTS_FR });
+
 	Animation& animation = registry.animations.emplace(entity);
 	animation.update_period_ms *= 2;
 	animation.total_frame = (int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_MOVING;
 	return entity;
 }
 
-void createRandomRegions(size_t num_regions, std::default_random_engine rng) {
+void createRandomRegions(size_t num_regions, std::default_random_engine& rng) {
 	assert(region_theme_count >= num_regions);
 	assert(region_goal_count >= num_regions);
 
@@ -214,7 +215,7 @@ void createRandomRegions(size_t num_regions, std::default_random_engine rng) {
 		);
 
 		// Calculate interest point for the region
-		float interest_distance = MAP_RADIUS * 0.6;  // 75% of MAP_RADIUS
+		float interest_distance = MAP_RADIUS * 0.6;
 		float center_angle = angle + (M_PI * 2 / num_regions) / 2; // Center of the angle span for the region
 		vec2 interest_point;
 		interest_point.x = interest_distance * cos(center_angle);
@@ -229,6 +230,81 @@ void createRandomRegions(size_t num_regions, std::default_random_engine rng) {
 		// Update angle
 		angle += (M_PI * 2 / num_regions);
 	}
+}
+
+void createRandomCysts(std::default_random_engine& rng) {
+	const float ANGLE = (M_PI * 2 / NUM_REGIONS);
+	const int TOTAL_CYSTS = 100;
+
+	const float LOWER_RADIUS = 0.18f * MAP_RADIUS;
+	const float UPPER_RADIUS = 0.98f * MAP_RADIUS;
+	const float MEAN_POINT   = 0.27f * MAP_RADIUS; // actual mean is approx = max_radius - mean_point
+
+	std::exponential_distribution<float> radius_distribution(1.f / MEAN_POINT);
+	std::uniform_real_distribution<float> angle_distribution(0.f, ANGLE);
+
+	std::vector<vec2> positions;
+	// generate cysts
+	for (int i = 0; i < registry.regions.components.size(); i++) {
+		for (int j = 0; j < TOTAL_CYSTS / registry.regions.components.size(); j++) {
+			// generate radius in the correct bounds
+			float radius;
+			do {
+				radius = MAP_RADIUS - radius_distribution(rng);
+			} while (radius > UPPER_RADIUS || radius < LOWER_RADIUS);
+
+			// generate angle
+			float angle = angle_distribution(rng) + ANGLE * i;
+
+			// calculate position and check closeness
+			vec2 pos = vec2(cos(angle), sin(angle)) * radius;
+			bool tooClose = false;
+			for (auto p : positions) {
+				if (distance(pos, p) < SCREEN_RADIUS / 2) {
+					tooClose = true;
+					break;
+				}
+			}
+			if (tooClose) {
+				--j;
+				continue;
+			}
+
+			// finally create cyst
+			createCyst(pos);
+			positions.push_back(pos);
+		}
+	}
+}
+
+void createCyst(vec2 pos) {
+	auto cyst_entity = Entity();
+	registry.cysts.emplace(cyst_entity);
+	registry.healthValues.insert(cyst_entity, {50.f});
+
+	// Motion component only needed for collision check, set all to 0
+	Motion& motion = registry.motions.emplace(cyst_entity);
+	motion.velocity = { 0.f, 0.f };
+	motion.max_velocity = 0.f;
+	motion.acceleration_unit = 0.f;
+	motion.deceleration_unit = 0.f;
+	motion.allow_accel = false;
+
+	Transform& transform = registry.transforms.emplace(cyst_entity);
+	transform.position = pos;
+	transform.scale = CYST_TEXTURE_SIZE * 3.f;
+
+	Animation& animation = registry.animations.emplace(cyst_entity);
+	animation.total_frame = (int)ANIMATION_FRAME_COUNT::CYST_SHINE;
+	animation.update_period_ms = 80;
+	animation.loop_interval = 1500.f;
+
+	registry.renderRequests.insert(
+		cyst_entity,
+		{ TEXTURE_ASSET_ID::CYST_SHINE,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITESHEET_CYST_SHINE,
+			RENDER_ORDER::OBJECTS_FR });
 }
 
 Entity createLine(vec2 position, vec2 scale) {

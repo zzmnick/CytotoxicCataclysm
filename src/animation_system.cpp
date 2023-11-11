@@ -58,15 +58,25 @@ void RenderSystem::animationSys_step(float elapsed_ms) {
     for (uint i = 0; i < registry.animations.components.size(); i++) {
         Animation& animation = registry.animations.components[i];
         
-        if(!animation.pauseAnimation){
+        if(!animation.pause_animation){
             animation.timer_ms += elapsed_ms;
-            animation.curr_frame = (int)(animation.timer_ms / animation.update_period_ms) % animation.total_frame;
+
+            if (animation.loop_interval > 0 && (int)(animation.timer_ms / animation.update_period_ms) >= animation.total_frame) {
+                animation.curr_frame = 0;
+                if (animation.timer_ms >= animation.loop_interval) {
+                    animation.timer_ms = 0.f;
+                }
+            }
+            else {
+                animation.curr_frame = (int)(animation.timer_ms / animation.update_period_ms) % animation.total_frame;
+            }
+
+
         }
         else {
             animation.timer_ms = 0;
             animation.curr_frame = 0;
         }
-        
     }
 }
 
@@ -84,9 +94,7 @@ void RenderSystem::animationSys_switchAnimation(Entity& entity,
         animation.update_period_ms = update_period_ms;
         animation.total_frame = (int)animationType;
         animation.curr_frame = 0;
-        animation.pauseAnimation = false;
+        animation.pause_animation = false;
         animation.timer_ms = 0.f;
-        
     }
-
 }
