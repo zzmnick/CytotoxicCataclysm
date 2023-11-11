@@ -214,6 +214,15 @@ void RenderSystem::drawToScreen()
 		nullptr); // one triangle = 3 vertices; nullptr indicates that there is
 	// no offset from the bound index buffer
 	gl_has_errors();
+
+}
+
+// helper function for view frustum culling
+bool RenderSystem::is_outside_screen(vec2 entityPos) {
+	assert(registry.camera.size() == 1);
+	vec2 camPos = registry.camera.components[0].position;
+	// check a radius a bit bigger than screen so we don't cull big objects too soon
+	return length(entityPos - camPos) > SCREEN_RADIUS * 1.2;
 }
 
 // Render our game world
@@ -261,6 +270,13 @@ void RenderSystem::draw()
 				RenderRequest& render_request = registry.renderRequests.components[i];
 				if (registry.transforms.has(entity)) {
 					Transform& transform = registry.transforms.get(entity);
+
+					// View frustum culling; ie. cull entities before vertex shader
+					// exclude on-screen entities, regions, and UI elements from culling
+					if (!registry.regions.has(entity) && !transform.is_screen_coord && is_outside_screen(transform.position)) {
+						continue;
+					}
+
 					// Transformation
 					Transformation transformation;
 					transformation.translate(transform.position);
@@ -271,10 +287,6 @@ void RenderSystem::draw()
 					transformation.scale(transform.scale);
 					// Note, its not very efficient to access elements indirectly via the entity
 					// albeit iterating through all Sprites in sequence. A good point to optimize
-
-					// ################# TODO #################
-					// can cull entities here if outside of camera
-					// if not it should still culll during fragment shader?
 
 					if (transform.is_screen_coord) {
 						drawEntity(entity, render_request, transformation.mat, projection_2D);
@@ -317,11 +329,11 @@ mat3 RenderSystem::createProjectionMatrix()
 mat3 RenderSystem::createViewMatrix()
 {
 	offset = vec2(0.f, 0.f);
+	
+	assert(registry.camera.size() == 1);
+	vec2 cameraPos = registry.camera.components[0].position;
+	offset.x = -cameraPos.x;
+	offset.y = cameraPos.y;
 
-	if (registry.transforms.has(player)) {
-		Transform& transform = registry.transforms.get(player);
-		offset.x = -transform.position.x;
-		offset.y = transform.position.y;
-	}
 	return { {1.f, 0.f, 0.f}, {0.f, -1.f, 0.f}, {offset.x, offset.y, 1.f} };
 }

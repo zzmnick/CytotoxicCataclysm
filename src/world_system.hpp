@@ -34,6 +34,9 @@ public:
 	// Steps the game ahead by ms milliseconds
 	bool step(float elapsed_ms);
 
+
+	void update_camera();
+
 	// Check for collisions
 	void resolve_collisions();
 
@@ -88,7 +91,8 @@ private:
 
 	// Step different sub-systems
 	void step_deathTimer(ScreenState& screen, float elapsed_ms);
-	void step_health(float elapsed_ms);
+	void step_health();
+	void step_healthbar(float elapsed_ms);
 	void step_invincibility(float elapsed_ms);
 	void step_attack(float elapsed_ms);
 	void step_dash(float elapsed_ms);
@@ -99,4 +103,6 @@ private:
 	int getMaxEnemiesForType(ENEMY_ID type);
 
 	void remove_garbage();
+
+	Entity& getPlayerBelonging(PLAYER_BELONGING_ID id);
 };

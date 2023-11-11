@@ -24,6 +24,8 @@ public:
 	ComponentContainer<vec4> colors;
 	ComponentContainer<Region> regions;
 	ComponentContainer<Health> healthValues;
+	ComponentContainer<PlayerHealthbar> healthbar;
+	ComponentContainer<Weapon> weapons;
 	ComponentContainer<Projectile> projectiles;
 	ComponentContainer<Invincibility> invincibility;
 	ComponentContainer<Dash> dashes;
@@ -32,6 +34,9 @@ public:
 	ComponentContainer<Weapon> weapons;
 	ComponentContainer<CollidePlayer> collidePlayers;
 	ComponentContainer<CollideEnemy> collideEnemies;
+	ComponentContainer<PlayerBelonging> playerBelongings;
+	ComponentContainer<Camera> camera;
+	ComponentContainer<Cyst> cysts;
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
 	ECSRegistry()
@@ -57,6 +62,8 @@ public:
 		registry_list.push_back(&weapons);
 		registry_list.push_back(&collidePlayers);
 		registry_list.push_back(&collideEnemies);
+		registry_list.push_back(&cysts);
+		registry_list.push_back(&playerBelongings);
 
 	}
 

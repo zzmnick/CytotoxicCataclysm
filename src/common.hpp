@@ -54,6 +54,7 @@ const int TARGET_REFRESH_RATE = 60;
 // This is the "in-game" screen
 const int CONTENT_WIDTH_PX = 1920;
 const int CONTENT_HEIGHT_PX = 1080;
+const float SCREEN_RADIUS = (float) hypot(CONTENT_WIDTH_PX, CONTENT_HEIGHT_PX) / 2; // Half of screen diagonal
 const size_t NUM_REGIONS = 4;
 const float MAP_RADIUS = 10000;
 const float SPAWN_REGION_RADIUS = CONTENT_HEIGHT_PX;
@@ -63,3 +64,5 @@ const float DEATH_EFFECT_DURATION = 600.0;
 const float DEATH_EFFECT_DURATION_ENEMY = 400.0;
 const float ATTACK_DELAY = 300.0;
 const float play_animation_threshold = 40.0f;
+const vec4 dashing_default_color = vec4(1, 100, 10, 1.f);
+const vec4 no_color = vec4(0, 0, 0, 0);

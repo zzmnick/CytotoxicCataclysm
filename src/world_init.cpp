@@ -39,13 +39,41 @@ Entity createPlayer(vec2 pos)
 	animation.total_frame = (int)ANIMATION_FRAME_COUNT::IMMUNITY_BLINKING;
 	animation.update_period_ms = 120;
 
-	// Creat a brand new health with 100% health value
+	// Create a brand new health with 100 health value
 	registry.healthValues.emplace(entity);
 
 	// Add color for player
 	registry.colors.insert(entity, { 1.f,1.f,1.f,1.f });
-
+	createDashing(entity);
 	return entity;
+}
+
+Entity createDashing(Entity& playerEntity) {
+	auto placeHolder = Entity();
+	PlayerBelonging& pb = registry.playerBelongings.emplace(placeHolder);
+	pb.id = PLAYER_BELONGING_ID::DASHING;
+	registry.renderRequests.insert(
+		placeHolder,
+		{ TEXTURE_ASSET_ID::DASHING,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITESHEET_DASHING,
+			RENDER_ORDER::OBJECTS_BK });
+
+	Animation& animation = registry.animations.emplace(placeHolder);
+	animation.total_frame = (int)ANIMATION_FRAME_COUNT::DASHING;
+	animation.update_period_ms = 50;
+
+	//same as player's
+	Motion& playerMotion_copy = registry.motions.get(playerEntity);
+	registry.motions.insert(placeHolder, playerMotion_copy);
+
+	Transform& playerTrans_copy = registry.transforms.get(playerEntity);
+	registry.transforms.insert(placeHolder, playerTrans_copy);
+
+	vec4& color = registry.colors.emplace(placeHolder);
+	color = dashing_default_color;
+
+	return placeHolder;
 }
 
 Entity createBoss(RenderSystem* renderer, vec2 pos) {
@@ -55,22 +83,17 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 	registry.meshPtrs.emplace(entity, &mesh);
 
 	Motion& motion = registry.motions.emplace(entity);
-	motion.max_velocity = 250.f; // TODO: Dummy boss for now, change this later
+	Health& health = registry.healthValues.emplace(entity);
 
-	registry.healthValues.emplace(entity);
-	registry.collidePlayers.emplace(entity);
-	Weapon& weapon = registry.weapons.emplace(entity);
-	weapon.damage = 15.f;
-	weapon.angle_offset = M_PI+M_PI/2;
-	weapon.bullet_speed = 1000.f;
-
-	Enemy& new_enemy = registry.enemies.emplace(entity);
+	// Setting initial components values
 	new_enemy.type = ENEMY_ID::BOSS;
 
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = BACTERIOPHAGE_TEXTURE_SIZE * 0.8f;
+	motion.max_velocity = 250.f; // TODO: Dummy boss for now, change this later
+	health.health = 500.f;
 	transform.angle_offset = M_PI / 2;
 
 	// Add to render_request
@@ -97,8 +120,6 @@ Entity createRedEnemy(vec2 pos) {
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 400;
-
-	Health& health = registry.healthValues.emplace(entity);
 	health.previous_health_pct = 200.0;
 
 
@@ -126,17 +147,16 @@ Entity createGreenEnemy(vec2 pos) {
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 200;
+	health.health = 200.0;
 
-	Health& health = registry.healthValues.emplace(entity);
-	health.previous_health_pct = 200.0;
-
-	// Add tp render_request
+	// Add to render_request
 	registry.renderRequests.insert(
 		entity,
 		{ TEXTURE_ASSET_ID::GREEN_ENEMY_MOVING,
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITESHEET_GREEN_ENEMY_MOVING,
 			RENDER_ORDER::OBJECTS_FR });
+
 	Animation& animation = registry.animations.emplace(entity);
 	animation.update_period_ms *= 2;
 	animation.total_frame = (int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_MOVING;
@@ -178,12 +198,9 @@ Entity createYellowEnemy(vec2 pos) {
 	return entity;
 }
 
-void createRandomRegions(size_t num_regions) {
+void createRandomRegions(size_t num_regions, std::default_random_engine& rng){
 	assert(region_theme_count >= num_regions);
 	assert(region_goal_count >= num_regions);
-
-	// C++ random number generator
-	std::default_random_engine rng = std::default_random_engine(std::random_device()());
 
 	std::vector<REGION_THEME_ID> unused_themes;
 	for (uint i = 0; i < region_theme_count; i++) {
@@ -237,7 +254,7 @@ void createRandomRegions(size_t num_regions) {
 		);
 
 		// Calculate interest point for the region
-		float interest_distance = MAP_RADIUS * 0.6;  // 75% of MAP_RADIUS
+		float interest_distance = MAP_RADIUS * 0.6;
 		float center_angle = angle + (M_PI * 2 / num_regions) / 2; // Center of the angle span for the region
 		vec2 interest_point;
 		interest_point.x = interest_distance * cos(center_angle);
@@ -252,6 +269,81 @@ void createRandomRegions(size_t num_regions) {
 		// Update angle
 		angle += (M_PI * 2 / num_regions);
 	}
+}
+
+void createRandomCysts(std::default_random_engine& rng) {
+	const float ANGLE = (M_PI * 2 / NUM_REGIONS);
+	const int TOTAL_CYSTS = 100;
+
+	const float LOWER_RADIUS = 0.18f * MAP_RADIUS;
+	const float UPPER_RADIUS = 0.98f * MAP_RADIUS;
+	const float MEAN_POINT   = 0.27f * MAP_RADIUS; // actual mean is approx = max_radius - mean_point
+
+	std::exponential_distribution<float> radius_distribution(1.f / MEAN_POINT);
+	std::uniform_real_distribution<float> angle_distribution(0.f, ANGLE);
+
+	std::vector<vec2> positions;
+	// generate cysts
+	for (int i = 0; i < registry.regions.components.size(); i++) {
+		for (int j = 0; j < TOTAL_CYSTS / registry.regions.components.size(); j++) {
+			// generate radius in the correct bounds
+			float radius;
+			do {
+				radius = MAP_RADIUS - radius_distribution(rng);
+			} while (radius > UPPER_RADIUS || radius < LOWER_RADIUS);
+
+			// generate angle
+			float angle = angle_distribution(rng) + ANGLE * i;
+
+			// calculate position and check closeness
+			vec2 pos = vec2(cos(angle), sin(angle)) * radius;
+			bool tooClose = false;
+			for (auto p : positions) {
+				if (distance(pos, p) < SCREEN_RADIUS / 2) {
+					tooClose = true;
+					break;
+				}
+			}
+			if (tooClose) {
+				--j;
+				continue;
+			}
+
+			// finally create cyst
+			createCyst(pos);
+			positions.push_back(pos);
+		}
+	}
+}
+
+void createCyst(vec2 pos) {
+	auto cyst_entity = Entity();
+	registry.cysts.emplace(cyst_entity);
+	registry.healthValues.insert(cyst_entity, {50.f});
+
+	// Motion component only needed for collision check, set all to 0
+	Motion& motion = registry.motions.emplace(cyst_entity);
+	motion.velocity = { 0.f, 0.f };
+	motion.max_velocity = 0.f;
+	motion.acceleration_unit = 0.f;
+	motion.deceleration_unit = 0.f;
+	motion.allow_accel = false;
+
+	Transform& transform = registry.transforms.emplace(cyst_entity);
+	transform.position = pos;
+	transform.scale = CYST_TEXTURE_SIZE * 3.f;
+
+	Animation& animation = registry.animations.emplace(cyst_entity);
+	animation.total_frame = (int)ANIMATION_FRAME_COUNT::CYST_SHINE;
+	animation.update_period_ms = 80;
+	animation.loop_interval = 1500.f;
+
+	registry.renderRequests.insert(
+		cyst_entity,
+		{ TEXTURE_ASSET_ID::CYST_SHINE,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITESHEET_CYST_SHINE,
+			RENDER_ORDER::OBJECTS_FR });
 }
 
 Entity createLine(vec2 position, vec2 scale) {
@@ -280,6 +372,8 @@ Entity createHealthbar(vec2 position, vec2 scale) {
 	Entity bar = Entity();
 	Entity frame = Entity();
 
+	registry.healthbar.emplace(bar);
+
 	// Add the components to the renderRequest in order
 	registry.renderRequests.insert(
 		bar,
@@ -294,7 +388,7 @@ Entity createHealthbar(vec2 position, vec2 scale) {
 			GEOMETRY_BUFFER_ID::SPRITE,
 			RENDER_ORDER::UI });
 
-	// Create bullet_transform for bar and frame
+	// Create transform for bar and frame
 	vec2 frameScale = HEALTHBAR_TEXTURE_SIZE * scale;
 	registry.transforms.insert(frame, { position, frameScale, 0.f, true });
 	vec2 barPosition = position - vec2(frameScale.x * 0.25, 0.f);
@@ -310,7 +404,6 @@ Entity createHealthbar(vec2 position, vec2 scale) {
 // Can be used for either player or enemy
 Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 	assert(registry.transforms.has(shooter));
-
 	// Create bullet's components
 	auto bullet_entity = Entity();
 	registry.projectiles.emplace(bullet_entity);
@@ -345,4 +438,10 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 			RENDER_ORDER::OBJECTS_BK });
 
 	return bullet_entity;
+}
+
+Entity createCamera(vec2 pos) {
+	Entity camera = Entity();
+	registry.camera.insert(camera, { pos });
+	return camera;
 }

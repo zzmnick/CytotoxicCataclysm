@@ -39,12 +39,15 @@ class RenderSystem {
 		textures_path("yellow_enemy.png"),
 		textures_path("healthbarframe.png"),
 		textures_path("gun.png"),
+		textures_path("cyst.png"),
 		textures_path("immunity_moving.png"),
 		textures_path("immunity_dying.png"),
 		textures_path("green_enemy_moving.png"),
 		textures_path("green_enemy_dying.png"),
 		textures_path("immunity_blink.png"),
+		textures_path("cyst_animation.png"),
 		textures_path("bacteriophage.png"),
+		textures_path("dashing.png"),
 
 		// Background
 		textures_path("background/nervous_bg.png"),
@@ -110,6 +113,9 @@ public:
 	mat3 createViewMatrix();
 	vec2 offset;
 
+	bool is_outside_screen(vec2 entityPos);
+
+
 	//animation system
 	void initAnimation(GEOMETRY_BUFFER_ID gid, ANIMATION_FRAME_COUNT fcount);
 	void animationSys_step(float elapsed_ms);
@@ -117,6 +123,7 @@ public:
 	static void animationSys_switchAnimation(Entity& entity, 
 		ANIMATION_FRAME_COUNT animationType, 
 		int update_period_ms);
+	void initAnimation_dashing();
 	
 private:
 	Entity player; // Keep reference to player entity

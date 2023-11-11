@@ -179,7 +179,6 @@ GLFWwindow* WorldSystem::create_window() {
 	Mix_VolumeChunk(soundChunks["player_dash"], 45);
 	Mix_VolumeChunk(soundChunks["enemy_hit"], 45);
 
-
 	return window;
 }
 
@@ -190,8 +189,9 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	fprintf(stderr, "Loaded music\n");
 
 	// Create world entities that don't reset
-	createRandomRegions(NUM_REGIONS);
+	createRandomRegions(NUM_REGIONS, rng);
 	healthbar = createHealthbar({ -CONTENT_WIDTH_PX * 0.35, -CONTENT_HEIGHT_PX * 0.45 }, STATUSBAR_SCALE);
+	createCamera({ 0.f, 0.f });
 
 	// Set all states to default
 	restart_game();
@@ -223,91 +223,92 @@ void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
 				screen.screen_darken_factor = 1 - timer.timer_ms / DEATH_EFFECT_DURATION;
 			}
 		}
-		else {
-			if (timer.timer_ms <= 0) {
+		else if (timer.timer_ms <= 0) {
+			// Remove other entities (enemies, cysts, etc.)
+
+			if (registry.enemies.has(entity)) {
 				// Enemy is dead -> remove
 				ENEMY_ID type = registry.enemies.get(entity).type;
-    			enemyCounts[type]--;
-				registry.remove_all_components_of(entity);
+				enemyCounts[type]--;
+			}
+			registry.remove_all_components_of(entity);
+		}
+	}
+}
+
+void WorldSystem::step_health() {
+	for (uint i = 0; i < registry.healthValues.components.size(); i++) {
+		Health& health = registry.healthValues.components[i];
+		Entity entity = registry.healthValues.entities[i];
+
+		if (health.health <= 0 && !registry.deathTimers.has(entity)) {
+			DeathTimer& dt = registry.deathTimers.emplace(entity);
+			int buffer = 20; // to fix timing between animation and death
+
+			if (entity == player) {
+				dt.timer_ms = DEATH_EFFECT_DURATION;
+
+				Mix_PlayChannel(chunkToChannel["player_death"], soundChunks["player_death"], 0);
+				
+				RenderSystem::animationSys_switchAnimation(player, 
+					ANIMATION_FRAME_COUNT::IMMUNITY_DYING, 
+					static_cast<int>(ceil((DEATH_EFFECT_DURATION+buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::IMMUNITY_DYING))));			
+			}
+			else if (registry.enemies.has(entity)) {
+				// Immobilize enemy
+				assert(registry.motions.has(entity));
+				registry.motions.remove(entity);
+
+				dt.timer_ms = DEATH_EFFECT_DURATION_ENEMY;
+
+				Mix_PlayChannel(chunkToChannel["enemy_death"], soundChunks["enemy_death"], 0);
+
+				Enemy& enemy = registry.enemies.get(entity);
+				if (enemy.type == ENEMY_ID::GREEN) {
+					RenderSystem::animationSys_switchAnimation(entity, 
+						ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
+						static_cast<int>(ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING))));
+				}
+			}
+			else if (registry.cysts.has(entity)) {
+				dt.timer_ms = 100.f; // TODO set based on animation length
+
+				// Sound effect
+
+				// Animation
+
 			}
 		}
 	}
 }
 
-void WorldSystem::step_health(float elapsed_ms) {
-	for (uint i = 0; i < registry.healthValues.components.size(); i++) {
-		Health& health = registry.healthValues.components[i];
-		Entity entity = registry.healthValues.entities[i];
-		if (health.previous_health_pct != health.health_pct) {
-			health.timer_ms -= elapsed_ms;
-			if (health.timer_ms <= 0) {
-				health.previous_health_pct = health.health_pct;
-				health.timer_ms = HEALTH_BAR_UPDATE_TIME_SLAP;
-			}
-			if (health.previous_health_pct <= 0) {
-				if (!registry.deathTimers.has(entity)) {
-					int buffer = 20; // buffer to fix miss-timing between animation and death
-					if (entity == player) {
-						//isPaused = true;
-						Mix_PlayChannel(chunkToChannel["player_death"], soundChunks["player_death"], 0);
-						/////////////////////////////
-						RenderSystem::animationSys_switchAnimation(player, 
-							ANIMATION_FRAME_COUNT::IMMUNITY_DYING, 
-							static_cast<int>(ceil((DEATH_EFFECT_DURATION+buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::IMMUNITY_DYING))));
-						
-						//temporary: since enemies cannot be killed at the moment
-						for (int j = 0; j < registry.enemies.entities.size(); j++) {
-							Entity& enemyEntity = registry.enemies.entities[j];
-							Enemy& enemy = registry.enemies.components[j];
-							if (enemy.type == ENEMY_ID::GREEN) {
-								RenderSystem::animationSys_switchAnimation(enemyEntity,
-									ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
-									static_cast<int>(ceil((DEATH_EFFECT_DURATION + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING)))
-								);
+void WorldSystem::step_healthbar(float elapsed_ms) {
+	PlayerHealthbar& bar = registry.healthbar.get(healthbar);
+	float current_health = registry.healthValues.get(player).health;
 
-							}
-							
-						}
-						registry.deathTimers.emplace(entity);
-					}
-					else {
-						// Immobilize enemy
-						assert(registry.motions.has(entity));
-						registry.motions.remove(entity);
-						Mix_PlayChannel(chunkToChannel["enemy_death"], soundChunks["enemy_death"], 0);
-
-						Enemy& enemy = registry.enemies.get(entity);
-						if (enemy.type == ENEMY_ID::GREEN) {
-							RenderSystem::animationSys_switchAnimation(entity, 
-								ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
-								static_cast<int>(ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / (1.f*(int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING)))
-							);
-
-						}
-						DeathTimer& dt = registry.deathTimers.emplace(entity);
-						dt.timer_ms = DEATH_EFFECT_DURATION_ENEMY;
-					}
-				}
-			}
+	if (bar.previous_health != current_health) {
+		bar.timer_ms -= elapsed_ms;
+		if (bar.timer_ms <= 0) {
+			bar.previous_health = current_health;
+			bar.timer_ms = HEALTH_BAR_UPDATE_TIME_SLAP;
 		}
-		if (entity == player) {
-			// Interpolate to get value of displayed healthbar
-			float healthbar_scale = 0.f;
-			float normalized_time = health.timer_ms / HEALTH_BAR_UPDATE_TIME_SLAP;
-			float new_health_pct = health.previous_health_pct * normalized_time + health.health_pct * (1.f - normalized_time);
-			healthbar_scale = max(0.f, new_health_pct / 100.f);
 
-			// Update the scale of the healthbar
-			assert(registry.transforms.has(healthbar));
-			Transform& transform = registry.transforms.get(healthbar);
-			transform.scale.x = HEALTHBAR_TEXTURE_SIZE.x * 0.72f * STATUSBAR_SCALE.x * healthbar_scale;
+		// Interpolate to get value of displayed healthbar
+		float healthbar_scale = 0.f;
+		float normalized_time = bar.timer_ms / HEALTH_BAR_UPDATE_TIME_SLAP;
+		float new_health_pct = bar.previous_health * normalized_time + current_health * (1.f - normalized_time);
+		healthbar_scale = max(0.f, new_health_pct / 100.f);
 
-			// Update the color of the healthbar
-			assert(registry.colors.has(healthbar));
-			vec4& color = registry.colors.get(healthbar);
-			color.g = healthbar_scale;
-			color.r = 1.f - healthbar_scale;
-		}
+		// Update the scale of the healthbar
+		assert(registry.transforms.has(healthbar));
+		Transform& transform = registry.transforms.get(healthbar);
+		transform.scale.x = HEALTHBAR_TEXTURE_SIZE.x * 0.72f * STATUSBAR_SCALE.x * healthbar_scale;
+
+		// Update the color of the healthbar
+		assert(registry.colors.has(healthbar));
+		vec4& color = registry.colors.get(healthbar);
+		color.g = healthbar_scale;
+		color.r = 1.f - healthbar_scale;
 	}
 }
 
@@ -426,6 +427,10 @@ void WorldSystem::step_enemySpawn(float elapsed_ms) {
     }
 }
 
+void WorldSystem::update_camera() {
+	registry.camera.components[0].position = registry.transforms.get(player).position;
+}
+
 void WorldSystem::remove_garbage() {
 	Transform player_transform = registry.transforms.get(player);
 	vec2 player_pos = player_transform.position;
@@ -461,11 +466,13 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	step_deathTimer(screen, elapsed_ms_since_last_update);
 	
 	if (isPaused) return false;
+
 	/*************************[ gameplay ]*************************/
 	// Code below this line will happen only if not paused
 
 
-	step_health(elapsed_ms_since_last_update);
+	step_health();
+	step_healthbar(elapsed_ms_since_last_update);
 	step_invincibility(elapsed_ms_since_last_update);
 	step_attack(elapsed_ms_since_last_update);
 	step_dash(elapsed_ms_since_last_update);
@@ -516,6 +523,7 @@ void WorldSystem::restart_game() {
 	// hardcode the boss position to upper right region, randomize later
 	Region boss_region = registry.regions.components[0];
 	createBoss(renderer, boss_region.interest_point);
+	createRandomCysts(rng);
 }
 
 // Compute collisions between entities
@@ -556,7 +564,7 @@ void WorldSystem::resolve_collisions() {
 
 			// Update player health
 			Health& playerHealth = registry.healthValues.get(entity);
-			playerHealth.health_pct -= 10.0;
+			playerHealth.health -= 10.0;
 
 			Mix_PlayChannel(chunkToChannel["player_hit"], soundChunks["player_hit"], 0);
 		}
@@ -572,17 +580,31 @@ void WorldSystem::resolve_collisions() {
 				enemy_motion.velocity = enemy_motion.max_velocity * knockback_direction;
 				enemy_motion.allow_accel = false;
 			}
-			garbage.push_back(entity);
 
-			// Update enemy health
+			// Deal damage to enemy based on weapon damage
 			Health& enemyHealth = registry.healthValues.get(enemy_entity);
-			if (enemyAttrib.type == ENEMY_ID::BOSS) {
-				enemyHealth.health_pct -= 2.0;
-			} else {
-				enemyHealth.health_pct -= 10.0;
-			}
+			enemyHealth.health -= registry.weapons.get(entity).damage;
 
 			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
+			garbage.push_back(entity);
+		}
+		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_CYST) {
+			Entity cyst = collision.other_entity;
+
+			// Deal damage to enemy based on weapon damage
+			Health& health = registry.healthValues.get(cyst);
+			health.health -= registry.weapons.get(entity).damage;
+
+			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
+			garbage.push_back(entity);
+		}
+		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_CYST
+			&& !registry.invincibility.has(entity)) {
+			Entity cyst = collision.other_entity;
+			Transform& cyst_transform = registry.transforms.get(cyst);
+			vec2 knockback_direction = normalize(transform.position - cyst_transform.position);
+			motion.velocity = 150.f * knockback_direction;
+			allow_accel = false;
 		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_PLAYER 
 			&& !registry.invincibility.has(player)) {
@@ -652,7 +674,7 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 	// temporary: test health bar. decrease by 10%
 	if (action == GLFW_RELEASE && key == GLFW_KEY_H) {
 		Health& playerHealth = registry.healthValues.get(player);
-		playerHealth.health_pct -= 1.0;
+		playerHealth.health -= 1.0;
 	}
 
 	if (action == GLFW_PRESS) {
@@ -713,14 +735,33 @@ void WorldSystem::control_movement(float elapsed_ms) {
 	if ((!(keys_pressed[GLFW_KEY_D] || keys_pressed[GLFW_KEY_A])) || (keys_pressed[GLFW_KEY_D] && keys_pressed[GLFW_KEY_A])) {
 		playermovement.velocity.x *= pow(playermovement.deceleration_unit, elapsed_ms);
 	}
-
+	
+	Entity& dashingAnimationEntity = getPlayerBelonging(PLAYER_BELONGING_ID::DASHING);
 	float magnitude = length(playermovement.velocity);
 	//If player is dashing then it can go over the max velocity
 	if (playerDash.active_dash_ms <= 0) {
 		if (magnitude > playermovement.max_velocity || magnitude < -playermovement.max_velocity) {
 			playermovement.velocity *= (playermovement.max_velocity / magnitude);
 		}
+		
+		//make dashing animation invisible
+		vec4& color = registry.colors.get(dashingAnimationEntity);
+		color = no_color;
 	}
+	else {
+		vec4& color = registry.colors.get(dashingAnimationEntity);
+		color = dashing_default_color;
+	}
+
+	
+}
+
+Entity& WorldSystem::getPlayerBelonging(PLAYER_BELONGING_ID id) {
+	for (uint i = 0; i < registry.playerBelongings.size(); i++) {
+		PlayerBelonging& pb = registry.playerBelongings.components[i];
+		if(pb.id == id) return registry.playerBelongings.entities[i];
+	}
+	return player;
 }
 
 void WorldSystem::control_action() {
@@ -780,6 +821,7 @@ void WorldSystem::player_dash() {
 		// If player is barely moving, dash in mouse direction
 		float alignment = -0.70f; // player texture is tilted
 		float playerAngle = registry.transforms.get(player).angle + alignment;
+
 		dashDirection = normalize(vec2(cos(playerAngle), sin(playerAngle)));
 	}
 	else {
