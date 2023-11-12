@@ -18,11 +18,17 @@ Entity createPlayer(vec2 pos)
 	transform.position = pos;
 	transform.angle = 0.f;
 	transform.scale = IMMUNITY_TEXTURE_SIZE * 3.f;
+	transform.angle_offset = M_PI + 0.7f;
+
 	registry.motions.insert(entity, { { 0.f, 0.f } });
 
 	// Create an (empty) Player component to be able to refer to all players
 	registry.players.emplace(entity);
 	registry.dashes.emplace(entity);
+	Weapon& weapon = registry.weapons.emplace(entity);
+	weapon.angle_offset = 0.7f;
+	weapon.offset = { 60.f,60.f };
+	registry.collideEnemies.emplace(entity);
 	registry.renderRequests.insert(
 		entity,
 		{ TEXTURE_ASSET_ID::IMMUNITY_BLINKING,
@@ -75,19 +81,26 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 	auto entity = Entity();
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::BACTERIOPHAGE);
 	registry.meshPtrs.emplace(entity, &mesh);
-	// Assuming boss is a type of enemy
-	Enemy& new_enemy = registry.enemies.emplace(entity);
-	Transform& transform = registry.transforms.emplace(entity);
+
 	Motion& motion = registry.motions.emplace(entity);
 	Health& health = registry.healthValues.emplace(entity);
 
 	// Setting initial components values
+	Enemy& new_enemy = registry.enemies.emplace(entity);
 	new_enemy.type = ENEMY_ID::BOSS;
+
+	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = BACTERIOPHAGE_TEXTURE_SIZE * 0.8f;
 	motion.max_velocity = 250.f; // TODO: Dummy boss for now, change this later
 	health.health = 500.f;
+	transform.angle_offset = M_PI / 2;
+
+	Weapon& weapon = registry.weapons.emplace(entity);
+	weapon.damage = 15.f;
+	weapon.angle_offset = M_PI + M_PI / 2;
+	weapon.bullet_speed = 1000.f;
 
 	// Add to render_request
 	registry.renderRequests.insert(
@@ -102,21 +115,20 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 Entity createRedEnemy(vec2 pos) {
 	// Create enemy components
 	auto entity = Entity();
-	
+
 	Enemy& new_enemy = registry.enemies.emplace(entity);
-	
+	new_enemy.type = ENEMY_ID::RED;
 
 	Transform& transform = registry.transforms.emplace(entity);
-	Motion& motion = registry.motions.emplace(entity);
-	Health& health = registry.healthValues.emplace(entity);
-
-	// Setting initial components values
-	new_enemy.type = ENEMY_ID::RED;
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = RED_ENEMY_TEXTURE_SIZE * 2.f;
+
+	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 400;
-	health.health = 100.0;
+	Health& health = registry.healthValues.emplace(entity);
+	health.health = 200.0;
+
 
 	registry.renderRequests.insert(
 		entity,
@@ -132,17 +144,17 @@ Entity createGreenEnemy(vec2 pos) {
 	// Create enemy components
 	auto entity = Entity();
 	Enemy& new_enemy = registry.enemies.emplace(entity);
-	
-	Transform& transform = registry.transforms.emplace(entity);
-	Motion& motion = registry.motions.emplace(entity);
-	Health& health = registry.healthValues.emplace(entity);
-
-	// Setting initial components values
 	new_enemy.type = ENEMY_ID::GREEN;
+
+	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = GREEN_ENEMY_TEXTURE_SIZE * 4.f;
+	transform.angle_offset = M_PI + 0.8;
+
+	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 200;
+	Health& health = registry.healthValues.emplace(entity);
 	health.health = 200.0;
 
 	// Add to render_request
@@ -159,7 +171,42 @@ Entity createGreenEnemy(vec2 pos) {
 	return entity;
 }
 
-void createRandomRegions(size_t num_regions, std::default_random_engine& rng) {
+
+Entity createYellowEnemy(vec2 pos) {
+	// Create enemy components
+	auto entity = Entity();
+
+	registry.noRotates.emplace(entity);
+	registry.collidePlayers.emplace(entity);
+
+	Weapon& weapon = registry.weapons.emplace(entity);
+	weapon.attack_delay = 900.f;
+
+	Enemy& new_enemy = registry.enemies.emplace(entity);
+	new_enemy.type = ENEMY_ID::YELLOW;
+
+	Transform& transform = registry.transforms.emplace(entity);
+	transform.position = pos;
+	transform.scale = YELLOW_ENEMY_TEXTURE_SIZE * 1.5f;
+	transform.angle_offset = M_PI;
+
+	Motion& motion = registry.motions.emplace(entity);
+	motion.max_velocity = 0.0f;
+
+	Health& health = registry.healthValues.emplace(entity);
+	health.health = 50.0;
+
+	// Add tp render_request
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::YELLOW_ENEMY,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE,
+			RENDER_ORDER::OBJECTS_FR });
+	return entity;
+}
+
+void createRandomRegions(size_t num_regions, std::default_random_engine& rng){
 	assert(region_theme_count >= num_regions);
 	assert(region_goal_count >= num_regions);
 
@@ -367,20 +414,29 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 	assert(registry.transforms.has(shooter));
 	// Create bullet's components
 	auto bullet_entity = Entity();
-	registry.weapons.emplace(bullet_entity);
+	registry.projectiles.emplace(bullet_entity);
 	Transform& bullet_transform = registry.transforms.emplace(bullet_entity);
 	Motion& bullet_motion = registry.motions.emplace(bullet_entity);
 	registry.colors.insert(bullet_entity, color);
 
 	// Set initial position and velocity
 	Transform& shooter_transform = registry.transforms.get(shooter);
+	Weapon& weapon = registry.weapons.get(shooter);
+
 	bullet_transform.position = {
-		shooter_transform.position.x + 60 * cos(shooter_transform.angle),
-		shooter_transform.position.y + 60 * sin(shooter_transform.angle)
+		shooter_transform.position.x + weapon.offset.x * cos(shooter_transform.angle),
+		shooter_transform.position.y + weapon.offset.y * sin(shooter_transform.angle)
 	};
 	bullet_transform.scale = scale;
 	bullet_transform.angle = 0.0;
-	bullet_motion.velocity = { cos(shooter_transform.angle - 0.70) * 500, sin(shooter_transform.angle - 0.70) * 500 };
+	bullet_motion.velocity = { cos(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed, sin(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed };
+
+	if (registry.collideEnemies.has(shooter)) {
+		registry.collideEnemies.emplace(bullet_entity);
+	}
+	if (registry.collidePlayers.has(shooter)) {
+		registry.collidePlayers.emplace(bullet_entity);
+	}
 
 	// Add bullet to render request
 	registry.renderRequests.insert(

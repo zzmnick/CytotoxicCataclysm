@@ -280,7 +280,10 @@ void RenderSystem::draw()
 					// Transformation
 					Transformation transformation;
 					transformation.translate(transform.position);
-					transformation.rotate(transform.angle);
+					if (!registry.noRotates.has(entity)) {  //This is for the yellow enemy and other enemies that we don't want to render rotation
+						transformation.rotate(transform.angle);
+
+					}
 					transformation.scale(transform.scale);
 					// Note, its not very efficient to access elements indirectly via the entity
 					// albeit iterating through all Sprites in sequence. A good point to optimize

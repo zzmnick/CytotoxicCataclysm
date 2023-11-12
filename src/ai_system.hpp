@@ -4,6 +4,7 @@
 
 #include "tiny_ecs_registry.hpp"
 #include "common.hpp"
+#include "world_init.hpp"
 
 class AISystem
 {
@@ -13,4 +14,5 @@ public:
 private:
 	Entity player; // Keep reference to player entity
 	void move_enemies(float elapsed_ms);
+	void enemy_shoot(float elapsed_ms);
 };
