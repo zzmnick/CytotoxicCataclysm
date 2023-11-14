@@ -414,7 +414,6 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 	assert(registry.transforms.has(shooter));
 	// Create bullet's components
 	auto bullet_entity = Entity();
-	registry.projectiles.emplace(bullet_entity);
 	Transform& bullet_transform = registry.transforms.emplace(bullet_entity);
 	Motion& bullet_motion = registry.motions.emplace(bullet_entity);
 	registry.colors.insert(bullet_entity, color);
@@ -430,6 +429,9 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 	bullet_transform.scale = scale;
 	bullet_transform.angle = 0.0;
 	bullet_motion.velocity = { cos(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed, sin(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed };
+
+	// Set projectile damage based on weapon
+	registry.projectiles.insert(bullet_entity, {weapon.damage});
 
 	if (registry.collideEnemies.has(shooter)) {
 		registry.collideEnemies.emplace(bullet_entity);

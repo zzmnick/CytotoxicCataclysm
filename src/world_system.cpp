@@ -580,7 +580,7 @@ void WorldSystem::resolve_collisions() {
 				enemy_motion.allow_accel = false;
 			}
 
-			// Deal damage to enemy based on weapon damage
+			// Deal damage to enemy
 			Health& enemyHealth = registry.healthValues.get(enemy_entity);
 			enemyHealth.health -= registry.projectiles.get(entity).damage;
 
@@ -590,7 +590,7 @@ void WorldSystem::resolve_collisions() {
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_CYST) {
 			Entity cyst = collision.other_entity;
 
-			// Deal damage to enemy based on weapon damage
+			// Deal damage to enemy
 			Health& health = registry.healthValues.get(cyst);
 			health.health -= registry.projectiles.get(entity).damage;
 
@@ -616,11 +616,10 @@ void WorldSystem::resolve_collisions() {
 
 			player_motion.velocity = (motion.max_velocity + 1000) * knockback_direction;
 			allow_accel = false;
-			Projectile& projectile = registry.projectiles.get(entity);
 
-			// Update player health
+			// Deal damage to player
 			Health& playerHealth = registry.healthValues.get(player);
-			playerHealth.health -= projectile.damage;
+			playerHealth.health -= registry.projectiles.get(entity).damage;
 
 
 			Mix_PlayChannel(chunkToChannel["player_hit"], soundChunks["player_hit"], 0);
