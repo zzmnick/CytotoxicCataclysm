@@ -21,14 +21,15 @@ void main()
 	if (origin_dist > mapRadius) {
 		discard;
 	}
-	if (origin_dist < spawnRadius) {
-		brightness = min(brightness, pow(origin_dist / spawnRadius, 3));
-	}
+
 	if (vertcoord.x < edgeThickness) {
-		brightness = min(brightness, vertcoord.x / edgeThickness);
+		brightness = 0.01f;
 	}
 	if (vertcoord.y < edgeThickness) {
-		brightness = min(brightness, vertcoord.y / edgeThickness);
+		brightness = 0.01f;
+	}
+	if (origin_dist < spawnRadius) {
+		brightness = min(brightness, pow(origin_dist / spawnRadius, 3));
 	}
 	if (brightness < 0.01f) {
 		discard;
