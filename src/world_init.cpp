@@ -18,16 +18,16 @@ Entity createPlayer(vec2 pos)
 	transform.position = pos;
 	transform.angle = 0.f;
 	transform.scale = IMMUNITY_TEXTURE_SIZE * 3.f;
-	transform.angle_offset = M_PI + 0.7f;
+	transform.angle_offset = M_PI + IMMUNITY_TEXTURE_ANGLE;
 
 	registry.motions.insert(entity, { { 0.f, 0.f } });
 
 	// Create an (empty) Player component to be able to refer to all players
 	registry.players.emplace(entity);
 	registry.dashes.emplace(entity);
-	Weapon& weapon = registry.weapons.emplace(entity);
-	weapon.angle_offset = 0.7f;
-	weapon.offset = { 60.f,60.f };
+
+	createGun(entity);
+
 	registry.collideEnemies.emplace(entity);
 	registry.renderRequests.insert(
 		entity,
@@ -46,6 +46,34 @@ Entity createPlayer(vec2 pos)
 	registry.colors.insert(entity, { 1.f,1.f,1.f,1.f });
 	createDashing(entity);
 	return entity;
+}
+
+Entity createGun(Entity player) {
+	Weapon& weapon = registry.weapons.emplace(player);
+	weapon.angle_offset = IMMUNITY_TEXTURE_ANGLE;
+	weapon.offset = { 60.f,60.f };
+
+	Entity gun = Entity();
+	registry.playerBelongings.insert(gun, { PLAYER_BELONGING_ID::GUN });
+
+	Motion player_motion = registry.motions.get(player);
+	registry.motions.insert(gun, player_motion);
+
+	Transform player_transform = registry.transforms.get(player);
+	Transform& gun_transform = registry.transforms.insert(gun, player_transform);
+	gun_transform.angle_offset = weapon.angle_offset + M_PI/2;
+	gun_transform.scale *= 1.5f;
+	gun_transform.position.x += weapon.offset.x * cos(player_transform.angle);
+	gun_transform.position.y += weapon.offset.y * sin(player_transform.angle);
+
+	registry.renderRequests.insert(
+		gun,
+		{ TEXTURE_ASSET_ID::GUN,
+		  EFFECT_ASSET_ID::TEXTURED,
+		  GEOMETRY_BUFFER_ID::SPRITE,
+		  RENDER_ORDER::BOSS });
+
+	return gun;
 }
 
 Entity createDashing(Entity& playerEntity) {

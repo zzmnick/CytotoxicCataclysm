@@ -278,7 +278,8 @@ struct Action {
 
 enum class PLAYER_BELONGING_ID {
 	DASHING = 0,
-	PLAYER_BELONGING_COUNT = DASHING + 1,
+	GUN = DASHING + 1,
+	PLAYER_BELONGING_COUNT = GUN + 1,
 };
 const int player_belonging_count = (int)PLAYER_BELONGING_ID::PLAYER_BELONGING_COUNT;
 

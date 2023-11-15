@@ -191,10 +191,20 @@ void step_movement(float elapsed_ms) {
 		Transform& transform = registry.transforms.get(entity);
 		
 		Motion& motion = motion_container.components[i];
-		if (registry.playerBelongings.has(entity)) {//can be used to update the weapons as well
+		if (registry.playerBelongings.has(entity)) {
 			Entity playerEntity = registry.players.entities[0];
-			motion.velocity = registry.motions.get(playerEntity).velocity;
-			transform.angle = atan2(motion.velocity.y, motion.velocity.x);
+
+			if (registry.playerBelongings.get(entity).id == PLAYER_BELONGING_ID::GUN) {
+				Transform player_transform = registry.transforms.get(playerEntity);
+				Weapon weapon = registry.weapons.get(playerEntity);
+				transform.position.x = player_transform.position.x + (weapon.offset.x) * cos(player_transform.angle);
+				transform.position.y = player_transform.position.y + weapon.offset.y * sin(player_transform.angle);
+				transform.angle = player_transform.angle + transform.angle_offset;
+			}
+			else {
+				motion.velocity = registry.motions.get(playerEntity).velocity;
+				transform.angle = atan2(motion.velocity.y, motion.velocity.x);
+			}
 		}
 		float step_seconds = elapsed_ms / 1000.f;
 		transform.position += motion.velocity * step_seconds;

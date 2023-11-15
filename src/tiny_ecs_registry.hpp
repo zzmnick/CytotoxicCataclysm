@@ -61,8 +61,9 @@ public:
 		registry_list.push_back(&weapons);
 		registry_list.push_back(&collidePlayers);
 		registry_list.push_back(&collideEnemies);
-		registry_list.push_back(&cysts);
 		registry_list.push_back(&playerBelongings);
+		registry_list.push_back(&camera);
+		registry_list.push_back(&cysts);
 
 	}
 
