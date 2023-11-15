@@ -243,7 +243,7 @@ void check_collision() {
 
 		// Check for collisions with the map boundary
 		if (!registry.cysts.has(entity_i) && collides_with_boundary(transform_i)) {
-			if (registry.weapons.has(entity_i)) {
+			if (registry.projectiles.has(entity_i)) {
 				registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::BULLET_WITH_BOUNDARY);
 			}
 			else {
