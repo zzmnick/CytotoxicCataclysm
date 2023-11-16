@@ -456,10 +456,28 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 	};
 	bullet_transform.scale = scale;
 	bullet_transform.angle = 0.0;
-	bullet_motion.velocity = { cos(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed, sin(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed };
+
+	Motion shooter_motion = registry.motions.get(shooter);
+
+	vec2 bullet_direction = normalize(vec2(cos(shooter_transform.angle - weapon.angle_offset), sin(shooter_transform.angle - weapon.angle_offset)));
+
+	float projection = dot(shooter_motion.velocity, bullet_direction);
+	// add players sideways velocity
+	vec2 shooter_velocity = shooter_motion.velocity - bullet_direction * projection;
+	// add half of players forward/backward velocity
+	//shooter_velocity += bullet_direction * projection * 0.5f;
+
+	// scale to length of max_velocity (ie when dashing)
+	if (length(shooter_velocity) > shooter_motion.max_velocity) {
+		float h = hypot(shooter_velocity.x, shooter_velocity.y);
+		shooter_velocity.x = shooter_motion.max_velocity * shooter_velocity.x / h;
+		shooter_velocity.y = shooter_motion.max_velocity * shooter_velocity.y / h;
+	}
+
+	bullet_motion.velocity = bullet_direction * 500.f + shooter_velocity;
 
 	// Set projectile damage based on weapon
-	registry.projectiles.insert(bullet_entity, {weapon.damage});
+	registry.projectiles.insert(bullet_entity, { weapon.damage });
 
 	if (registry.collideEnemies.has(shooter)) {
 		registry.collideEnemies.emplace(bullet_entity);
