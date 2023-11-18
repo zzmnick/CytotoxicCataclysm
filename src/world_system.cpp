@@ -257,6 +257,9 @@ void WorldSystem::step_health() {
 				// Immobilize enemy
 				assert(registry.motions.has(entity));
 				registry.motions.remove(entity);
+				if (registry.weapons.has(entity)) {
+					registry.weapons.remove(entity);
+				}
 
 				dt.timer_ms = DEATH_EFFECT_DURATION_ENEMY;
 
@@ -314,19 +317,26 @@ void WorldSystem::step_healthbar(float elapsed_ms) {
 void WorldSystem::step_invincibility(float elapsed_ms) {
 	if (registry.invincibility.has(player)) {
 		assert(registry.colors.has(player));
-		vec4& color = registry.colors.get(player);
 
 		// Reduce timer and change set player flashing
 		float& timer = registry.invincibility.get(player).timer_ms;
 		timer -= elapsed_ms;
+		float flashAlpha;
 		if (timer <= 0) {
 			registry.invincibility.remove(player);
-			color.a = 1.f;
+			flashAlpha = 1.f;
 		}
 		else {
 			// Flash once every 200ms
-			color.a = mod(ceil(timer / 100.f), 2.f);
+			flashAlpha = mod(ceil(timer / 100.f), 2.f);
 		}
+		
+		// set alpha values
+		vec4& player_color = registry.colors.get(player);
+		// TODO generalize to include sword, maybe get current belonging?
+		vec4& weapon_color = registry.colors.get(getPlayerBelonging(PLAYER_BELONGING_ID::GUN));
+		player_color.a = flashAlpha;
+		weapon_color.a = flashAlpha;
 	}
 }
 

@@ -34,7 +34,7 @@ Entity createPlayer(vec2 pos)
 		{ TEXTURE_ASSET_ID::IMMUNITY_BLINKING,
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITESHEET_IMMUNITY_BLINKING,
-			RENDER_ORDER::OBJECTS_FR });
+			RENDER_ORDER::PLAYER });
 	Animation& animation = registry.animations.emplace(entity);
 	animation.total_frame = (int)ANIMATION_FRAME_COUNT::IMMUNITY_BLINKING;
 	animation.update_period_ms = 120;
@@ -71,7 +71,9 @@ Entity createGun(Entity player) {
 		{ TEXTURE_ASSET_ID::GUN,
 		  EFFECT_ASSET_ID::TEXTURED,
 		  GEOMETRY_BUFFER_ID::SPRITE,
-		  RENDER_ORDER::BOSS });
+		  RENDER_ORDER::PLAYER });
+
+	registry.colors.insert(gun, { 1.f,1.f,1.f,1.f });
 
 	return gun;
 }
@@ -178,7 +180,7 @@ Entity createGreenEnemy(vec2 pos) {
 	transform.position = pos;
 	transform.angle = M_PI;
 	transform.scale = GREEN_ENEMY_TEXTURE_SIZE * 4.f;
-	transform.angle_offset = M_PI + 0.8;
+	transform.angle_offset = M_PI + 0.8f;
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 200;
