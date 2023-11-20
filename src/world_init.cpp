@@ -311,7 +311,8 @@ void createRandomRegions(size_t num_regions, std::default_random_engine& rng){
 
 void createRandomCysts(std::default_random_engine& rng) {
 	const float ANGLE = (M_PI * 2 / NUM_REGIONS);
-	const int TOTAL_CYSTS = 100;
+	const int TOTAL_CYSTS = 200; // temp: set to ~120
+	const float MAX_CLOSENESS = SCREEN_RADIUS / 2;
 
 	const float LOWER_RADIUS = 0.18f * MAP_RADIUS;
 	const float UPPER_RADIUS = 0.98f * MAP_RADIUS;
@@ -337,7 +338,7 @@ void createRandomCysts(std::default_random_engine& rng) {
 			vec2 pos = vec2(cos(angle), sin(angle)) * radius;
 			bool tooClose = false;
 			for (auto p : positions) {
-				if (distance(pos, p) < SCREEN_RADIUS / 2) {
+				if (distance(pos, p) < MAX_CLOSENESS) {
 					tooClose = true;
 					break;
 				}
@@ -476,7 +477,7 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 		shooter_velocity.y = shooter_motion.max_velocity * shooter_velocity.y / h;
 	}
 
-	bullet_motion.velocity = bullet_direction * 500.f + shooter_velocity;
+	bullet_motion.velocity = bullet_direction * weapon.bullet_speed + shooter_velocity;
 
 	// Set projectile damage based on weapon
 	registry.projectiles.insert(bullet_entity, { weapon.damage });

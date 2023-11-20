@@ -4,6 +4,7 @@
 #include "common.hpp"
 #include "render_system.hpp"
 #include "./sub_systems/dialog_system.hpp"
+#include "./sub_systems/effects_system.hpp"
 
 // stlib
 #include <vector>
@@ -12,8 +13,6 @@
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <SDL_mixer.h>
-
-#include "render_system.hpp"
 
 // Container for all our entities and game logic. Individual rendering / update is
 // deferred to the relative update() methods
@@ -42,6 +41,9 @@ public:
 
 	// Should the game be over ?
 	bool is_over()const;
+
+	void startEntityDeath(Entity entity);
+
 private:
 	// Input callback functions
 	void on_key(int key, int, int action, int mod);
@@ -63,6 +65,7 @@ private:
 
 	// Game state
 	RenderSystem* renderer;
+	EffectsSystem* effects_system;
 	float current_speed;
 	Entity player;
 	bool isPaused;
@@ -97,6 +100,7 @@ private:
 	void step_attack(float elapsed_ms);
 	void step_dash(float elapsed_ms);
 	void step_enemySpawn(float elapsed_ms);
+	void step_timer_with_callback(float elapsed_ms);
 
 	void spawnEnemiesNearInterestPoint(vec2 player_position);
 	void spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 player_velocity);

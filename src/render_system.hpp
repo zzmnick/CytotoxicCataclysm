@@ -67,6 +67,10 @@ class RenderSystem {
 		textures_path("ui/tutorial4_shoot.png"),
 		textures_path("ui/tutorial5_pause.png"),
 		textures_path("ui/tutorial6_end.png"),
+		textures_path("ui/icon_damage.png"),
+		textures_path("ui/icon_slow.png"),
+		textures_path("ui/icon_fov.png"),
+		textures_path("ui/icon_ammo.png"),
 	};
 
 	std::array<GLuint, effect_count> effects;

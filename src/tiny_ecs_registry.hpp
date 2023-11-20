@@ -36,6 +36,9 @@ public:
 	ComponentContainer<PlayerBelonging> playerBelongings;
 	ComponentContainer<Camera> camera;
 	ComponentContainer<Cyst> cysts;
+	ComponentContainer<TimedEvent> timedEvents;
+	
+
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
 	ECSRegistry()
@@ -64,6 +67,9 @@ public:
 		registry_list.push_back(&playerBelongings);
 		registry_list.push_back(&camera);
 		registry_list.push_back(&cysts);
+		registry_list.push_back(&timedEvents);
+
+
 
 	}
 

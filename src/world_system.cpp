@@ -2,6 +2,7 @@
 #include "world_system.hpp"
 #include "world_init.hpp"
 #include "sub_systems/dialog_system.hpp"
+#include "sub_systems/effects_system.hpp"
 
 // stlib
 #include <cassert>
@@ -148,6 +149,10 @@ GLFWwindow* WorldSystem::create_window() {
 	soundChunks["player_shoot_1"] = Mix_LoadWAV(audio_path("sound/sfx_wpn_laser8.wav").c_str());
 	soundChunks["enemy_hit"] = Mix_LoadWAV(audio_path("sound/sfx_movement_footsteps5.wav").c_str());
 	soundChunks["enemy_death"] = Mix_LoadWAV(audio_path("sound/sfx_deathscream_android8.wav").c_str());
+	soundChunks["cyst_pos"] = Mix_LoadWAV(audio_path("sound/sfx_sounds_fanfare3.wav").c_str());
+	soundChunks["cyst_neg"] = Mix_LoadWAV(audio_path("sound/sfx_deathscream_robot1.wav").c_str());
+	soundChunks["cyst_empty"] = Mix_LoadWAV(audio_path("sound/sfx_sounds_interaction7.wav").c_str());
+	soundChunks["no_ammo"] = Mix_LoadWAV(audio_path("sound/sfx_wpn_noammo3.wav").c_str());
 
 	// Check for failures
 	for (const auto& pair : backgroundMusic) {
@@ -164,13 +169,13 @@ GLFWwindow* WorldSystem::create_window() {
 	}
 
 	// Assign channels
-	Mix_AllocateChannels(6);
-	chunkToChannel["player_hit"] = 0;
-	chunkToChannel["player_dash"] = 1;
-	chunkToChannel["player_death"] = 2;
-	chunkToChannel["player_shoot_1"] = 3;
-	chunkToChannel["enemy_hit"] = 4;
-	chunkToChannel["enemy_death"] = 5;
+	Mix_AllocateChannels(10);
+	chunkToChannel["player_hit"] = 9;
+	chunkToChannel["player_dash"] = 8;
+	chunkToChannel["player_death"] = 7;
+	chunkToChannel["player_shoot_1"] = 6;
+	chunkToChannel["enemy_hit"] = 5;
+	chunkToChannel["enemy_death"] = 4;
 
 	// Adjust music and CHUNK volume in range [0,128]
 	Mix_VolumeMusic(45);
@@ -183,6 +188,7 @@ GLFWwindow* WorldSystem::create_window() {
 
 void WorldSystem::init(RenderSystem* renderer_arg) {
 	this->renderer = renderer_arg;
+	this->effects_system = new EffectsSystem(player, rng, soundChunks, *this);
 	// Playing background music indefinitely
 	Mix_FadeInMusic(backgroundMusic["main"], -1, 2000);
 	fprintf(stderr, "Loaded music\n");
@@ -235,51 +241,56 @@ void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
 	}
 }
 
+void WorldSystem::startEntityDeath(Entity entity) {
+	DeathTimer& dt = registry.deathTimers.emplace(entity);
+	int buffer = 20; // to fix timing between animation and death
+
+	if (entity == player) {
+		dt.timer_ms = DEATH_EFFECT_DURATION;
+
+		Mix_PlayChannel(chunkToChannel["player_death"], soundChunks["player_death"], 0);
+
+		RenderSystem::animationSys_switchAnimation(player,
+			ANIMATION_FRAME_COUNT::IMMUNITY_DYING,
+			static_cast<int>(ceil((DEATH_EFFECT_DURATION + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::IMMUNITY_DYING))));
+	}
+	else if (registry.enemies.has(entity)) {
+		// Immobilize enemy
+		assert(registry.motions.has(entity));
+		registry.motions.remove(entity);
+
+		if (registry.weapons.has(entity)) {
+			registry.weapons.remove(entity);
+		}
+
+		dt.timer_ms = DEATH_EFFECT_DURATION_ENEMY;
+
+		Mix_PlayChannel(chunkToChannel["enemy_death"], soundChunks["enemy_death"], 0);
+
+		Enemy& enemy = registry.enemies.get(entity);
+		if (enemy.type == ENEMY_ID::GREEN) {
+			RenderSystem::animationSys_switchAnimation(entity,
+				ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
+				static_cast<int>(ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING))));
+		}
+	}
+	else if (registry.cysts.has(entity)) {
+		dt.timer_ms = 100.f; // TODO set based on animation length
+
+		effects_system->apply_random_effect();
+
+		// TODO death animation
+
+	}
+}
+
 void WorldSystem::step_health() {
 	for (uint i = 0; i < registry.healthValues.components.size(); i++) {
 		Health& health = registry.healthValues.components[i];
 		Entity entity = registry.healthValues.entities[i];
 
 		if (health.health <= 0 && !registry.deathTimers.has(entity)) {
-			DeathTimer& dt = registry.deathTimers.emplace(entity);
-			int buffer = 20; // to fix timing between animation and death
-
-			if (entity == player) {
-				dt.timer_ms = DEATH_EFFECT_DURATION;
-
-				Mix_PlayChannel(chunkToChannel["player_death"], soundChunks["player_death"], 0);
-				
-				RenderSystem::animationSys_switchAnimation(player, 
-					ANIMATION_FRAME_COUNT::IMMUNITY_DYING, 
-					static_cast<int>(ceil((DEATH_EFFECT_DURATION+buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::IMMUNITY_DYING))));			
-			}
-			else if (registry.enemies.has(entity)) {
-				// Immobilize enemy
-				assert(registry.motions.has(entity));
-				registry.motions.remove(entity);
-				if (registry.weapons.has(entity)) {
-					registry.weapons.remove(entity);
-				}
-
-				dt.timer_ms = DEATH_EFFECT_DURATION_ENEMY;
-
-				Mix_PlayChannel(chunkToChannel["enemy_death"], soundChunks["enemy_death"], 0);
-
-				Enemy& enemy = registry.enemies.get(entity);
-				if (enemy.type == ENEMY_ID::GREEN) {
-					RenderSystem::animationSys_switchAnimation(entity, 
-						ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
-						static_cast<int>(ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING))));
-				}
-			}
-			else if (registry.cysts.has(entity)) {
-				dt.timer_ms = 100.f; // TODO set based on animation length
-
-				// Sound effect
-
-				// Animation
-
-			}
+			startEntityDeath(entity);
 		}
 	}
 }
@@ -436,6 +447,22 @@ void WorldSystem::step_enemySpawn(float elapsed_ms) {
     }
 }
 
+// steps timers and invoke associated callback upon expiration
+void WorldSystem::step_timer_with_callback(float elapsed_ms) {
+	std::vector<Entity> garbage; // another garbage collector
+	for (uint i = 0; i < registry.timedEvents.components.size(); i++) {
+		TimedEvent& timedEvent = registry.timedEvents.components[i];
+		timedEvent.timer_ms -= elapsed_ms;
+		if (timedEvent.timer_ms <= 0.f) {
+			timedEvent.callback();
+			garbage.push_back(registry.timedEvents.entities[i]);
+		}
+	}
+	for (Entity e : garbage) {
+		registry.remove_all_components_of(e);
+	}
+}
+
 void WorldSystem::update_camera() {
 	registry.camera.components[0].position = registry.transforms.get(player).position;
 }
@@ -486,6 +513,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	step_attack(elapsed_ms_since_last_update);
 	step_dash(elapsed_ms_since_last_update);
 	step_enemySpawn(elapsed_ms_since_last_update);
+	step_timer_with_callback(elapsed_ms_since_last_update);
 
 	// Block velocity update for one step after collision to
 	// avoid going out of border / going through enemy
@@ -510,6 +538,13 @@ void WorldSystem::restart_game() {
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 	printf("Restarting\n");
+	// reverse active effects
+	for (auto event : registry.timedEvents.components) {
+		event.callback();
+	}
+	while (registry.timedEvents.entities.size() > 0) {
+		registry.remove_all_components_of(registry.timedEvents.entities.back());
+	}
 	// Remove all entities that we created
 	// All that have a motion
 	while (registry.motions.entities.size() > 0)
@@ -529,6 +564,7 @@ void WorldSystem::restart_game() {
 	dialog_system = nullptr;
 	// Create a new player
 	player = createPlayer({ 0, 0 });
+	effects_system->player = player;
 	// hardcode the boss position to upper right region, randomize later
 	Region boss_region = registry.regions.components[0];
 	createBoss(renderer, boss_region.interest_point);
@@ -796,8 +832,14 @@ void WorldSystem::control_direction() {
 void WorldSystem::player_shoot() {
 	Weapon& playerWeapon = registry.weapons.get(player);
 	if (playerWeapon.attack_timer <= 0) {
-		createBullet(player, { 10.f, 10.f }, { 1.f, 1.2f, 0.2f, 1.f });
+		createBullet(player, playerWeapon.size, playerWeapon.color);
 		playerWeapon.attack_timer = playerWeapon.attack_delay;
+	}
+	else if (playerWeapon.attack_timer > ATTACK_DELAY * 2 &&
+		!Mix_Playing(chunkToChannel["player_shoot_1"])) {
+		// for attack delay effect or long cooldown attacks
+		Mix_PlayChannel(chunkToChannel["player_shoot_1"], soundChunks["no_ammo"], 0);
+
 	}
 }
 
@@ -851,8 +893,8 @@ void WorldSystem::handle_shooting_sound_effect() {
 	auto play_or_queue_sound = [&]() {
 		if (!Mix_Playing(chunkToChannel["player_shoot_1"])) {
 			// duck volume if another sound is playing
-			int volume = Mix_Playing(-1) ? 40 : 128;
-			Mix_Volume(chunkToChannel["player_shoot_1"], volume);
+			int volume = Mix_Playing(-1) ? 20 : 60;
+			Mix_VolumeChunk(soundChunks["player_shoot_1"], volume);
 			Mix_PlayChannel(chunkToChannel["player_shoot_1"], soundChunks["player_shoot_1"], 0);
 		}
 		else {

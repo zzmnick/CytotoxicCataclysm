@@ -195,6 +195,9 @@ void RenderSystem::drawToScreen()
 	glUniform1f(time_uloc, (float)(glfwGetTime() * 10.0f));
 	ScreenState& screen = registry.screenStates.get(screen_state_entity);
 	glUniform1f(dead_timer_uloc, screen.screen_darken_factor);
+	// set fov
+	GLint limit_fov = glGetUniformLocation(screen_program, "is_fov_limited");
+	glUniform1i(limit_fov, screen.limit_fov);
 	gl_has_errors();
 	// Set the vertex position and vertex texture coordinates (both stored in the
 	// same VBO)

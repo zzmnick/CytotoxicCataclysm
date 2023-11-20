@@ -57,24 +57,21 @@ enum class COLLISION_TYPE {
 	BULLET_WITH_CYST = BULLET_WITH_BOUNDARY + 1,
 };
 
-enum class CYST_POS_EFFECT {
+enum class CYST_EFFECT_ID {
+	// POSITIVE EFFECTS
 	DAMAGE = 0,
 	HEAL = DAMAGE + 1,
-	STOP_SPAWN = HEAL + 1,
-	EFFECT_COUNT = STOP_SPAWN + 1
-};
-const int cyst_pos_effect_count = (int)CYST_POS_EFFECT::EFFECT_COUNT;
+	CLEAR_SCREEN = HEAL + 1,
 
-enum class CYST_NEG_EFFECT {
-	SLOW = 0,
-	DIRECTION = SLOW + 1,
-	FOV = DIRECTION + 1,
-	EXPLOSION = FOV + 1,
-	EFFECT_COUNT = EXPLOSION + 1
+	// NEGATIVE EFFECTS
+	SLOW = CLEAR_SCREEN + 1,
+	FOV = SLOW + 1,
+	DIRECTION = FOV + 1,
+	NO_ATTACK = DIRECTION + 1,
+	EFFECT_COUNT = NO_ATTACK + 1
 };
-const int cyst_neg_effect_count = (int)CYST_NEG_EFFECT::EFFECT_COUNT;
-
-const int cyst_total_effect_count = cyst_pos_effect_count + cyst_neg_effect_count;
+const int cyst_effect_count = static_cast<int>(CYST_EFFECT_ID::EFFECT_COUNT);
+const int cyst_neg_start = static_cast<int>(CYST_EFFECT_ID::SLOW);
 
 /**
  * The following enumerators represent global identifiers refering to graphic
@@ -136,7 +133,11 @@ enum class TEXTURE_ASSET_ID {
 	TUTORIAL_SHOOT = TUTORIAL_ROTATE + 1,
 	TUTORIAL_PAUSE = TUTORIAL_SHOOT + 1,
 	TUTORIAL_END = TUTORIAL_PAUSE + 1,
-	TEXTURE_COUNT = TUTORIAL_END + 1 // TEXTURE_COUNT indicates that no txture is needed
+	ICON_DAMAGE = TUTORIAL_END + 1,
+	ICON_SLOW = ICON_DAMAGE + 1,
+	ICON_FOV = ICON_SLOW + 1,
+	ICON_AMMO = ICON_FOV + 1,
+	TEXTURE_COUNT = ICON_AMMO + 1 // TEXTURE_COUNT indicates that no txture is needed
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
@@ -314,6 +315,7 @@ extern Debug debugging;
 // Sets the brightness of the screen
 struct ScreenState {
 	float screen_darken_factor = -1;
+	bool limit_fov = false;
 };
 
 // A struct to refer to debugging graphics in the ECS
@@ -383,8 +385,9 @@ struct Weapon {
 	float attack_delay = ATTACK_DELAY;
 	float angle_offset = 0.0f;
 	float bullet_speed = 500.f;
+	vec4 color = { 1.f, 1.2f, 0.2f, 1.f };
+	vec2 size = { 10.f, 10.f };
 	vec2 offset = { 0.f, 0.f };
-	
 };
 
 struct Projectile {
@@ -405,8 +408,7 @@ struct NoRotate {
 
 };
 
-struct Dash
-{
+struct Dash {
 	float timer_ms = 400.f;
 	float active_dash_ms = 0.f;
 	float dash_speed = 5.f;
@@ -416,11 +418,17 @@ struct Dash
 struct Cyst {
 	float health = 25.f;
 };
+
 struct CollidePlayer {
 
 };
 
 struct CollideEnemy {
 
+};
+
+struct TimedEvent {
+	float timer_ms = 10000.f;
+	std::function<void()> callback;
 };
 #pragma endregion
