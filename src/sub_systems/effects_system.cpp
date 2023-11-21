@@ -120,7 +120,7 @@ void EffectsSystem::handle_clear_screen() {
 	vec2 camPos = registry.camera.components[0].position;
 	for (int i = 0; i < registry.enemies.entities.size(); i++) {
 		float distance = length(registry.transforms.get(registry.enemies.entities[i]).position - camPos);
-		if (registry.enemies.components[i].type != ENEMY_ID::BOSS && distance < SCREEN_RADIUS * 0.9) {
+		if (registry.enemies.components[i].type != ENEMY_ID::BOSS && registry.enemies.components[i].type != ENEMY_ID::FRIENDBOSS && distance < SCREEN_RADIUS * 0.9) {
 			ws.startEntityDeath(registry.enemies.entities[i]);
 		}
 	}

@@ -31,7 +31,9 @@ const int region_goal_count = (int)REGION_GOAL_ID::REGION_GOAL_COUNT;
 
 enum class ENEMY_ID {
 	BOSS = 0,
-	GREEN = BOSS + 1,
+	FRIENDBOSS = BOSS + 1,
+	FRIENDBOSSCLONE = FRIENDBOSS + 1,
+	GREEN = FRIENDBOSSCLONE + 1,
 	RED = GREEN + 1,
 	YELLOW = RED + 1,
 	ENEMY_COUNT = YELLOW + 1
@@ -40,8 +42,8 @@ const int enemy_type_count = (int)ENEMY_ID::ENEMY_COUNT;
 
 enum class BOSS_ID {
 	BACTERIOPHAGE = 0,
-	ECOLI = BACTERIOPHAGE + 1,
-	BOSS_COUNT = ECOLI + 1
+	FRIEND = BACTERIOPHAGE + 1,
+	BOSS_COUNT = FRIEND + 1
 };
 const int boss_type_count = (int)BOSS_ID::BOSS_COUNT;
 
@@ -114,9 +116,10 @@ enum class TEXTURE_ASSET_ID {
 	CYST_SHINE = IMMUNITY_BLINKING + 1,
 	BACTERIOPHAGE = CYST_SHINE + 1,
 	DASHING = BACTERIOPHAGE + 1,
+	FRIEND = DASHING + 1,
 
 	// Background
-	NERVOUS_BG = DASHING + 1,
+	NERVOUS_BG = FRIEND + 1,
 	RESPIRATORY_BG = NERVOUS_BG + 1,
 	URINARY_BG = RESPIRATORY_BG + 1,
 	MUSCULAR_BG = URINARY_BG + 1,
@@ -248,6 +251,7 @@ struct Camera {
 // Enemy component
 struct Enemy {
 	ENEMY_ID type;
+	float angle = 0.f;
 };
 
 // Data relevant to the shape of entities

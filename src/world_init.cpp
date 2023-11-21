@@ -140,6 +140,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::BACTERIOPHAGE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
+	registry.collidePlayers.emplace(entity);
 	Motion& motion = registry.motions.emplace(entity);
 	Health& health = registry.healthValues.emplace(entity);
 
@@ -169,6 +170,86 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 		  RENDER_ORDER::BOSS });
 	return entity;
 }
+
+Entity createSecondBoss(RenderSystem* renderer, vec2 pos) {
+	// Create boss components
+	auto entity = Entity();
+	// Assuming boss is a type of enemy
+	registry.collidePlayers.emplace(entity);
+	Dash& enemy_dash = registry.dashes.emplace(entity);
+
+
+
+
+	Enemy& new_enemy = registry.enemies.emplace(entity);
+	// Setting initial components values
+	new_enemy.type = ENEMY_ID::FRIENDBOSS;
+
+	Transform& transform = registry.transforms.emplace(entity);
+	transform.position = pos;
+	transform.angle = 0.f;
+	transform.angle_offset = M_PI + 0.7f;
+	transform.scale = FRIEND_TEXTURE_SIZE * 3.f;
+
+	Motion& motion = registry.motions.emplace(entity);
+
+	motion.max_velocity = 350.f; // TODO: Dummy boss for now, change this later
+
+	Health& health = registry.healthValues.emplace(entity);
+	health.health = 250.f;
+
+	Weapon& weapon = registry.weapons.emplace(entity);
+	weapon.damage = 15.f;
+	weapon.bullet_speed = 1000.f;
+	weapon.angle_offset = 0.7f;
+	weapon.offset = { 60.f,60.f };
+
+	// Add to render_request
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::FRIEND,
+		  EFFECT_ASSET_ID::TEXTURED,
+		  GEOMETRY_BUFFER_ID::SPRITE,
+		  RENDER_ORDER::BOSS });
+	return entity;
+}
+
+Entity createBossClone(vec2 pos) {
+	// Create boss components
+	auto entity = Entity();
+	// Assuming boss is a type of enemy
+	registry.collidePlayers.emplace(entity);
+
+
+
+	Enemy& new_enemy = registry.enemies.emplace(entity);
+	// Setting initial components values
+	new_enemy.type = ENEMY_ID::FRIENDBOSSCLONE;
+
+	Transform& transform = registry.transforms.emplace(entity);
+	transform.position = pos;
+	transform.angle = 0.f;
+	transform.angle_offset = M_PI + 0.7f;
+	transform.scale = FRIEND_TEXTURE_SIZE * 3.f;
+
+	Motion& motion = registry.motions.emplace(entity);
+
+	motion.max_velocity = 300.f; // TODO: Dummy boss for now, change this later
+
+	Health& health = registry.healthValues.emplace(entity);
+	health.health = 10.f;
+
+
+	// Add to render_request
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::FRIEND,
+		  EFFECT_ASSET_ID::TEXTURED,
+		  GEOMETRY_BUFFER_ID::SPRITE,
+		  RENDER_ORDER::BOSS });
+	return entity;
+}
+
 
 Entity createRedEnemy(vec2 pos) {
 	
@@ -491,22 +572,33 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 
 	Motion shooter_motion = registry.motions.get(shooter);
 
-	vec2 bullet_direction = normalize(vec2(cos(shooter_transform.angle - weapon.angle_offset), sin(shooter_transform.angle - weapon.angle_offset)));
+	if (registry.enemies.has(shooter)) {
+		bullet_motion.velocity = { cos(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed, 
+			sin(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed};
 
-	float projection = dot(shooter_motion.velocity, bullet_direction);
-	// add players sideways velocity
-	vec2 shooter_velocity = shooter_motion.velocity - bullet_direction * projection;
-	// add half of players forward/backward velocity
-	//shooter_velocity += bullet_direction * projection * 0.5f;
 
-	// scale to length of max_velocity (ie when dashing)
-	if (length(shooter_velocity) > shooter_motion.max_velocity) {
-		float h = hypot(shooter_velocity.x, shooter_velocity.y);
-		shooter_velocity.x = shooter_motion.max_velocity * shooter_velocity.x / h;
-		shooter_velocity.y = shooter_motion.max_velocity * shooter_velocity.y / h;
 	}
+	else {
 
-	bullet_motion.velocity = bullet_direction * weapon.bullet_speed + shooter_velocity;
+
+
+		vec2 bullet_direction = normalize(vec2(cos(shooter_transform.angle - weapon.angle_offset), sin(shooter_transform.angle - weapon.angle_offset)));
+
+		float projection = dot(shooter_motion.velocity, bullet_direction);
+		// add players sideways velocity
+		vec2 shooter_velocity = shooter_motion.velocity - bullet_direction * projection;
+		// add half of players forward/backward velocity
+		//shooter_velocity += bullet_direction * projection * 0.5f;
+
+		// scale to length of max_velocity (ie when dashing)
+		if (length(shooter_velocity) > shooter_motion.max_velocity) {
+			float h = hypot(shooter_velocity.x, shooter_velocity.y);
+			shooter_velocity.x = shooter_motion.max_velocity * shooter_velocity.x / h;
+			shooter_velocity.y = shooter_motion.max_velocity * shooter_velocity.y / h;
+		}
+
+		bullet_motion.velocity = bullet_direction * weapon.bullet_speed + shooter_velocity;
+	}
 
 	// Set projectile damage based on weapon
 	registry.projectiles.insert(bullet_entity, { weapon.damage });

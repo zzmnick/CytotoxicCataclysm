@@ -53,6 +53,7 @@ class RenderSystem {
 		textures_path("cyst_animation.png"),
 		textures_path("bacteriophage.png"),
 		textures_path("dashing.png"),
+		textures_path("friend.png"),
 
 		// Background
 		textures_path("background/nervous_bg.png"),

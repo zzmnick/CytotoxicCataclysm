@@ -206,6 +206,7 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	if (SHOW_DIALOGS) {
 		dialog_system = new DialogSystem(keys_pressed, mouse);
 	}
+
 }
 
 void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
@@ -262,6 +263,9 @@ void WorldSystem::startEntityDeath(Entity entity) {
 		if (registry.weapons.has(entity)) {
 			registry.weapons.remove(entity);
 		}
+		if (registry.dashes.has(entity)) {
+			registry.dashes.remove(entity);
+		}
 
 		dt.timer_ms = DEATH_EFFECT_DURATION_ENEMY;
 
@@ -272,6 +276,15 @@ void WorldSystem::startEntityDeath(Entity entity) {
 			RenderSystem::animationSys_switchAnimation(entity,
 				ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING,
 				static_cast<int>(ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING))));
+		}
+		if (enemy.type == ENEMY_ID::FRIENDBOSS) {
+			for (Entity enemyentity: registry.enemies.entities){
+				Enemy& enemyclone = registry.enemies.get(enemyentity);
+				if (enemyclone.type == ENEMY_ID::FRIENDBOSSCLONE) {
+					startEntityDeath(enemyentity);
+				}
+			}
+			
 		}
 	}
 	else if (registry.cysts.has(entity)) {
@@ -916,3 +929,5 @@ void WorldSystem::handle_shooting_sound_effect() {
 		isShootingSoundQueued = false;
 	}
 }
+
+
