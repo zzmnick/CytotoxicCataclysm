@@ -28,6 +28,11 @@ class RenderSystem {
 		  // specify meshes of other assets here
 	};
 
+	const std::vector < std::pair<GEOMETRY_BUFFER_ID, std::string>> mesh_paths_color_vector =
+	{
+		  std::pair<GEOMETRY_BUFFER_ID, std::string>(GEOMETRY_BUFFER_ID::SWORD, mesh_path("sword.obj"))
+	};
+
 	// Make sure these paths remain in sync with the associated enumerators.
 	const std::array<std::string, texture_count> texture_paths = {
 		

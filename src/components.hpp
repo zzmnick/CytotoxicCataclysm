@@ -166,7 +166,8 @@ enum class GEOMETRY_BUFFER_ID {
 	SPRITESHEET_CYST_SHINE = SPRITESHEET_IMMUNITY_BLINKING + 1,
 	SPRITESHEET_DASHING = SPRITESHEET_CYST_SHINE + 1,
 	BACTERIOPHAGE = SPRITESHEET_DASHING + 1,
-	GEOMETRY_COUNT = BACTERIOPHAGE + 1
+	SWORD = BACTERIOPHAGE + 1,
+	GEOMETRY_COUNT = SWORD + 1
 };
 const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 
@@ -280,7 +281,8 @@ struct Action {
 
 enum class PLAYER_BELONGING_ID {
 	DASHING = 0,
-	GUN = DASHING + 1,
+	SWORD = DASHING + 1,
+	GUN = SWORD + 1,
 	PLAYER_BELONGING_COUNT = GUN + 1,
 };
 const int player_belonging_count = (int)PLAYER_BELONGING_ID::PLAYER_BELONGING_COUNT;
@@ -343,10 +345,12 @@ struct TexturedVertex {
 
 // Mesh datastructure for storing vertex and index buffers
 struct Mesh {
-	static bool loadFromOBJFile(std::string obj_path, std::vector<TexturedVertex>& out_vertices, std::vector<uint16_t>& out_vertex_indices, vec2& out_size);
+	static bool loadFromOBJFile(std::string obj_path, std::vector<TexturedVertex>& out_vertices, std::vector<uint16_t>& out_vertex_indices, vec2& out_size, 
+		std::vector<ColoredVertex>& out_color_vertices, bool containColorVertices);
 	vec2 original_size = { 1,1 };
-	std::vector<TexturedVertex> vertices;
+	std::vector<TexturedVertex> texture_vertices;
 	std::vector<uint16_t> vertex_indices;
+	std::vector<ColoredVertex> color_vertices;
 };
 
 struct RenderRequest {
@@ -392,6 +396,7 @@ struct Weapon {
 
 struct Projectile {
 	float damage = 10.f;
+	
 };
 
 struct Animation {

@@ -126,12 +126,31 @@ void RenderSystem::initializeGlMeshes()
 		GEOMETRY_BUFFER_ID geom_index = mesh_paths[i].first;
 		std::string name = mesh_paths[i].second;
 		Mesh::loadFromOBJFile(name,
-			meshes[(int)geom_index].vertices,
+			meshes[(int)geom_index].texture_vertices,
 			meshes[(int)geom_index].vertex_indices,
-			meshes[(int)geom_index].original_size);
+			meshes[(int)geom_index].original_size,
+			meshes[(int)geom_index].color_vertices,
+			false);
 
 		bindVBOandIBO(geom_index,
-			meshes[(int)geom_index].vertices,
+			meshes[(int)geom_index].texture_vertices,
+			meshes[(int)geom_index].vertex_indices);
+	}
+
+	for (uint i = 0; i < mesh_paths_color_vector.size(); i++)
+	{
+		// Initialize meshes
+		GEOMETRY_BUFFER_ID geom_index = mesh_paths_color_vector[i].first;
+		std::string name = mesh_paths_color_vector[i].second;
+		Mesh::loadFromOBJFile(name,
+			meshes[(int)geom_index].texture_vertices,
+			meshes[(int)geom_index].vertex_indices,
+			meshes[(int)geom_index].original_size,
+			meshes[(int)geom_index].color_vertices,
+			true);
+
+		bindVBOandIBO(geom_index, 
+			meshes[(int)geom_index].color_vertices, 
 			meshes[(int)geom_index].vertex_indices);
 	}
 }

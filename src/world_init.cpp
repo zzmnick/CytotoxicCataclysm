@@ -94,16 +94,44 @@ Entity createDashing(Entity& playerEntity) {
 	animation.update_period_ms = 50;
 
 	//same as player's
-	Motion& playerMotion_copy = registry.motions.get(playerEntity);
+	Motion playerMotion_copy = registry.motions.get(playerEntity);
 	registry.motions.insert(placeHolder, playerMotion_copy);
 
-	Transform& playerTrans_copy = registry.transforms.get(playerEntity);
+	Transform playerTrans_copy = registry.transforms.get(playerEntity);
 	registry.transforms.insert(placeHolder, playerTrans_copy);
 
 	vec4& color = registry.colors.emplace(placeHolder);
 	color = dashing_default_color;
 
 	return placeHolder;
+}
+
+Entity createSword(RenderSystem* renderer, Entity& playerEntity) {
+	auto entity = Entity();
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SWORD);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	PlayerBelonging& pb = registry.playerBelongings.emplace(entity);
+	pb.id = PLAYER_BELONGING_ID::SWORD;
+	
+	//same as player's
+	Motion playerMotion_copy = registry.motions.get(playerEntity);
+	registry.motions.insert(entity, playerMotion_copy);
+	
+
+	Transform playerTrans_copy = registry.transforms.get(playerEntity);
+	playerTrans_copy.scale = SWORD_SIZE;
+	registry.transforms.insert(entity, playerTrans_copy);
+
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::TEXTURE_COUNT,
+			EFFECT_ASSET_ID::COLOURED,
+			GEOMETRY_BUFFER_ID::SWORD,
+			RENDER_ORDER::OBJECTS_FR });
+
+	return entity;
+
 }
 
 Entity createBoss(RenderSystem* renderer, vec2 pos) {
@@ -143,9 +171,9 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 }
 
 Entity createRedEnemy(vec2 pos) {
+	
 	// Create enemy components
 	auto entity = Entity();
-
 	Enemy& new_enemy = registry.enemies.emplace(entity);
 	new_enemy.type = ENEMY_ID::RED;
 
@@ -171,6 +199,7 @@ Entity createRedEnemy(vec2 pos) {
 }
 
 Entity createGreenEnemy(vec2 pos) {
+	
 	// Create enemy components
 	auto entity = Entity();
 	Enemy& new_enemy = registry.enemies.emplace(entity);
@@ -205,7 +234,6 @@ Entity createGreenEnemy(vec2 pos) {
 Entity createYellowEnemy(vec2 pos) {
 	// Create enemy components
 	auto entity = Entity();
-
 	registry.noRotates.emplace(entity);
 	registry.collidePlayers.emplace(entity);
 
@@ -445,6 +473,7 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 	assert(registry.transforms.has(shooter));
 	// Create bullet's components
 	auto bullet_entity = Entity();
+
 	Transform& bullet_transform = registry.transforms.emplace(bullet_entity);
 	Motion& bullet_motion = registry.motions.emplace(bullet_entity);
 	registry.colors.insert(bullet_entity, color);

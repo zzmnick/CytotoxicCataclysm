@@ -632,6 +632,7 @@ void WorldSystem::resolve_collisions() {
 
 			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
 			garbage.push_back(entity);
+			
 		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_CYST) {
 			Entity cyst = collision.other_entity;

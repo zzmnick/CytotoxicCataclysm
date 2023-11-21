@@ -74,6 +74,26 @@ bool collides(const Transform& transform1, const Transform& transform2)
 	return false;
 }
 
+//AABB-AABB collision is used
+//reference: https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
+bool collides_bounding_box(const Transform& transform1, const Transform& transform2)
+{
+	//diagnal
+	float transform1_scale_diagnal_abs = abs(length(transform1.scale));
+	float transform2_scale_diagnal_abs = abs(length(transform2.scale));
+
+	vec2 top_right_1 = { transform1.position.x + transform1_scale_diagnal_abs / 2.f, transform1.position.y + transform1_scale_diagnal_abs / 2.f };
+	vec2 bottom_left_1 = { transform1.position.x - transform1_scale_diagnal_abs / 2.f, transform1.position.y - transform1_scale_diagnal_abs / 2.f };
+
+	vec2 top_right_2 = { transform2.position.x + transform2_scale_diagnal_abs / 2.f, transform2.position.y + transform2_scale_diagnal_abs / 2.f };
+	vec2 bottom_left_2 = { transform2.position.x - transform2_scale_diagnal_abs / 2.f, transform2.position.y - transform2_scale_diagnal_abs / 2.f };
+
+	return bottom_left_1.x <= top_right_2.x 
+		&& top_right_1.x >= bottom_left_2.x
+		&& bottom_left_1.y <= top_right_2.y
+		&& top_right_1.y >= bottom_left_2.y;
+}
+
 bool collides_with_boundary(const Transform& transform)
 {
 	std::vector<CollisionCircle> collision_circles = get_collision_circles(transform);
@@ -113,6 +133,82 @@ bool get_side_of_line(vec2 point_1, vec2 point_2, vec2 target) {
 		(point_2.y - point_1.y) * (target.x - point_1.x) > 0;
 }
 
+//Reference: https://stackoverflow.com/questions/3838329/how-can-i-check-if-two-segments-intersect
+bool line_line_intersection_t_u(vec2 A, vec2 B, vec2 C, vec2 D) {
+	return get_side_of_line(A, C, D) != get_side_of_line(B,C,D) && get_side_of_line(A,B,C) != get_side_of_line(A,B,D);
+}
+
+//check if any kine segment on mesh p1p2p3 is intersecting any line segment of the mesh abc
+bool line_line_intersect(vec2 a, vec2 b, vec2 c, vec2 p1, vec2 p2, vec2 p3) {
+	//ab p1p2
+	if (line_line_intersection_t_u(b, a, p1, p2)) return true;
+
+	//ab p1p3
+	if( line_line_intersection_t_u(b, a, p1, p3)) return true;
+
+	//ab p2p3
+	if( line_line_intersection_t_u(b, a, p2, p3)) return true;
+
+	//ac p1p2
+	if( line_line_intersection_t_u(c, a, p1, p2)) return true;
+
+	//ac p2p3
+	if( line_line_intersection_t_u(c, a, p2, p3)) return true;
+
+	//ac p1p3
+	if( line_line_intersection_t_u(c, a, p1, p3)) return true;
+
+	//bc p1p2
+	if( line_line_intersection_t_u(b, c, p1, p2)) return true;
+
+	//bc p1p3
+	if( line_line_intersection_t_u(b, c, p1, p3))return true;
+
+	//bc p2p3
+	if( line_line_intersection_t_u(b, c, p2, p3)) return true;
+
+	return false;	
+}
+
+bool collides_mesh_with_mesh(Mesh* mesh1, Transform transform_1, Mesh* mesh2, Transform transform_2) {
+	Transformation t_matrix1;
+	t_matrix1.translate(transform_1.position);
+	t_matrix1.rotate(transform_1.angle);
+	t_matrix1.scale(transform_1.scale);
+	std::vector<vec2> vertex_pos1;
+
+	Transformation t_matrix2;
+	t_matrix2.translate(transform_2.position);
+	t_matrix2.rotate(transform_2.angle);
+	t_matrix2.scale(transform_2.scale);
+	std::vector<vec2> vertex_pos2;
+	
+	// Convert all vertex position to world coordinate
+	for (TexturedVertex v1 : mesh1->texture_vertices) {
+		vec3 world_pos1 = t_matrix1.mat * vec3(v1.position.x, v1.position.y, 1.f);
+		vertex_pos1.push_back(vec2(world_pos1.x, world_pos1.y));
+	}
+
+	for (TexturedVertex v2 : mesh2->texture_vertices) {
+		vec3 world_pos2 = t_matrix2.mat * vec3(v2.position.x, v2.position.y, 1.f);
+		vertex_pos2.push_back(vec2(world_pos2.x, world_pos2.y));
+	}
+
+	for (int i = 0; i < mesh1->vertex_indices.size(); i += 3) {
+		vec2 point1_1 = vertex_pos1[mesh1->vertex_indices[i]];
+		vec2 point1_2 = vertex_pos1[mesh1->vertex_indices[i + 1]];
+		vec2 point1_3 = vertex_pos1[mesh1->vertex_indices[i + 2]];
+		for (int j = 0; j < mesh2->vertex_indices.size(); j += 3) {
+			vec2 point2_1 = vertex_pos2[mesh2->vertex_indices[j]];
+			vec2 point2_2 = vertex_pos2[mesh2->vertex_indices[j + 1]];
+			vec2 point2_3 = vertex_pos2[mesh2->vertex_indices[j + 2]];
+			// line intersection
+			if(line_line_intersect(point1_1, point1_2, point1_3, point2_1, point2_2, point2_3)) return true;
+		}
+	}
+	return false;
+}
+
 // Check if mesh collides with circles. Mesh is associated with transform_1
 bool collides_with_mesh(Mesh *mesh, Transform transform_1, Transform transform_2) {
 	std::vector<CollisionCircle> circles = get_collision_circles(transform_2);
@@ -122,7 +218,7 @@ bool collides_with_mesh(Mesh *mesh, Transform transform_1, Transform transform_2
 	t_matrix.scale(transform_1.scale);
 	std::vector<vec2> vertex_pos;
 	// Convert all vertex position to world coordinate
-	for (TexturedVertex v : mesh->vertices) {
+	for (TexturedVertex v : mesh->texture_vertices) {
 		vec3 world_pos = t_matrix.mat * vec3(v.position.x, v.position.y, 1.f);
 		vertex_pos.push_back(vec2(world_pos.x, world_pos.y));
 	}
@@ -157,11 +253,14 @@ void collisionhelper(Entity entity_1, Entity entity_2) {
 	if (registry.projectiles.has(entity_1)) {
 		if (registry.projectiles.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_BULLET, entity_2);
-		} else if (registry.players.has(entity_2) && registry.collidePlayers.has(entity_1)) {
+		}
+		else if (registry.players.has(entity_2) && registry.collidePlayers.has(entity_1)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_PLAYER, entity_2);
-		} else if (registry.enemies.has(entity_2) && registry.collideEnemies.has(entity_1)) {
+		}
+		else if (registry.enemies.has(entity_2) && registry.collideEnemies.has(entity_1)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_ENEMY, entity_2);
-		} else if (registry.cysts.has(entity_2)) {
+		}
+		else if (registry.cysts.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_CYST, entity_2);
 		}
 	// Player Collisions
@@ -193,17 +292,23 @@ void step_movement(float elapsed_ms) {
 		Motion& motion = motion_container.components[i];
 		if (registry.playerBelongings.has(entity)) {
 			Entity playerEntity = registry.players.entities[0];
+			Transform player_transform = registry.transforms.get(playerEntity);
 
-			if (registry.playerBelongings.get(entity).id == PLAYER_BELONGING_ID::GUN) {
-				Transform player_transform = registry.transforms.get(playerEntity);
+			PlayerBelonging& pb = registry.playerBelongings.get(entity);
+			if (pb.id == PLAYER_BELONGING_ID::GUN) {
+				
 				Weapon weapon = registry.weapons.get(playerEntity);
 				transform.position.x = player_transform.position.x + (weapon.offset.x) * cos(player_transform.angle);
 				transform.position.y = player_transform.position.y + weapon.offset.y * sin(player_transform.angle);
 				transform.angle = player_transform.angle + transform.angle_offset;
 			}
-			else {
+			else if (pb.id == PLAYER_BELONGING_ID::DASHING) {
 				motion.velocity = registry.motions.get(playerEntity).velocity;
 				transform.angle = atan2(motion.velocity.y, motion.velocity.x);
+			}
+			else {
+				motion.velocity = registry.motions.get(playerEntity).velocity;
+				transform.angle = player_transform.angle;
 			}
 		}
 		float step_seconds = elapsed_ms / 1000.f;
@@ -239,7 +344,7 @@ void check_collision() {
 	{
 		Entity entity_i = motion_container.entities[i];
 		assert(registry.transforms.has(entity_i));
-		Transform& transform_i = registry.transforms.get(entity_i);
+		Transform transform_i = registry.transforms.get(entity_i);
 
 		// Check for collisions with the map boundary
 		if (!registry.cysts.has(entity_i) && collides_with_boundary(transform_i)) {
@@ -261,14 +366,30 @@ void check_collision() {
 		{
 			Entity entity_j = motion_container.entities[j];
 			assert(registry.transforms.has(entity_j));
-			Transform& transform_j = registry.transforms.get(entity_j);
+			Transform transform_j = registry.transforms.get(entity_j);
 
 			// skip if outside screen
 			if (is_outside_screen(transform_j.position)) {
 				continue;
 			}
 
-			if (registry.meshPtrs.has(entity_i)) {
+			//skip if bounding box is not colliding
+			if (!collides_bounding_box(transform_i, transform_j)) {
+				continue;
+			}
+
+			//player's belongings(ie. dashing, sword) cannot hurt the player; ignore collisions between player's belongings
+			if ((registry.players.has(entity_i) || registry.playerBelongings.has(entity_i)) && (registry.players.has(entity_j) || registry.playerBelongings.has(entity_j))) {
+				continue;
+			}
+
+
+			if (registry.meshPtrs.has(entity_i) && registry.meshPtrs.has(entity_j)) {//mesh-mesh collision
+				if ( collides_mesh_with_mesh(registry.meshPtrs.get(entity_i), transform_i, registry.meshPtrs.get(entity_j), transform_j) ) {
+					collisionhelper(entity_i, entity_j);
+					collisionhelper(entity_j, entity_i);
+				}
+			} else if (registry.meshPtrs.has(entity_i)) {
 				if (collides_with_mesh(registry.meshPtrs.get(entity_i), transform_i, transform_j)) {
 					collisionhelper(entity_i, entity_j);
 					collisionhelper(entity_j, entity_i);

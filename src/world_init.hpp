@@ -16,6 +16,7 @@ const vec2 HEALTHBAR_TEXTURE_SIZE = { 530.f, 80.f };
 const vec2 BACTERIOPHAGE_TEXTURE_SIZE = { 750.f, 900.f };
 const vec2 DIALOG_TEXTURE_SIZE = { 1920.f, 1080.f };
 const vec2 CYST_TEXTURE_SIZE = { 23.f, -22.f };
+const vec2 SWORD_SIZE = { 500.f, 500.f };
 
 const float IMMUNITY_TEXTURE_ANGLE = M_PI / 4;
 
@@ -24,14 +25,16 @@ const vec2 STATUSBAR_SCALE = { 1.f, 1.f };
 /*************************[ characters ]*************************/
 // the player
 Entity createPlayer(vec2 pos);
+Entity createDashing(Entity& playerEntity);
+Entity createSword(RenderSystem* renderer, Entity& playerEntity);
 Entity createGun(Entity player);
 // enemies
 Entity createRedEnemy(vec2 pos);
 Entity createGreenEnemy(vec2 pos);
 Entity createYellowEnemy(vec2 pos);
 Entity createBoss(RenderSystem* renderer, vec2 pos);
-//dashing
-Entity createDashing(Entity& playerEntity);
+
+
 
 /*************************[ environment ]*************************/
 // the random regions
