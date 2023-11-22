@@ -44,6 +44,13 @@ void AISystem::move_enemies(float elapsed_ms) {
 				}
 			}
 			else if (enemyAttribute.type == ENEMY_ID::FRIENDBOSS) {
+				float distance = length(playerposition - enemytransform.position);
+				if (distance > CONTENT_WIDTH_PX / 2) {
+					continue;
+				}
+
+				
+
 				Dash& enemyDash = registry.dashes.get(entity);
 				if (enemyDash.active_dash_ms > 0.f) {
 					continue;

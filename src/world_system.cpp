@@ -581,6 +581,8 @@ void WorldSystem::restart_game() {
 	// hardcode the boss position to upper right region, randomize later
 	Region boss_region = registry.regions.components[0];
 	createBoss(renderer, boss_region.interest_point);
+	Region second_boss_region = registry.regions.components[1];
+	createSecondBoss(renderer, second_boss_region.interest_point);
 	createRandomCysts(rng);
 }
 
