@@ -86,13 +86,15 @@ void AISystem::enemy_shoot(float elapsed_ms) {
 			if (enemyWeapon.attack_timer <= 0) {
 				Enemy& enemy = registry.enemies.get(entity);
 				if (enemy.type == ENEMY_ID::BOSS) {
-					createBullet(entity, { 20.f, 20.f }, { 0.f, 0.992f, 1.f, 1.f });
+					createBullet(entity, enemyWeapon.size, enemyWeapon.color);
+
 
 				}
 				else if (enemy.type == ENEMY_ID::FRIENDBOSS) {
 					float decision = (static_cast<float>(rand()) / RAND_MAX); //This generates num between 0 and 1
 					if (decision <= 0.7f) {
-						createBullet(entity, { 13.f, 13.f }, { 0.718f, 1.f, 0.f, 1.f });
+						createBullet(entity, enemyWeapon.size, enemyWeapon.color);
+
 					}
 					else {
 						enemy_special_attack(entity);

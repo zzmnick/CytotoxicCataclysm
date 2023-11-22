@@ -52,6 +52,9 @@ Entity createGun(Entity player) {
 	Weapon& weapon = registry.weapons.emplace(player);
 	weapon.angle_offset = IMMUNITY_TEXTURE_ANGLE;
 	weapon.offset = { 60.f,60.f };
+	weapon.bullet_speed = 1400.f;
+	weapon.size = { 15.f, 15.f };
+	weapon.damage = 10.f;
 
 	Entity gun = Entity();
 	registry.playerBelongings.insert(gun, { PLAYER_BELONGING_ID::GUN });
@@ -159,7 +162,9 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 	Weapon& weapon = registry.weapons.emplace(entity);
 	weapon.damage = 15.f;
 	weapon.angle_offset = M_PI + M_PI / 2;
-	weapon.bullet_speed = 1000.f;
+	weapon.bullet_speed = 800.f;
+	weapon.size = { 45.f, 45.f };
+	weapon.color = { 0.f, 0.992f, 1.f, 1.f };
 
 	// Add to render_request
 	registry.renderRequests.insert(
@@ -320,6 +325,9 @@ Entity createYellowEnemy(vec2 pos, float health) {
 
 	Weapon& weapon = registry.weapons.emplace(entity);
 	weapon.attack_delay = 900.f;
+	weapon.bullet_speed = 400.f;
+	weapon.size = { 25.f, 25.f };
+	weapon.color = { 0.718f, 1.f, 0.f, 1.f };
 
 	Enemy& new_enemy = registry.enemies.emplace(entity);
 	new_enemy.type = ENEMY_ID::YELLOW;

@@ -32,8 +32,8 @@ Entity createDashing(Entity& playerEntity);
 Entity createSword(RenderSystem* renderer, Entity& playerEntity);
 Entity createGun(Entity player);
 // enemies
-Entity createRedEnemy(vec2 pos, float health = 100.0);
-Entity createGreenEnemy(vec2 pos, float health = 200.0);
+Entity createRedEnemy(vec2 pos, float health = 40.0);
+Entity createGreenEnemy(vec2 pos, float health = 150.0);
 Entity createYellowEnemy(vec2 pos, float health = 50.0);
 Entity createBossClone(vec2 pos, float health = 10.0);
 Entity createBoss(RenderSystem* renderer, vec2 pos, float health = 1000.0);

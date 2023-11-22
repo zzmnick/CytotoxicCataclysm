@@ -1087,7 +1087,7 @@ void WorldSystem::player_dash() {
 
 	playerMovement.velocity += playerDash.max_dash_velocity * dashDirection;
 
-	playerDash.timer_ms = 600.f;
+	playerDash.timer_ms = 800.f;
 	playerDash.active_dash_ms = 100.f;
 
 	Mix_PlayChannel(chunkToChannel["player_dash"], soundChunks["player_dash"], 0);
