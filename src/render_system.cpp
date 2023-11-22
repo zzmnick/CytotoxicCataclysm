@@ -68,6 +68,13 @@ void RenderSystem::setTexturedShaderVars(Entity entity) {
 		glUniform1f(isAnimation_loc, -1.f);
 	}
 
+	GLint highlight_loc = glGetUniformLocation(program, "highlight");
+	if (registry.menuButtons.has(entity) && registry.menuButtons.get(entity).highlight) {
+		glUniform1i(highlight_loc, 1);
+	} else {
+		glUniform1i(highlight_loc, 0);
+	}
+
 	gl_has_errors();
 }
 

@@ -75,6 +75,13 @@ enum class CYST_EFFECT_ID {
 const int cyst_effect_count = static_cast<int>(CYST_EFFECT_ID::EFFECT_COUNT);
 const int cyst_neg_start = static_cast<int>(CYST_EFFECT_ID::SLOW);
 
+enum class GAME_STATE {
+	START_MENU = 0,
+	PAUSE_MENU = START_MENU + 1,
+	DIALOG = PAUSE_MENU + 1,
+	RUNNING = DIALOG + 1
+};
+
 /**
  * The following enumerators represent global identifiers refering to graphic
  * assets. For example TEXTURE_ASSET_ID are the identifiers of each texture
@@ -140,7 +147,16 @@ enum class TEXTURE_ASSET_ID {
 	ICON_SLOW = ICON_DAMAGE + 1,
 	ICON_FOV = ICON_SLOW + 1,
 	ICON_AMMO = ICON_FOV + 1,
-	TEXTURE_COUNT = ICON_AMMO + 1 // TEXTURE_COUNT indicates that no txture is needed
+	START_MENU_TITLE = ICON_AMMO + 1,
+	PAUSE_MENU_TITLE = START_MENU_TITLE + 1,
+	MENU_START = PAUSE_MENU_TITLE + 1,
+	MENU_LOAD = MENU_START + 1,
+	MENU_EXIT = MENU_LOAD + 1,
+	MENU_RESUME = MENU_EXIT + 1,
+	MENU_SAVE = MENU_RESUME + 1,
+	MENU_MUTE = MENU_SAVE + 1,
+	MENU_UNMUTE = MENU_MUTE + 1,
+	TEXTURE_COUNT = MENU_UNMUTE + 1 // TEXTURE_COUNT indicates that no txture is needed
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
@@ -170,7 +186,8 @@ enum class GEOMETRY_BUFFER_ID {
 	SPRITESHEET_DASHING = SPRITESHEET_CYST_SHINE + 1,
 	BACTERIOPHAGE = SPRITESHEET_DASHING + 1,
 	SWORD = BACTERIOPHAGE + 1,
-	GEOMETRY_COUNT = SWORD + 1
+	MENU_BACKGROUND = SWORD + 1,
+	GEOMETRY_COUNT = MENU_BACKGROUND + 1
 };
 const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 
@@ -181,7 +198,8 @@ enum class RENDER_ORDER {
 	OBJECTS_FR = PLAYER + 1,
 	BOSS = OBJECTS_FR + 1,
 	UI = BOSS + 1,
-	RENDER_ORDER_COUNT = UI + 1
+	MENU = UI + 1,
+	RENDER_ORDER_COUNT = MENU + 1
 };
 const int render_order_count = (int)RENDER_ORDER::RENDER_ORDER_COUNT;
 
@@ -193,6 +211,18 @@ enum class ANIMATION_FRAME_COUNT {
 	IMMUNITY_BLINKING = 2,
 	CYST_SHINE = 4,
 	DASHING = 8,
+};
+
+enum MENU_OPTION {
+    START_GAME = 0,
+    LOAD_GAME = START_GAME + 1,
+    EXIT_GAME = LOAD_GAME + 1,
+    RESUME_GAME = EXIT_GAME + 1,
+    SAVE_GAME = RESUME_GAME + 1,
+    MUTE_SOUND = SAVE_GAME + 1,
+    UNMUTE_SOUND = MUTE_SOUND + 1,
+    EXIT_CURR_PLAY = UNMUTE_SOUND + 1,
+	NONE = EXIT_CURR_PLAY + 1
 };
 
 static std::unordered_map <ANIMATION_FRAME_COUNT, GEOMETRY_BUFFER_ID> animation_geo_map_general = {
@@ -439,5 +469,14 @@ struct CollideEnemy {
 struct TimedEvent {
 	float timer_ms = 10000.f;
 	std::function<void()> callback;
+};
+
+struct MenuElem {
+
+};
+
+struct MenuButton {
+	MENU_OPTION option;
+	bool highlight;
 };
 #pragma endregion

@@ -77,6 +77,15 @@ class RenderSystem {
 		textures_path("ui/icon_slow.png"),
 		textures_path("ui/icon_fov.png"),
 		textures_path("ui/icon_ammo.png"),
+		textures_path("ui/start_menu_title.png"),
+		textures_path("ui/pause_menu_title.png"),
+		textures_path("ui/start_button.png"),
+		textures_path("ui/load_button.png"),
+		textures_path("ui/exit_button.png"),
+		textures_path("ui/resume_button.png"),
+		textures_path("ui/save_button.png"),
+		textures_path("ui/mute_button.png"),
+		textures_path("ui/unmute_button.png"),
 	};
 
 	std::array<GLuint, effect_count> effects;

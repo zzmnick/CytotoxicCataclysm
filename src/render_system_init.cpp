@@ -185,7 +185,15 @@ void RenderSystem::initializeGlGeometryBuffers()
 	const std::vector<uint16_t> textured_indices = { 0, 3, 1, 1, 3, 2 };
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::SPRITE, textured_vertices, textured_indices);
 
+	//////////////////////////
+	// Initialize menu background
+	// Only the texutre coordinates are different from the sprite geometry
+	textured_vertices[0].texcoord = { 0.f, 2.25f };
+	textured_vertices[1].texcoord = { 4.f, 2.25f };
+	textured_vertices[2].texcoord = { 4.f, 0.f };
+	textured_vertices[3].texcoord = { 0.f, 0.f };
 
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::MENU_BACKGROUND, textured_vertices, textured_indices);
 
 	//////////////////////////////////
 	// Initialize debug line

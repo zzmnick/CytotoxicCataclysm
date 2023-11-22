@@ -18,8 +18,9 @@ const vec2 DIALOG_TEXTURE_SIZE = { 1920.f, 1080.f };
 const vec2 CYST_TEXTURE_SIZE = { 23.f, -22.f };
 const vec2 SWORD_SIZE = { 500.f, 500.f };
 const vec2 FRIEND_TEXTURE_SIZE = { 30.f, 30.f };
-
-
+const vec2 MENU_BUTTON_TEXTURE_SIZE = {882.f, 262.f};
+const vec2 START_TITLE_TEXTURE_SIZE = {2928.f, 824.f};
+const vec2 PAUSE_TITLE_TEXTURE_SIZE = {1193.f, 143.f};
 
 const float IMMUNITY_TEXTURE_ANGLE = M_PI / 4;
 

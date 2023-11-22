@@ -3,6 +3,7 @@
 #include "world_init.hpp"
 #include "sub_systems/dialog_system.hpp"
 #include "sub_systems/effects_system.hpp"
+#include "sub_systems/menu_system.hpp"
 
 // stlib
 #include <cassert>
@@ -36,6 +37,7 @@ WorldSystem::WorldSystem() {
 	maxEnemies[ENEMY_ID::RED] = MAX_RED_ENEMIES;
     maxEnemies[ENEMY_ID::GREEN] = MAX_GREEN_ENEMIES;
 	maxEnemies[ENEMY_ID::YELLOW] = MAX_YELLOW_ENEMIES;
+	state = GAME_STATE::START_MENU;
 }
 
 WorldSystem::~WorldSystem() {
@@ -189,6 +191,7 @@ GLFWwindow* WorldSystem::create_window() {
 void WorldSystem::init(RenderSystem* renderer_arg) {
 	this->renderer = renderer_arg;
 	this->effects_system = new EffectsSystem(player, rng, soundChunks, *this);
+	this->menu_system = new MenuSystem(mouse);
 	// Playing background music indefinitely
 	Mix_FadeInMusic(backgroundMusic["main"], -1, 2000);
 	fprintf(stderr, "Loaded music\n");
@@ -498,6 +501,11 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	while (registry.debugComponents.entities.size() > 0)
 		registry.remove_all_components_of(registry.debugComponents.entities.back());
 
+	step_menu();
+	if (state == GAME_STATE::START_MENU || state == GAME_STATE::PAUSE_MENU) return false;
+
+	// Code below this line will happen only if not in start/pause menu
+
 	// Processing the player state
 	assert(registry.screenStates.components.size() <= 1);
 	ScreenState& screen = registry.screenStates.components[0];
@@ -509,12 +517,13 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 			dialog_system = nullptr;
 		}
 		else {
-			isPaused = !dialog_system->step(elapsed_ms_since_last_update);
+			state = dialog_system->step(elapsed_ms_since_last_update) ? 
+					GAME_STATE::RUNNING : GAME_STATE::DIALOG;
 		}
 	}
 	step_deathTimer(screen, elapsed_ms_since_last_update);
-	
-	if (isPaused) return false;
+
+	if (state != GAME_STATE::RUNNING) return false;
 
 	/*************************[ gameplay ]*************************/
 	// Code below this line will happen only if not paused
@@ -572,7 +581,7 @@ void WorldSystem::restart_game() {
 	/*************************[ setup new world ]*************************/
 	// Reset the game state
 	current_speed = 1.f;
-	isPaused = false;
+	state = GAME_STATE::START_MENU;
 	isShootingSoundQueued = false;
 	dialog_system = nullptr;
 	// Create a new player
@@ -710,41 +719,19 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 	// key is of 'type' GLFW_KEY_
 	// action can be GLFW_PRESS GLFW_RELEASE GLFW_REPEAT
 
-	// Mute/Unmute music
-	if (action == GLFW_RELEASE && key == GLFW_KEY_M) {
-		Mix_PausedMusic() ? Mix_ResumeMusic() : Mix_PauseMusic();
-	}
-
-	// Resetting game
-	if (action == GLFW_RELEASE && key == GLFW_KEY_R) {
-		restart_game();
-	}
-
 	// Pausing game
 	if (action == GLFW_RELEASE && key == GLFW_KEY_ESCAPE) {
-		isPaused = !isPaused;
+		if (state == GAME_STATE::RUNNING && dialog_system == nullptr) {
+			state = GAME_STATE::PAUSE_MENU;
+		}
 	}
 
-	// Load game state when 'L' is pressed
-    if (action == GLFW_RELEASE && key == GLFW_KEY_L) {
-		load_game();
-    }
-
-	// Save game state when 'P' is pressed
-    if (action == GLFW_RELEASE && key == GLFW_KEY_P) {
-		save_game();
-    }
-
-	// temporary: shorctut for when testing
-	// Quit the program: press 'Q' when game is paused
-	if (isPaused && action == GLFW_RELEASE && key == GLFW_KEY_Q) {
-		exit(EXIT_SUCCESS);
-	}
-
-	// temporary: test health bar. decrease by 10%
-	if (action == GLFW_RELEASE && key == GLFW_KEY_H) {
-		Health& playerHealth = registry.healthValues.get(player);
-		playerHealth.health -= 1.0;
+	if (action == GLFW_PRESS && key == GLFW_MOUSE_BUTTON_LEFT) {
+		if (state == GAME_STATE::PAUSE_MENU || state == GAME_STATE::START_MENU) {
+			menu_system->recent_click_coord = {mouse.x - CONTENT_WIDTH_PX / 2.f, 
+										   	   mouse.y - CONTENT_HEIGHT_PX / 2.f};
+		}
+		
 	}
 
 	if (action == GLFW_PRESS) {
@@ -859,7 +846,6 @@ void WorldSystem::clear_game_state() {
 
     // Reset game state variables
     current_speed = 1.f;
-    isPaused = false;
     isShootingSoundQueued = false;
     dialog_system = nullptr;
 }
@@ -1124,4 +1110,31 @@ void WorldSystem::handle_shooting_sound_effect() {
 	}
 }
 
-
+void WorldSystem::step_menu() {
+	if (state == GAME_STATE::START_MENU) {
+		MENU_OPTION option = menu_system->poll_start_menu();
+		if (option == MENU_OPTION::START_GAME) {
+			state = GAME_STATE::RUNNING;
+		} else if (option == MENU_OPTION::LOAD_GAME) {
+			load_game();
+			state = GAME_STATE::RUNNING;
+		} else if (option == MENU_OPTION::EXIT_GAME) {
+			exit(EXIT_SUCCESS);
+		}
+	} else if (state == GAME_STATE::PAUSE_MENU) {
+		MENU_OPTION option = menu_system->poll_pause_menu();
+		if (option == MENU_OPTION::RESUME_GAME) {
+			state = GAME_STATE::RUNNING;
+		} else if (option == MENU_OPTION::SAVE_GAME) {
+			save_game();
+		} else if (option == MENU_OPTION::MUTE_SOUND) {
+			Mix_Volume(-1, 0);
+			Mix_VolumeMusic(0);
+		} else if (option == MENU_OPTION::UNMUTE_SOUND) {
+			Mix_Volume(-1, 128);
+			Mix_VolumeMusic(45);
+		} else if (option == MENU_OPTION::EXIT_CURR_PLAY) {
+			restart_game();
+		}
+	}
+}

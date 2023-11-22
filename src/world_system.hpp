@@ -5,6 +5,7 @@
 #include "render_system.hpp"
 #include "./sub_systems/dialog_system.hpp"
 #include "./sub_systems/effects_system.hpp"
+#include "./sub_systems/menu_system.hpp"
 
 // stlib
 #include <vector>
@@ -68,7 +69,7 @@ private:
 	EffectsSystem* effects_system;
 	float current_speed;
 	Entity player;
-	bool isPaused;
+	GAME_STATE state;
 
 	// UI references
 	Entity healthbar;
@@ -85,6 +86,7 @@ private:
 	std::uniform_real_distribution<float> uniform_dist; // number between 0..1
 
 	DialogSystem* dialog_system = nullptr;
+	MenuSystem* menu_system = nullptr;
 	
 	// Maintain enemy counts
 	std::unordered_map<ENEMY_ID, int> enemyCounts;
@@ -101,6 +103,7 @@ private:
 	void step_dash(float elapsed_ms);
 	void step_enemySpawn(float elapsed_ms);
 	void step_timer_with_callback(float elapsed_ms);
+	void step_menu();
 
 	void spawnEnemiesNearInterestPoint(vec2 player_position);
 	void spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 player_velocity);

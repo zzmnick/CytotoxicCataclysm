@@ -37,6 +37,8 @@ public:
 	ComponentContainer<Camera> camera;
 	ComponentContainer<Cyst> cysts;
 	ComponentContainer<TimedEvent> timedEvents;
+	ComponentContainer<MenuElem> menuElems;
+	ComponentContainer<MenuButton> menuButtons;
 	
 
 	// constructor that adds all containers for looping over them
@@ -68,8 +70,8 @@ public:
 		registry_list.push_back(&camera);
 		registry_list.push_back(&cysts);
 		registry_list.push_back(&timedEvents);
-
-
+		registry_list.push_back(&menuElems);
+		registry_list.push_back(&menuButtons);
 
 	}
 
