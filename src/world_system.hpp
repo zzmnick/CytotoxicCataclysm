@@ -108,5 +108,10 @@ private:
 
 	void remove_garbage();
 
+	void clear_game_state();
+	void load_game();
+	void save_game();
+	json serializeGameState();
+
 	Entity& getPlayerBelonging(PLAYER_BELONGING_ID id);
 };

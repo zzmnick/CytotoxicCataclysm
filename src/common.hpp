@@ -20,6 +20,9 @@ using namespace glm;
 
 #include "tiny_ecs.hpp"
 
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
 // Simple utility functions to avoid mistyping directory name
 // audio_path("audio.ogg") -> data/audio/audio.ogg
 // Get defintion of PROJECT_SOURCE_DIR from:

@@ -14,9 +14,9 @@
 
 std::unordered_map < int, int > keys_pressed;
 vec2 mouse;
-const float SPAWN_RANGE = MAP_RADIUS *0.6f; // Example value; adjust as needed
-const int MAX_RED_ENEMIES = 10; // Example value; adjust as needed
-const int MAX_GREEN_ENEMIES = 5; // Example value; adjust as needed
+const float SPAWN_RANGE = MAP_RADIUS *0.6f;
+const int MAX_RED_ENEMIES = 10;
+const int MAX_GREEN_ENEMIES = 5;
 const int MAX_YELLOW_ENEMIES = 3;
 const float ENEMY_SPAWN_PADDING = 50.f; // Padding to ensure off-screen spawn
 float enemy_spawn_cooldown = 5.f;
@@ -723,6 +723,16 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 		isPaused = !isPaused;
 	}
 
+	// Load game state when 'L' is pressed
+    if (action == GLFW_RELEASE && key == GLFW_KEY_L) {
+		load_game();
+    }
+
+	// Save game state when 'P' is pressed
+    if (action == GLFW_RELEASE && key == GLFW_KEY_P) {
+		save_game();
+    }
+
 	// temporary: shorctut for when testing
 	// Quit the program: press 'Q' when game is paused
 	if (isPaused && action == GLFW_RELEASE && key == GLFW_KEY_Q) {
@@ -812,6 +822,188 @@ void WorldSystem::control_movement(float elapsed_ms) {
 	}
 
 	
+}
+
+void WorldSystem::clear_game_state() {
+    // Debugging for memory/component leaks
+    registry.list_all_components();
+    std::cout << "Clearing game state\n";
+
+    for (auto event : registry.timedEvents.components) {
+        event.callback();
+    }
+
+    while (registry.timedEvents.entities.size() > 0) {
+        registry.remove_all_components_of(registry.timedEvents.entities.back());
+    }
+
+    auto clearSpecificEntities = [this](auto& componentRegistry) {
+        while (!componentRegistry.entities.empty()) {
+            registry.remove_all_components_of(componentRegistry.entities.back());
+        }
+    };
+
+    // Clear regions, enemies, and cysts
+    clearSpecificEntities(registry.enemies);
+    clearSpecificEntities(registry.cysts);
+	clearSpecificEntities(registry.projectiles);
+
+    // Reset enemy and player counts
+    for (auto &count : enemyCounts) {
+        count.second = 0;
+    }
+
+	registry.list_all_components();
+
+    // Reset game state variables
+    current_speed = 1.f;
+    isPaused = false;
+    isShootingSoundQueued = false;
+    dialog_system = nullptr;
+}
+
+void WorldSystem::load_game() {
+    std::ifstream inFile("savegame.json");
+    if (!inFile) {
+        std::cerr << "Error opening file for reading." << std::endl;
+        return;
+    }
+    json gameState;
+    inFile >> gameState;
+
+    // Clear current game state before loading
+    clear_game_state();
+
+	// Deserialize and recreate Regions
+    loadRegions(gameState["regions"]);
+
+    // Deserialize Player
+    const auto& playerData = gameState["player"];
+    Transform& playerTransform = registry.transforms.get(player);
+    playerTransform.position = { playerData["position"][0], playerData["position"][1] };
+    Health& playerHealth = registry.healthValues.get(player);
+    playerHealth.health = playerData["health"];
+
+
+    // Deserialize Enemies
+    for (const auto& enemyData : gameState["enemies"]) {
+        vec2 position = { enemyData["position"][0], enemyData["position"][1] };
+        float enemyHealth = enemyData["health"];
+        ENEMY_ID enemyType = static_cast<ENEMY_ID>(enemyData["type"]);
+
+        switch (enemyType) {
+            case ENEMY_ID::BOSS:
+                createBoss(renderer, position, enemyHealth);
+                break;
+			case ENEMY_ID::FRIENDBOSS:
+				createSecondBoss(renderer, position, enemyHealth);
+				break;
+			case ENEMY_ID::RED:
+				createRedEnemy(position, enemyHealth);
+				enemyCounts[ENEMY_ID::RED]++;
+				break;
+			case ENEMY_ID::GREEN:
+				createGreenEnemy(position, enemyHealth);
+				enemyCounts[ENEMY_ID::GREEN]++;
+				break;
+			case ENEMY_ID::YELLOW:
+				createYellowEnemy(position, enemyHealth);
+				enemyCounts[ENEMY_ID::YELLOW]++;
+                break;
+            default:
+                // Handle unknown type
+                break;
+        }
+
+        std::cout << "Enemy loaded: Type = " << static_cast<int>(enemyType)
+                  << ", Position = (" << position.x << ", " << position.y << ")"
+                  << ", Health = " << enemyHealth << "\n";
+    }
+
+    // Deserialize Cysts
+    for (const auto& cystData : gameState["cysts"]) {
+		vec2 position = {cystData["position"][0], cystData["position"][1]};
+		float cystHealth = cystData["health"];
+		createCyst(position, cystHealth);
+
+		std::cout << "Cyst loaded: Position = (" << position.x << ", " << position.y << ")"
+				<< ", Health = " << cystHealth << "\n";
+    }
+
+    inFile.close();
+    std::cout << "Game state loaded." << std::endl;
+}
+
+void WorldSystem::save_game() {
+	json gameState = serializeGameState();
+	std::ofstream outFile("savegame.json");
+	if (!outFile) {
+		std::cerr << "Error opening file for writing." << std::endl;
+		return;
+	}
+	outFile << gameState.dump(4);
+	outFile.close();
+	std::cout << "Game state saved." << std::endl;	
+}
+
+json WorldSystem::serializeGameState() {
+    json gameState;
+
+    // Serialize Regions
+    for (const Region& region : registry.regions.components) {
+        json regionData;
+        regionData["theme"] = static_cast<int>(region.theme);
+        regionData["goal"] = static_cast<int>(region.goal);
+        regionData["enemy"] = static_cast<int>(region.enemy);
+        regionData["boss"] = static_cast<int>(region.boss);
+        regionData["is_cleared"] = region.is_cleared;
+        regionData["interest_point"] = {region.interest_point.x, region.interest_point.y};
+        gameState["regions"].push_back(regionData);
+    }
+
+    // Serialize Player
+    const auto& playerTransform = registry.transforms.get(player);
+    const auto& playerHealth = registry.healthValues.get(player);
+    gameState["player"]["position"] = {playerTransform.position.x, playerTransform.position.y};
+    gameState["player"]["health"] = playerHealth.health;
+
+    // // Serialize Player Belongings
+    // auto& belongingsContainer = registry.playerBelongings;
+    // for (uint i = 0; i < belongingsContainer.size(); i++) {
+    //     Entity belongingEntity = belongingsContainer.entities[i];
+    //     const auto& belongingTransform = registry.transforms.get(belongingEntity);
+    //     json belongingData;
+    //     belongingData["position"] = {belongingTransform.position.x, belongingTransform.position.y};
+    //     gameState["playerBelongings"].push_back(belongingData);
+    // }
+
+    // Serialize Enemies
+    auto& enemiesContainer = registry.enemies;
+    for (uint i = 0; i < enemiesContainer.size(); i++) {
+        Entity enemyEntity = enemiesContainer.entities[i];
+        const auto& enemyTransform = registry.transforms.get(enemyEntity);
+        const auto& enemyHealth = registry.healthValues.get(enemyEntity);
+        const Enemy& enemyType = enemiesContainer.components[i];
+        json enemyData;
+        enemyData["position"] = {enemyTransform.position.x, enemyTransform.position.y};
+        enemyData["health"] = enemyHealth.health;
+        enemyData["type"] = static_cast<int>(enemyType.type);
+        gameState["enemies"].push_back(enemyData);
+    }
+
+    // Serialize Cysts
+    auto& cystsContainer = registry.cysts;
+    for (uint i = 0; i < cystsContainer.size(); i++) {
+        Entity cystEntity = cystsContainer.entities[i];
+        const auto& cystTransform = registry.transforms.get(cystEntity);
+        const auto& cystHealth = registry.healthValues.get(cystEntity);
+        json cystData;
+        cystData["position"] = {cystTransform.position.x, cystTransform.position.y};
+        cystData["health"] = cystHealth.health;
+        gameState["cysts"].push_back(cystData);
+    }
+
+    return gameState;
 }
 
 Entity& WorldSystem::getPlayerBelonging(PLAYER_BELONGING_ID id) {

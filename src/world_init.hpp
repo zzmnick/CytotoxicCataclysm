@@ -32,19 +32,19 @@ Entity createDashing(Entity& playerEntity);
 Entity createSword(RenderSystem* renderer, Entity& playerEntity);
 Entity createGun(Entity player);
 // enemies
-Entity createRedEnemy(vec2 pos);
-Entity createGreenEnemy(vec2 pos);
-Entity createYellowEnemy(vec2 pos);
-Entity createBossClone(vec2 pos);
-Entity createBoss(RenderSystem* renderer, vec2 pos);
-Entity createSecondBoss(RenderSystem* renderer, vec2 pos);
+Entity createRedEnemy(vec2 pos, float health = 100.0);
+Entity createGreenEnemy(vec2 pos, float health = 200.0);
+Entity createYellowEnemy(vec2 pos, float health = 50.0);
+Entity createBossClone(vec2 pos, float health = 10.0);
+Entity createBoss(RenderSystem* renderer, vec2 pos, float health = 1000.0);
+Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health = 250.0);
 
 
 /*************************[ environment ]*************************/
 // the random regions
 void createRandomRegions(size_t num_regions, std::default_random_engine& rng);
 void createRandomCysts(std::default_random_engine& rng);
-void createCyst(vec2 pos);
+void createCyst(vec2 pos, float health = 50.0);
 Entity createBullet(Entity shooter, vec2 scale, vec4 color);
 
 /*************************[ UI ]*************************/
@@ -56,3 +56,7 @@ Entity createHealthbar(vec2 position, vec2 scale);
 /*************************[ other ]*************************/
 Entity createCamera(vec2 pos);
 
+
+/*************************[ load ]*************************/
+void loadRegions(const json& regionsData);
+void loadEnemies(const json& enemiesData);

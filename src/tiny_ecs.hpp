@@ -51,6 +51,12 @@ public:
 	{
 	}
 
+	// Update a component associated with an entity
+	inline void update(Entity e, const Component& c) {
+        assert(has(e) && "Entity not contained in ECS registry");
+        components[map_entity_componentID[e]] = c;
+    }
+
 	// Inserting a component c associated to entity e
 	inline Component& insert(Entity e, Component c, bool check_for_duplicates = true)
 	{

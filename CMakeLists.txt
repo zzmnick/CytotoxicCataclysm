@@ -62,6 +62,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES ENABLE_EXPORTS 0)
 target_include_directories(${PROJECT_NAME} PUBLIC ext/stb_image/)
 target_include_directories(${PROJECT_NAME} PUBLIC ext/gl3w)
 
+# Add the JSON library include directory
+target_include_directories(${PROJECT_NAME} PUBLIC ext/json/)
+
 # Find OpenGL
 find_package(OpenGL REQUIRED)
 

@@ -79,31 +79,31 @@ Entity createGun(Entity player) {
 }
 
 Entity createDashing(Entity& playerEntity) {
-	auto placeHolder = Entity();
-	PlayerBelonging& pb = registry.playerBelongings.emplace(placeHolder);
+	auto entity = Entity();
+	PlayerBelonging& pb = registry.playerBelongings.emplace(entity);
 	pb.id = PLAYER_BELONGING_ID::DASHING;
 	registry.renderRequests.insert(
-		placeHolder,
+		entity,
 		{ TEXTURE_ASSET_ID::DASHING,
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITESHEET_DASHING,
 			RENDER_ORDER::OBJECTS_BK });
 
-	Animation& animation = registry.animations.emplace(placeHolder);
+	Animation& animation = registry.animations.emplace(entity);
 	animation.total_frame = (int)ANIMATION_FRAME_COUNT::DASHING;
 	animation.update_period_ms = 50;
 
 	//same as player's
 	Motion playerMotion_copy = registry.motions.get(playerEntity);
-	registry.motions.insert(placeHolder, playerMotion_copy);
+	registry.motions.insert(entity, playerMotion_copy);
 
 	Transform playerTrans_copy = registry.transforms.get(playerEntity);
-	registry.transforms.insert(placeHolder, playerTrans_copy);
+	registry.transforms.insert(entity, playerTrans_copy);
 
-	vec4& color = registry.colors.emplace(placeHolder);
+	vec4& color = registry.colors.emplace(entity);
 	color = dashing_default_color;
 
-	return placeHolder;
+	return entity;
 }
 
 Entity createSword(RenderSystem* renderer, Entity& playerEntity) {
@@ -134,7 +134,7 @@ Entity createSword(RenderSystem* renderer, Entity& playerEntity) {
 
 }
 
-Entity createBoss(RenderSystem* renderer, vec2 pos) {
+Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 	// Create boss components
 	auto entity = Entity();
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::BACTERIOPHAGE);
@@ -142,7 +142,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 
 	registry.collidePlayers.emplace(entity);
 	Motion& motion = registry.motions.emplace(entity);
-	Health& health = registry.healthValues.emplace(entity);
+	Health& enemyHealth = registry.healthValues.emplace(entity);
 
 	// Setting initial components values
 	Enemy& new_enemy = registry.enemies.emplace(entity);
@@ -153,7 +153,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 	transform.angle = M_PI;
 	transform.scale = BACTERIOPHAGE_TEXTURE_SIZE * 0.8f;
 	motion.max_velocity = 250.f; // TODO: Dummy boss for now, change this later
-	health.health = 500.f;
+	enemyHealth.health = health;
 	transform.angle_offset = M_PI / 2;
 
 	Weapon& weapon = registry.weapons.emplace(entity);
@@ -171,7 +171,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos) {
 	return entity;
 }
 
-Entity createSecondBoss(RenderSystem* renderer, vec2 pos) {
+Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 	// Create boss components
 	auto entity = Entity();
 	// Assuming boss is a type of enemy
@@ -195,8 +195,8 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos) {
 
 	motion.max_velocity = 350.f; // TODO: Dummy boss for now, change this later
 
-	Health& health = registry.healthValues.emplace(entity);
-	health.health = 250.f;
+	Health& enemyHealth = registry.healthValues.emplace(entity);
+	enemyHealth.health = health;
 
 	Weapon& weapon = registry.weapons.emplace(entity);
 	weapon.damage = 15.f;
@@ -214,7 +214,7 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos) {
 	return entity;
 }
 
-Entity createBossClone(vec2 pos) {
+Entity createBossClone(vec2 pos, float health) {
 	// Create boss components
 	auto entity = Entity();
 	// Assuming boss is a type of enemy
@@ -236,8 +236,8 @@ Entity createBossClone(vec2 pos) {
 
 	motion.max_velocity = 300.f; // TODO: Dummy boss for now, change this later
 
-	Health& health = registry.healthValues.emplace(entity);
-	health.health = 10.f;
+	Health& enemyHealth = registry.healthValues.emplace(entity);
+	enemyHealth.health = health;
 
 
 	// Add to render_request
@@ -251,7 +251,7 @@ Entity createBossClone(vec2 pos) {
 }
 
 
-Entity createRedEnemy(vec2 pos) {
+Entity createRedEnemy(vec2 pos, float health) {
 	
 	// Create enemy components
 	auto entity = Entity();
@@ -265,8 +265,8 @@ Entity createRedEnemy(vec2 pos) {
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 400;
-	Health& health = registry.healthValues.emplace(entity);
-	health.health = 200.0;
+	Health& enemyHealth = registry.healthValues.emplace(entity);
+	enemyHealth.health = health;
 
 
 	registry.renderRequests.insert(
@@ -279,7 +279,7 @@ Entity createRedEnemy(vec2 pos) {
 	return entity;
 }
 
-Entity createGreenEnemy(vec2 pos) {
+Entity createGreenEnemy(vec2 pos, float health) {
 	
 	// Create enemy components
 	auto entity = Entity();
@@ -294,8 +294,8 @@ Entity createGreenEnemy(vec2 pos) {
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 200;
-	Health& health = registry.healthValues.emplace(entity);
-	health.health = 200.0;
+	Health& enemyHealth = registry.healthValues.emplace(entity);
+	enemyHealth.health = health;
 
 	// Add to render_request
 	registry.renderRequests.insert(
@@ -312,7 +312,7 @@ Entity createGreenEnemy(vec2 pos) {
 }
 
 
-Entity createYellowEnemy(vec2 pos) {
+Entity createYellowEnemy(vec2 pos, float health) {
 	// Create enemy components
 	auto entity = Entity();
 	registry.noRotates.emplace(entity);
@@ -332,8 +332,8 @@ Entity createYellowEnemy(vec2 pos) {
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 0.0f;
 
-	Health& health = registry.healthValues.emplace(entity);
-	health.health = 50.0;
+	Health& enemyHealth = registry.healthValues.emplace(entity);
+	enemyHealth.health = health;
 
 	// Add tp render_request
 	registry.renderRequests.insert(
@@ -409,9 +409,7 @@ void createRandomRegions(size_t num_regions, std::default_random_engine& rng){
 		
 		// Store the interest point in the Region component
 		region.interest_point = interest_point;
-
 		std::cout << "Region " << i+1 << ": Interest Point (X, Y) = (" << interest_point.x << ", " << interest_point.y << ")\n";
-
 
 		// Update angle
 		angle += (M_PI * 2 / num_regions);
@@ -464,10 +462,10 @@ void createRandomCysts(std::default_random_engine& rng) {
 	}
 }
 
-void createCyst(vec2 pos) {
+void createCyst(vec2 pos, float health) {
 	auto cyst_entity = Entity();
 	registry.cysts.emplace(cyst_entity);
-	registry.healthValues.insert(cyst_entity, {50.f});
+	registry.healthValues.insert(cyst_entity, {health});
 
 	// Motion component only needed for collision check, set all to 0
 	Motion& motion = registry.motions.emplace(cyst_entity);
@@ -625,4 +623,28 @@ Entity createCamera(vec2 pos) {
 	Entity camera = Entity();
 	registry.camera.insert(camera, { pos });
 	return camera;
+}
+
+void loadRegions(const json& regionsData) {
+    // Assuming the regions are saved in the same order they were created
+    assert(regionsData.size() == registry.regions.components.size());
+
+    for (size_t i = 0; i < regionsData.size(); ++i) {
+        const auto& regionData = regionsData[i];
+        auto entity = registry.regions.entities[i]; // Get existing entity
+        Region& region = registry.regions.get(entity); // Get existing region component
+
+        // Update region details from JSON data
+        region.theme = static_cast<REGION_THEME_ID>(regionData["theme"]);
+        region.goal = static_cast<REGION_GOAL_ID>(regionData["goal"]);
+        region.enemy = static_cast<ENEMY_ID>(regionData["enemy"]);
+        region.boss = static_cast<BOSS_ID>(regionData["boss"]);
+        region.is_cleared = regionData["is_cleared"];
+        vec2 interest_point = { regionData["interest_point"][0], regionData["interest_point"][1] };
+        region.interest_point = interest_point;
+
+        // Update RenderRequest component
+        RenderRequest& renderReq = registry.renderRequests.get(entity);
+        renderReq.used_texture = region_texture_map[region.theme];
+    }
 }
