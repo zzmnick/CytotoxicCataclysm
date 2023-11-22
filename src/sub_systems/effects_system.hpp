@@ -85,7 +85,7 @@ public:
 private:
 	// damage buff consts
 	const float DAMAGE_MULTIPLIER = 2.5f;
-	const float BULLET_SPEED_MULTIPLIER = 1.5f;
+	const float BULLET_SPEED_MULTIPLIER = 0.6f;
 	const float ATTACK_DELAY_MULTIPLIER = 1.f;
 	const float BULLET_SIZE_MULTIPLIER = 2.f;
 	const vec4 DAMAGE_BUFF_PROJECTILE_COLOR = { 0.2f,0.1f,0.1f,1.f };

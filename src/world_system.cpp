@@ -651,7 +651,7 @@ void WorldSystem::resolve_collisions() {
 		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_CYST) {
 			Entity cyst = collision.other_entity;
-
+			
 			// Deal damage to enemy
 			Health& health = registry.healthValues.get(cyst);
 			health.health -= registry.projectiles.get(entity).damage;

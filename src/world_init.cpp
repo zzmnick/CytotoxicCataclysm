@@ -426,7 +426,7 @@ void createRandomRegions(size_t num_regions, std::default_random_engine& rng){
 
 void createRandomCysts(std::default_random_engine& rng) {
 	const float ANGLE = (M_PI * 2 / NUM_REGIONS);
-	const int TOTAL_CYSTS = 200; // temp: set to ~120
+	const int TOTAL_CYSTS = 120; 
 	const float MAX_CLOSENESS = SCREEN_RADIUS / 2;
 
 	const float LOWER_RADIUS = 0.18f * MAP_RADIUS;

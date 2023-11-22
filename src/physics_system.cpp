@@ -260,7 +260,7 @@ void collisionhelper(Entity entity_1, Entity entity_2) {
 		else if (registry.enemies.has(entity_2) && registry.collideEnemies.has(entity_1)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_ENEMY, entity_2);
 		}
-		else if (registry.cysts.has(entity_2)) {
+		else if (registry.cysts.has(entity_2) && registry.collideEnemies.has(entity_1)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::BULLET_WITH_CYST, entity_2);
 		}
 	// Player Collisions
