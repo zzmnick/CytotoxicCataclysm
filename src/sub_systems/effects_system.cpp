@@ -2,9 +2,17 @@
 #pragma once
 #include "sub_systems/effects_system.hpp"
 #include "components.hpp"
-#include "tiny_ecs_registry.hpp"
 #include "world_system.hpp"
+#include "tiny_ecs_registry.hpp"
 
+EffectsSystem::~EffectsSystem() {
+	//The value of the soundChunks is passed in a an argument, no delete needed
+	//The pointers in the soundChunks are handled in the ~WorldSystem()
+
+	//The created timedEvents are also recycled in WorldSystem::step_timer_with_callback(float elapsed_ms)
+	while (registry.timedEvents.entities.size() > 0)
+		registry.remove_all_components_of(registry.timedEvents.entities.back());
+}
 
 // Apply effect with timer, play sound, display icon
 void EffectsSystem::apply_random_effect() {

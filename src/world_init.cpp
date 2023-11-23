@@ -160,7 +160,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
 	transform.angle = M_PI;
-	transform.scale = BACTERIOPHAGE_TEXTURE_SIZE * 0.8f;
+	transform.scale = BACTERIOPHAGE_SIZE;
 	motion.max_velocity = 250.f; // TODO: Dummy boss for now, change this later
 	enemyHealth.health = health;
 	transform.angle_offset = M_PI / 2;
@@ -272,7 +272,7 @@ Entity createRedEnemy(vec2 pos, float health) {
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
 	transform.angle = M_PI;
-	transform.scale = RED_ENEMY_TEXTURE_SIZE * 2.f;
+	transform.scale = RED_ENEMY_SIZE;
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 400;
@@ -300,7 +300,7 @@ Entity createGreenEnemy(vec2 pos, float health) {
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
 	transform.angle = M_PI;
-	transform.scale = GREEN_ENEMY_TEXTURE_SIZE * 4.f;
+	transform.scale = GREEN_ENEMY_SIZE;
 	transform.angle_offset = M_PI + 0.8f;
 
 	Motion& motion = registry.motions.emplace(entity);
@@ -340,7 +340,7 @@ Entity createYellowEnemy(vec2 pos, float health) {
 
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
-	transform.scale = YELLOW_ENEMY_TEXTURE_SIZE * 1.5f;
+	transform.scale = YELLOW_ENEMY_SIZE;
 	transform.angle_offset = M_PI;
 
 	Motion& motion = registry.motions.emplace(entity);

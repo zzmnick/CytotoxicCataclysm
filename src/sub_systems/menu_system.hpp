@@ -12,6 +12,7 @@ public:
     MENU_OPTION poll_start_menu();
     MENU_OPTION poll_pause_menu();
     vec2 recent_click_coord;
+    ~MenuSystem();
 
 private:
     bool assets_drawn;

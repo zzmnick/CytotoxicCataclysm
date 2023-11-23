@@ -82,6 +82,8 @@ public:
 	};
 	void apply_random_effect();
 
+	~EffectsSystem();
+
 private:
 	// damage buff consts
 	const float DAMAGE_MULTIPLIER = 2.5f;

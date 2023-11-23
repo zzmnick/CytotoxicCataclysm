@@ -26,6 +26,11 @@ const float IMMUNITY_TEXTURE_ANGLE = M_PI / 4;
 
 const vec2 STATUSBAR_SCALE = { 1.f, 1.f };
 
+const vec2 RED_ENEMY_SIZE = RED_ENEMY_TEXTURE_SIZE * 2.f;
+const vec2 GREEN_ENEMY_SIZE = GREEN_ENEMY_TEXTURE_SIZE * 4.f;
+const vec2 YELLOW_ENEMY_SIZE = YELLOW_ENEMY_TEXTURE_SIZE * 1.5f;
+const vec2 BACTERIOPHAGE_SIZE = BACTERIOPHAGE_TEXTURE_SIZE * 0.8f;
+
 /*************************[ characters ]*************************/
 // the player
 Entity createPlayer(vec2 pos);

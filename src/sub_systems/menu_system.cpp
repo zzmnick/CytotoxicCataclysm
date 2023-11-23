@@ -9,6 +9,10 @@ MenuSystem::MenuSystem(const vec2& mouse)
     prev_limit_fov = false;
 }
 
+MenuSystem::~MenuSystem(){
+    destroy_menu();
+}
+
 MENU_OPTION MenuSystem::poll_start_menu() {
     if (!assets_drawn) {
         draw_start_menu();

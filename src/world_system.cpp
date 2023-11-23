@@ -60,6 +60,12 @@ WorldSystem::~WorldSystem() {
 
 	// Close the window
 	glfwDestroyWindow(window);
+
+	delete this->effects_system;
+
+	delete this->menu_system;
+
+	//the value of the this->renderer is passed in as an argument, no delete needed ;
 }
 
 // Debugging
@@ -397,6 +403,13 @@ void WorldSystem::step_dash(float elapsed_ms) {
 	playerDash.timer_ms -= elapsed_ms;
 }
 
+bool out_of_boundary_check(vec2 entityScale, vec2 entityPos) {
+	if (length(entityPos) + length(entityScale) / 2.f > MAP_RADIUS) {
+		return true;
+	}
+	return false;
+}
+
 void WorldSystem::spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 player_velocity) {
     std::uniform_real_distribution<float> angle_randomness(-M_PI/4, M_PI/4);  // 45 degrees randomness
 
@@ -413,16 +426,19 @@ void WorldSystem::spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 pla
 
     switch (type) {
         case ENEMY_ID::RED:
+			if (out_of_boundary_check(RED_ENEMY_SIZE, spawn_position)) break;
             std::cout << "Spawning Red Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
             createRedEnemy(spawn_position);
             enemyCounts[ENEMY_ID::RED]++;
             break;
         case ENEMY_ID::GREEN:
+			if (out_of_boundary_check(GREEN_ENEMY_SIZE, spawn_position)) break;
             std::cout << "Spawning Green Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
             createGreenEnemy(spawn_position);
             enemyCounts[ENEMY_ID::GREEN]++;
             break;
 		case ENEMY_ID::YELLOW:
+			if (out_of_boundary_check(YELLOW_ENEMY_SIZE, spawn_position)) break;
 			createYellowEnemy(spawn_position);
 			enemyCounts[ENEMY_ID::YELLOW]++;
         default:

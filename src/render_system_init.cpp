@@ -291,6 +291,10 @@ RenderSystem::~RenderSystem()
 	// remove all entities created by the render system
 	while (registry.renderRequests.entities.size() > 0)
 		registry.remove_all_components_of(registry.renderRequests.entities.back());
+
+	while (registry.animations.entities.size() > 0)
+		registry.remove_all_components_of(registry.animations.entities.back());
+		
 }
 
 // Initialize the screen texture from a standard sprite
