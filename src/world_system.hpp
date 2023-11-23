@@ -73,6 +73,7 @@ private:
 
 	// UI references
 	Entity healthbar;
+	Entity cursor;
 
 	// sound references and handler
 	std::unordered_map<std::string, Mix_Music*> backgroundMusic;

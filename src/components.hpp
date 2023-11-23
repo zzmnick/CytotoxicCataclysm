@@ -156,7 +156,8 @@ enum class TEXTURE_ASSET_ID {
 	MENU_SAVE = MENU_RESUME + 1,
 	MENU_MUTE = MENU_SAVE + 1,
 	MENU_UNMUTE = MENU_MUTE + 1,
-	TEXTURE_COUNT = MENU_UNMUTE + 1 // TEXTURE_COUNT indicates that no txture is needed
+	CROSSHAIR = MENU_UNMUTE + 1,
+	TEXTURE_COUNT = CROSSHAIR + 1 // TEXTURE_COUNT indicates that no txture is needed
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 

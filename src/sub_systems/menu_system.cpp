@@ -182,9 +182,8 @@ bool MenuSystem::check_button_click(Entity entity) {
     Transform transform = registry.transforms.get(entity);
     vec2 bottom_right = transform.position + abs(transform.scale) / 2.f;
     vec2 top_left = transform.position - abs(transform.scale) / 2.f;
-    vec2 mouse_coord = {curr_mouse.x - CONTENT_WIDTH_PX / 2.f, curr_mouse.y - CONTENT_HEIGHT_PX / 2.f};
-    if (mouse_coord.x > top_left.x && mouse_coord.x < bottom_right.x && 
-            mouse_coord.y > top_left.y && mouse_coord.y < bottom_right.y) {
+    if (curr_mouse.x > top_left.x && curr_mouse.x < bottom_right.x &&
+        curr_mouse.y > top_left.y && curr_mouse.y < bottom_right.y) {
         registry.menuButtons.get(entity).highlight = true;
         if (recent_click_coord.x > top_left.x && recent_click_coord.x < bottom_right.x &&
                 recent_click_coord.y > top_left.y && recent_click_coord.y < bottom_right.y) {

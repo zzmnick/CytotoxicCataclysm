@@ -4,6 +4,7 @@
 #include "sub_systems/dialog_system.hpp"
 #include "sub_systems/effects_system.hpp"
 #include "sub_systems/menu_system.hpp"
+#include "sub_systems/menu_system.hpp"
 
 // stlib
 #include <cassert>
@@ -197,6 +198,7 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	fprintf(stderr, "Loaded music\n");
 
 	// Create world entities that don't reset
+	cursor = createCrosshair();
 	createRandomRegions(NUM_REGIONS, rng);
 	healthbar = createHealthbar({ -CONTENT_WIDTH_PX * 0.35, -CONTENT_HEIGHT_PX * 0.45 }, STATUSBAR_SCALE);
 	createCamera({ 0.f, 0.f });
@@ -502,14 +504,17 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 		registry.remove_all_components_of(registry.debugComponents.entities.back());
 
 	step_menu();
-	if (state == GAME_STATE::START_MENU || state == GAME_STATE::PAUSE_MENU) return false;
+	if (state == GAME_STATE::START_MENU || state == GAME_STATE::PAUSE_MENU) {
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		registry.colors.get(cursor).a = 0.f;
+		return false;
+	}
 
 	// Code below this line will happen only if not in start/pause menu
 
 	// Processing the player state
 	assert(registry.screenStates.components.size() <= 1);
 	ScreenState& screen = registry.screenStates.components[0];
-
 	// Step dialog if active
 	if (dialog_system != nullptr) {
 		if (dialog_system->is_finished()) {
@@ -524,9 +529,11 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	step_deathTimer(screen, elapsed_ms_since_last_update);
 
 	if (state != GAME_STATE::RUNNING) return false;
-
 	/*************************[ gameplay ]*************************/
 	// Code below this line will happen only if not paused
+
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+	registry.colors.get(cursor).a = 1.f;
 
 
 	step_health();
@@ -570,7 +577,9 @@ void WorldSystem::restart_game() {
 	// Remove all entities that we created
 	// All that have a motion
 	while (registry.motions.entities.size() > 0)
-		registry.remove_all_components_of(registry.transforms.entities.back());
+		registry.remove_all_components_of(registry.motions.entities.back());
+	delete dialog_system;
+	dialog_system = nullptr;
 	// Reset enemy counts
     for (auto &count : enemyCounts) {
         count.second = 0;
@@ -728,8 +737,7 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 
 	if (action == GLFW_PRESS && key == GLFW_MOUSE_BUTTON_LEFT) {
 		if (state == GAME_STATE::PAUSE_MENU || state == GAME_STATE::START_MENU) {
-			menu_system->recent_click_coord = {mouse.x - CONTENT_WIDTH_PX / 2.f, 
-										   	   mouse.y - CONTENT_HEIGHT_PX / 2.f};
+			menu_system->recent_click_coord = mouse;
 		}
 		
 	}
@@ -761,10 +769,28 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 }
 
 void WorldSystem::on_mouse_move(vec2 pos) {
-	if (registry.deathTimers.has(player)) {
-		return;
+	vec2 mouseScreenCoord = vec2(pos.x - CONTENT_WIDTH_PX / 2, pos.y - CONTENT_HEIGHT_PX / 2);
+	Transform player_transform = registry.transforms.get(player);
+	float angle = player_transform.angle;
+	float offsetX = -60 * sin(angle);
+	float offsetY = -60 * cos(angle);
+	vec2 cursor_position = { clamp(mouseScreenCoord.x + offsetX, -CONTENT_WIDTH_PX / 2.f + 60, CONTENT_WIDTH_PX / 2.f - 60),
+							 clamp(mouseScreenCoord.y + offsetY, - CONTENT_HEIGHT_PX / 2.f + 60, CONTENT_HEIGHT_PX / 2.f - 60)};
+
+	// set cursor/crosshair location
+	registry.transforms.get(cursor).position = cursor_position;
+
+	// hide cursor if on top of player
+	vec2 mouseWorldCoord = vec2(inverse(renderer->createViewMatrix()) * vec3(cursor_position, 1.0));
+	if (distance(mouseWorldCoord, player_transform.position) < 70) {
+		registry.colors.get(cursor).a = 0.f;
 	}
-	mouse = pos;
+	else {
+		registry.colors.get(cursor).a = 1.f;
+	}
+
+	// set mouse for player angle
+	mouse = mouseScreenCoord;
 }
 
 void WorldSystem::control_movement(float elapsed_ms) {
@@ -1011,15 +1037,14 @@ void WorldSystem::control_action() {
 	}
 }
 
-
-
 void WorldSystem::control_direction() {
+	if (registry.deathTimers.has(player)) {
+		return;
+	}
 	assert(registry.transforms.has(player));
 	Transform& playertransform = registry.transforms.get(player);
 
-	float right = (float)CONTENT_WIDTH_PX;
-	float bottom = (float)CONTENT_HEIGHT_PX;
-	float angle = atan2(-bottom / 2 + mouse.y, right / 2 - mouse.x) + playertransform.angle_offset;
+	float angle = atan2(mouse.y,-mouse.x) + playertransform.angle_offset;
 	playertransform.angle = angle;
 }
 
@@ -1063,8 +1088,8 @@ void WorldSystem::player_dash() {
 	}
 	else if (length(playerMovement.velocity) < 10.f) {
 		// If player is barely moving, dash in mouse direction
-		float alignment = -0.70f; // player texture is tilted
-		float playerAngle = registry.transforms.get(player).angle + alignment;
+		Transform transform = registry.transforms.get(player);
+		float playerAngle = transform.angle - transform.angle_offset + M_PI;
 
 		dashDirection = normalize(vec2(cos(playerAngle), sin(playerAngle)));
 	}

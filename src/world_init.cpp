@@ -633,6 +633,23 @@ Entity createCamera(vec2 pos) {
 	return camera;
 }
 
+Entity createCrosshair() {
+	Entity entity = Entity();
+
+	// Create transform for bar and frame
+	registry.transforms.insert(entity, { vec2(0.f,0.f), vec2(20.f,20.f), 0.f, true});
+
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::CROSSHAIR,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE,
+			RENDER_ORDER::UI });
+	registry.colors.insert(entity, { 1.f,1.f,1.f,1.f });
+
+	return entity;
+}
+
 void loadRegions(const json& regionsData) {
     // Assuming the regions are saved in the same order they were created
     assert(regionsData.size() == registry.regions.components.size());

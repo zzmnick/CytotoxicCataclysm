@@ -53,6 +53,7 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color);
 Entity createLine(vec2 position, vec2 scale);
 // create healthbar and its frame. Returns healthbar entity
 Entity createHealthbar(vec2 position, vec2 scale);
+Entity createCrosshair();
 
 /*************************[ other ]*************************/
 Entity createCamera(vec2 pos);
