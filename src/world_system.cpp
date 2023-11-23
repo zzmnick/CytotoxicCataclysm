@@ -364,8 +364,23 @@ void WorldSystem::step_invincibility(float elapsed_ms) {
 		vec4& player_color = registry.colors.get(player);
 		// TODO generalize to include sword, maybe get current belonging?
 		vec4& weapon_color = registry.colors.get(getPlayerBelonging(PLAYER_BELONGING_ID::GUN));
+		vec4& sword_color = registry.colors.get(getPlayerBelonging(PLAYER_BELONGING_ID::SWORD));
 		player_color.a = flashAlpha;
 		weapon_color.a = flashAlpha;
+		sword_color.a = flashAlpha;
+	}
+	// Step Eneny and cyst invincibility to sword
+	for (uint i = 0; i < registry.enemies.components.size(); i++) {
+		Enemy& enemy_attrib = registry.enemies.components[i];
+		if (enemy_attrib.sword_attack_cd > 0.f) {
+			enemy_attrib.sword_attack_cd -= elapsed_ms;
+		}
+	}
+	for (uint i = 0; i < registry.cysts.components.size(); i++) {
+		Cyst& cyst_attrib = registry.cysts.components[i];
+		if (cyst_attrib.sword_attack_cd > 0.f) {
+			cyst_attrib.sword_attack_cd -= elapsed_ms;
+		}
 	}
 }
 
@@ -595,6 +610,7 @@ void WorldSystem::restart_game() {
 	dialog_system = nullptr;
 	// Create a new player
 	player = createPlayer({ 0, 0 });
+	createSword(renderer, player);
 	effects_system->player = player;
 	// hardcode the boss position to upper right region, randomize later
 	Region boss_region = registry.regions.components[0];
@@ -676,6 +692,47 @@ void WorldSystem::resolve_collisions() {
 
 			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
 			garbage.push_back(entity);
+		}
+		else if (collision.collision_type == COLLISION_TYPE::SWORD_WITH_ENEMY) {
+			Entity enemy_entity = collision.other_entity;
+			Enemy& enemyAttrib = registry.enemies.get(enemy_entity);
+			if (enemyAttrib.sword_attack_cd <= 0.f) {
+				Transform& enemy_transform = registry.transforms.get(enemy_entity);
+				Motion& enemy_motion = registry.motions.get(enemy_entity);
+				vec2 knockback_direction = normalize(enemy_transform.position - transform.position);
+				if (enemyAttrib.type != ENEMY_ID::BOSS) {
+					enemy_motion.velocity = enemy_motion.max_velocity * knockback_direction;
+				} else {
+					// less knockback on boss
+					enemy_motion.velocity = 0.2f * enemy_motion.max_velocity * knockback_direction;
+				}
+				enemy_motion.allow_accel = false;
+
+				// Deal damage to enemy
+				Health& enemyHealth = registry.healthValues.get(enemy_entity);
+				enemyHealth.health -= registry.melees.get(entity).damage;
+
+				// Give enemy invincibility to sword for a moment after taking an attack
+				enemyAttrib.sword_attack_cd = 500.f;
+
+				Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
+			}
+			
+		}
+		else if (collision.collision_type == COLLISION_TYPE::SWORD_WITH_CYST) {
+			Entity cyst = collision.other_entity;
+			Cyst& cyst_attrib = registry.cysts.get(cyst);
+			
+			if (cyst_attrib.sword_attack_cd <= 0.f) {
+			// Deal damage to cyst
+			Health& health = registry.healthValues.get(cyst);
+			health.health -= registry.melees.get(entity).damage;
+
+			// Give cyst invincibility to sword for a moment after taking an attack
+			cyst_attrib.sword_attack_cd = 500.f;
+
+			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
+			}
 		}
 		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_CYST
 			&& !registry.invincibility.has(entity)) {

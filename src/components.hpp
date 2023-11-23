@@ -57,6 +57,8 @@ enum class COLLISION_TYPE {
 	BULLET_WITH_BULLET = BULLET_WITH_PLAYER + 1,
 	BULLET_WITH_BOUNDARY = BULLET_WITH_BULLET + 1,
 	BULLET_WITH_CYST = BULLET_WITH_BOUNDARY + 1,
+	SWORD_WITH_ENEMY = BULLET_WITH_CYST + 1,
+	SWORD_WITH_CYST = SWORD_WITH_ENEMY + 1
 };
 
 enum class CYST_EFFECT_ID {
@@ -283,6 +285,7 @@ struct Camera {
 struct Enemy {
 	ENEMY_ID type;
 	float angle = 0.f;
+	float sword_attack_cd = 0.f;
 };
 
 // Data relevant to the shape of entities
@@ -457,6 +460,7 @@ struct Dash {
 
 struct Cyst {
 	float health = 25.f;
+	float sword_attack_cd = 0.f;
 };
 
 struct CollidePlayer {
@@ -479,5 +483,11 @@ struct MenuElem {
 struct MenuButton {
 	MENU_OPTION option;
 	bool highlight;
+};
+
+struct Melee {
+	vec2 offset = {0.f, 0.f};
+	vec2 pivot = {0.f, 0.f};
+	float damage = 20.f;
 };
 #pragma endregion

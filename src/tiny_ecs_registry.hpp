@@ -39,6 +39,7 @@ public:
 	ComponentContainer<TimedEvent> timedEvents;
 	ComponentContainer<MenuElem> menuElems;
 	ComponentContainer<MenuButton> menuButtons;
+	ComponentContainer<Melee> melees;
 	
 
 	// constructor that adds all containers for looping over them
@@ -72,6 +73,8 @@ public:
 		registry_list.push_back(&timedEvents);
 		registry_list.push_back(&menuElems);
 		registry_list.push_back(&menuButtons);
+		registry_list.push_back(&melees);
+
 
 	}
 

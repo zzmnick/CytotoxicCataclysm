@@ -116,6 +116,9 @@ Entity createSword(RenderSystem* renderer, Entity& playerEntity) {
 
 	PlayerBelonging& pb = registry.playerBelongings.emplace(entity);
 	pb.id = PLAYER_BELONGING_ID::SWORD;
+
+	Melee& melee = registry.melees.emplace(entity);
+	melee.offset = {100.f, -5.f};
 	
 	//same as player's
 	Motion playerMotion_copy = registry.motions.get(playerEntity);
@@ -124,6 +127,7 @@ Entity createSword(RenderSystem* renderer, Entity& playerEntity) {
 
 	Transform playerTrans_copy = registry.transforms.get(playerEntity);
 	playerTrans_copy.scale = SWORD_SIZE;
+	playerTrans_copy.angle_offset += 0.3f;
 	registry.transforms.insert(entity, playerTrans_copy);
 
 	registry.renderRequests.insert(
@@ -131,7 +135,9 @@ Entity createSword(RenderSystem* renderer, Entity& playerEntity) {
 		{ TEXTURE_ASSET_ID::TEXTURE_COUNT,
 			EFFECT_ASSET_ID::COLOURED,
 			GEOMETRY_BUFFER_ID::SWORD,
-			RENDER_ORDER::OBJECTS_FR });
+			RENDER_ORDER::OBJECTS_BK });
+
+	registry.colors.insert(entity, { 1.f,1.f,1.f,1.f });
 
 	return entity;
 

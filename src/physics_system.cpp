@@ -275,6 +275,13 @@ void collisionhelper(Entity entity_1, Entity entity_2) {
 		if (registry.enemies.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::ENEMY_WITH_ENEMY, entity_2);
 		}
+	// Sword collisions
+	} else if (registry.melees.has(entity_1)) {
+		if (registry.enemies.has(entity_2)) {
+			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::SWORD_WITH_ENEMY, entity_2);
+		} else if (registry.cysts.has(entity_2)) {
+			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::SWORD_WITH_CYST, entity_2);
+		}
 	}
 }
 
@@ -305,6 +312,12 @@ void step_movement(float elapsed_ms) {
 			else if (pb.id == PLAYER_BELONGING_ID::DASHING) {
 				motion.velocity = registry.motions.get(playerEntity).velocity;
 				transform.angle = atan2(motion.velocity.y, motion.velocity.x);
+			}
+			else if (pb.id == PLAYER_BELONGING_ID::SWORD) {
+				Melee melee = registry.melees.get(entity);
+				transform.position.x = player_transform.position.x + melee.offset.x * cos(player_transform.angle) - melee.offset.y * sin(player_transform.angle);
+				transform.position.y = player_transform.position.y + melee.offset.x * sin(player_transform.angle) + melee.offset.y * cos(player_transform.angle);
+				transform.angle = player_transform.angle + transform.angle_offset;
 			}
 			else {
 				motion.velocity = registry.motions.get(playerEntity).velocity;
