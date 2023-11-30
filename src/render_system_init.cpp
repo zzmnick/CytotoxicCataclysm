@@ -307,7 +307,10 @@ bool RenderSystem::initScreenTexture()
 
 	glGenTextures(1, &off_screen_render_buffer_color);
 	glBindTexture(GL_TEXTURE_2D, off_screen_render_buffer_color);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, framebuffer_width, framebuffer_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	// this texture will scale to the size of viewport
+	// 1. make same size as screen, viewport smaller than this to have letterboxing
+	// or 2. make size of content which is same size of viewport.  
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CONTENT_WIDTH_PX, CONTENT_HEIGHT_PX, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	gl_has_errors();

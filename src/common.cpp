@@ -56,3 +56,7 @@ bool gl_has_errors()
 
 	return true;
 }
+
+// workaround to avoid linker error
+int MONITOR_WIDTH = 0;
+int MONITOR_HEIGHT = 0;
