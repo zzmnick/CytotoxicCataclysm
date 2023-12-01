@@ -214,7 +214,8 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	// Create world entities that don't reset
 	cursor = createCrosshair();
 	createRandomRegions(NUM_REGIONS, rng);
-	healthbar = createHealthbar({ -CONTENT_WIDTH_PX * 0.35, -CONTENT_HEIGHT_PX * 0.45 }, STATUSBAR_SCALE);
+	createWaypoints();
+	healthbar = createHealthbar({ -CONTENT_WIDTH_PX * 0.34, -CONTENT_HEIGHT_PX * 0.43 }, STATUSBAR_SCALE);
 	createCamera({ 0.f, 0.f });
 
 	// Set all states to default
@@ -499,9 +500,9 @@ void WorldSystem::step_enemySpawn(float elapsed_ms) {
             spawnEnemiesNearInterestPoint(player_position);
         }
 
-        // Reset the cooldown timer for the next individual enemy spawn
-        enemy_spawn_cooldown = INDIVIDUAL_SPAWN_INTERVAL;
-    }
+// Reset the cooldown timer for the next individual enemy spawn
+enemy_spawn_cooldown = INDIVIDUAL_SPAWN_INTERVAL;
+	}
 }
 
 // steps timers and invoke associated callback upon expiration
@@ -517,6 +518,99 @@ void WorldSystem::step_timer_with_callback(float elapsed_ms) {
 	}
 	for (Entity e : garbage) {
 		registry.remove_all_components_of(e);
+	}
+}
+
+void WorldSystem::step_waypoints() {
+	static const float padding = 23.f;
+	static const float top = -CONTENT_HEIGHT_PX / 2 + padding;
+	static const float bot = CONTENT_HEIGHT_PX / 2 - padding;
+	static const float left = -CONTENT_WIDTH_PX / 2 + padding;
+	static const float right = CONTENT_WIDTH_PX / 2 - padding;
+
+	// ip is interest point
+	auto findIntersectionPoint = [](vec2 ip) {
+		vec2 p; // p is position to render icon
+		float t; // t is parameter for parametric equation
+		p.y = top; // p intersects top of screen
+		p.x = (p.y) / (ip.y) * (ip.x);
+		t = p.x / ip.x;
+		if (t > 0.f && t < 1.f && p.x > left && p.x < right) {
+			return p;
+		}
+		p.y = bot; // p intersects bottom of screen
+		p.x = (p.y) / (ip.y) * (ip.x);
+		t = p.x / ip.x;
+		if (t > 0.f && t < 1.f && p.x > left && p.x < right) {
+			return p;
+		}
+		p.x = left; // p intersects left of screen
+		p.y = (p.x) / (ip.x) * (ip.y);
+		t = p.y / ip.y;
+		if (t > 0.f && t < 1.f && p.y > top && p.y < bot) {
+			return p;
+		}
+		p.x = right; // p intersects right of screen
+		p.y = (p.x) / (ip.x) * (ip.y);
+		t = p.y / ip.y;
+		if (t > 0.f && t < 1.f && p.y > top && p.y < bot) {
+			return p;
+		}
+		return ip;
+		};
+
+	// hide all if boss onscreen
+	for (auto boss : registry.bosses.entities) {
+		if (length(vec2(renderer->createViewMatrix() * vec3(registry.transforms.get(boss).position, 1.f))) < SCREEN_RADIUS) {
+			for (Entity wp : registry.waypoints.entities) {
+				registry.colors.get(wp).a = 0.f;
+			}
+			return;
+		}
+	}
+
+
+	float minDistance = MAP_RADIUS;
+	Entity closestWP;
+	for (Entity wp : registry.waypoints.entities) {
+		Waypoint waypoint = registry.waypoints.get(wp);
+		//	TODO: dont remove waypoint here, do it when toggling region.is_cleared
+		//if (region.is_cleared) {
+		//	registry.waypoints.remove(wp);
+		//}
+		vec2 interest_point_screen_coord = vec2(renderer->createViewMatrix() * vec3(waypoint.interest_point, 1.0));
+		vec2 result = findIntersectionPoint(interest_point_screen_coord);
+
+		registry.transforms.get(wp).position = result;
+
+		float distance = length(interest_point_screen_coord);
+		if (distance < minDistance) {
+			minDistance = distance;
+			closestWP = wp;
+		}
+
+		const float minDistanceThreshold = 1500.f;
+		const float maxDistanceThreshold = 7500.f;
+		float scale = clamp(distance, minDistanceThreshold, maxDistanceThreshold);
+		scale = 1.f - ((scale - minDistanceThreshold) / (maxDistanceThreshold - minDistanceThreshold));
+		registry.transforms.get(wp).scale = waypoint.icon_scale * 0.35f * scale + 27.f;
+
+		if (scale > 0.4) {
+			registry.colors.get(wp).a = scale + 0.1;
+		}
+		else {
+			registry.colors.get(wp).a = 0.00001f; // since 0.f will indicate on-screen
+		}
+
+		// hide if interest point is on-screen
+		if (result == interest_point_screen_coord) {
+			registry.colors.get(wp).a = 0.f;
+		}
+	}
+	// set closest icon alpha to 1 if not on screen and player not in center
+	if (length(registry.transforms.get(player).position) > 600.f) {
+		float& alpha = registry.colors.get(closestWP).a;
+		alpha = alpha == 0.f ? 0.f : 1.f;
 	}
 }
 
@@ -582,6 +676,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	step_dash(elapsed_ms_since_last_update);
 	step_enemySpawn(elapsed_ms_since_last_update);
 	step_timer_with_callback(elapsed_ms_since_last_update);
+	step_waypoints();
 
 	// Block velocity update for one step after collision to
 	// avoid going out of border / going through enemy

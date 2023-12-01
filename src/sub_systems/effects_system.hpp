@@ -12,8 +12,8 @@ class WorldSystem;
 // Rendering consts
 const vec2 ICON_SIZE = { 23.f, 23.f };
 const float ICON_SCALE = 3.f;
-const float PADDING = 12.f;
-const vec2 EFFECTS_POSITION = { CONTENT_WIDTH_PX * 0.35, CONTENT_HEIGHT_PX * 0.45 };
+const float PADDING = 13.f;
+const vec2 EFFECTS_POSITION = { CONTENT_WIDTH_PX * 0.35, CONTENT_HEIGHT_PX * 0.43 };
 
 
 // Enums and Maps

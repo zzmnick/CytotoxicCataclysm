@@ -172,6 +172,8 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 	weapon.size = { 45.f, 45.f };
 	weapon.color = { 0.f, 0.992f, 1.f, 1.f };
 
+	registry.bosses.emplace(entity);
+
 	// Add to render_request
 	registry.renderRequests.insert(
 		entity,
@@ -188,9 +190,6 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 	// Assuming boss is a type of enemy
 	registry.collidePlayers.emplace(entity);
 	Dash& enemy_dash = registry.dashes.emplace(entity);
-
-
-
 
 	Enemy& new_enemy = registry.enemies.emplace(entity);
 	// Setting initial components values
@@ -214,6 +213,8 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 	weapon.bullet_speed = 1000.f;
 	weapon.angle_offset = 0.7f;
 	weapon.offset = { 60.f,60.f };
+
+	registry.bosses.emplace(entity);
 
 	// Add to render_request
 	registry.renderRequests.insert(
@@ -642,7 +643,6 @@ Entity createCamera(vec2 pos) {
 Entity createCrosshair() {
 	Entity entity = Entity();
 
-	// Create transform for bar and frame
 	registry.transforms.insert(entity, { vec2(0.f,0.f), vec2(20.f,20.f), 0.f, true});
 
 	registry.renderRequests.insert(
@@ -678,4 +678,39 @@ void loadRegions(const json& regionsData) {
         RenderRequest& renderReq = registry.renderRequests.get(entity);
         renderReq.used_texture = region_texture_map[region.theme];
     }
+}
+
+void createWaypoints() {
+	for (const Region& region : registry.regions.components) {
+		if (region.is_cleared) continue;
+		if (region.boss == BOSS_ID::FRIEND) continue; // don't show second boss yet TODO: call createWaypoint for second boss when appropriate
+		createWaypoint(region);
+	}
+}
+
+void createWaypoint(Region region) {
+	Entity entity = Entity();
+
+	Waypoint& waypoint = registry.waypoints.emplace(entity);
+	waypoint.interest_point = region.interest_point;
+	registry.transforms.insert(entity, {vec2(0.f, 0.f), vec2(30.f, 30.f), 0.f, true });
+
+	TEXTURE_ASSET_ID texture;
+	if (region.boss == BOSS_ID::BACTERIOPHAGE) {
+		waypoint.icon_scale = SKULL_TEXTURE_SIZE;
+		texture = TEXTURE_ASSET_ID::ICON_SKULL;
+
+	} else {
+		// this includes second boss
+		waypoint.icon_scale = QUESTION_TEXTURE_SIZE;
+		texture = TEXTURE_ASSET_ID::ICON_QUESTION;
+	}
+
+	registry.renderRequests.insert(
+		entity,
+		{ texture,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE,
+			RENDER_ORDER::UI });
+	registry.colors.insert(entity, { 1.f,1.f,1.f,0.f });
 }

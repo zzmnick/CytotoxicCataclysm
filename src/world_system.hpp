@@ -104,6 +104,7 @@ private:
 	void step_dash(float elapsed_ms);
 	void step_enemySpawn(float elapsed_ms);
 	void step_timer_with_callback(float elapsed_ms);
+	void step_waypoints();
 	void step_menu();
 
 	void spawnEnemiesNearInterestPoint(vec2 player_position);

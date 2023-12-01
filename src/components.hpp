@@ -159,7 +159,9 @@ enum class TEXTURE_ASSET_ID {
 	MENU_MUTE = MENU_SAVE + 1,
 	MENU_UNMUTE = MENU_MUTE + 1,
 	CROSSHAIR = MENU_UNMUTE + 1,
-	TEXTURE_COUNT = CROSSHAIR + 1 // TEXTURE_COUNT indicates that no txture is needed
+	ICON_SKULL = CROSSHAIR + 1,
+	ICON_QUESTION = ICON_SKULL + 1,
+	TEXTURE_COUNT = ICON_QUESTION + 1 // TEXTURE_COUNT indicates that no txture is needed
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
@@ -489,5 +491,16 @@ struct Melee {
 	vec2 offset = {0.f, 0.f};
 	vec2 pivot = {0.f, 0.f};
 	float damage = 20.f;
+};
+
+
+// Icons corresponding to interest point
+struct Waypoint {
+	vec2 interest_point = { 0.f, 0.f }; // to reference region
+	vec2 icon_scale = { 20.f, 20.f };
+};
+
+struct Boss {
+
 };
 #pragma endregion

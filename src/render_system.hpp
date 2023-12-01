@@ -87,6 +87,8 @@ class RenderSystem {
 		textures_path("ui/mute_button.png"),
 		textures_path("ui/unmute_button.png"),
 		textures_path("ui/crosshair.png"),
+		textures_path("ui/skull.png"),
+		textures_path("ui/question.png"),
 	};
 
 	std::array<GLuint, effect_count> effects;

@@ -126,10 +126,10 @@ void EffectsSystem::handle_heal_effect() {
 void EffectsSystem::handle_clear_screen() {
 	// start death timers for on-screen enemies
 	vec2 camPos = registry.camera.components[0].position;
-	for (int i = 0; i < registry.enemies.entities.size(); i++) {
-		float distance = length(registry.transforms.get(registry.enemies.entities[i]).position - camPos);
-		if (registry.enemies.components[i].type != ENEMY_ID::BOSS && registry.enemies.components[i].type != ENEMY_ID::FRIENDBOSS && distance < SCREEN_RADIUS * 0.9) {
-			ws.startEntityDeath(registry.enemies.entities[i]);
+	for (auto enemy : registry.enemies.entities) {
+		float distance = length(registry.transforms.get(enemy).position - camPos);
+		if (!registry.bosses.has(enemy) && distance < SCREEN_RADIUS * 0.9) {
+			ws.startEntityDeath(enemy);
 		}
 	}
 	setActiveTimer(CYST_EFFECT_ID::CLEAR_SCREEN, -1);

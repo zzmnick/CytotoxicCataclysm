@@ -21,6 +21,8 @@ const vec2 FRIEND_TEXTURE_SIZE = { 30.f, 30.f };
 const vec2 MENU_BUTTON_TEXTURE_SIZE = {882.f, 262.f};
 const vec2 START_TITLE_TEXTURE_SIZE = {2928.f, 824.f};
 const vec2 PAUSE_TITLE_TEXTURE_SIZE = {1193.f, 143.f};
+const vec2 QUESTION_TEXTURE_SIZE = {30.f, 54.f};
+const vec2 SKULL_TEXTURE_SIZE = {45.f, 42.f};
 
 const float IMMUNITY_TEXTURE_ANGLE = M_PI / 4;
 
@@ -59,6 +61,8 @@ Entity createLine(vec2 position, vec2 scale);
 // create healthbar and its frame. Returns healthbar entity
 Entity createHealthbar(vec2 position, vec2 scale);
 Entity createCrosshair();
+void createWaypoints();
+void createWaypoint(Region region);
 
 /*************************[ other ]*************************/
 Entity createCamera(vec2 pos);

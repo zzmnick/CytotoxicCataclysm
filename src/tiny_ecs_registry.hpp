@@ -40,6 +40,8 @@ public:
 	ComponentContainer<MenuElem> menuElems;
 	ComponentContainer<MenuButton> menuButtons;
 	ComponentContainer<Melee> melees;
+	ComponentContainer<Waypoint> waypoints;
+	ComponentContainer<Boss> bosses;
 	
 
 	// constructor that adds all containers for looping over them
@@ -74,8 +76,8 @@ public:
 		registry_list.push_back(&menuElems);
 		registry_list.push_back(&menuButtons);
 		registry_list.push_back(&melees);
-
-
+		registry_list.push_back(&waypoints);
+		registry_list.push_back(&bosses);
 	}
 
 	void clear_all_components() {
