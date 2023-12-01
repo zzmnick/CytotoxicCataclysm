@@ -523,8 +523,8 @@ void WorldSystem::step_timer_with_callback(float elapsed_ms) {
 
 void WorldSystem::step_waypoints() {
 	static const float padding = 23.f;
-	static const float top = -CONTENT_HEIGHT_PX / 2 + padding;
-	static const float bot = CONTENT_HEIGHT_PX / 2 - padding;
+	static const float top = -CONTENT_HEIGHT_PX / 2 + padding + 4.f;
+	static const float bot = CONTENT_HEIGHT_PX / 2 - padding - 4.f;
 	static const float left = -CONTENT_WIDTH_PX / 2 + padding;
 	static const float right = CONTENT_WIDTH_PX / 2 - padding;
 
