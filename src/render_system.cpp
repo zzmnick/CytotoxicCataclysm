@@ -6,33 +6,6 @@
 #include <SDL.h>
 #include "tiny_ecs_registry.hpp"
 
-void setViewport2() {
-	if (USE_FULLSCREEN) {
-		int width, height;
-		if (MONITOR_WIDTH / MONITOR_HEIGHT > ASPECT_RATIO) {
-			// letterboxing on the sides
-			width = static_cast<int>(MONITOR_HEIGHT * ASPECT_RATIO);
-			height = MONITOR_HEIGHT;
-		}
-		else {
-			// letterboxing on top and bottom
-			width = MONITOR_WIDTH;
-			height = static_cast<int>(MONITOR_WIDTH / ASPECT_RATIO);
-			printf("%d, %d\n", width, height); // this is in the proper aspect ratio!! (16/9)
-		}
-		int offsetWidth = (MONITOR_WIDTH - width) / 2;
-		int offsetHeight = (MONITOR_HEIGHT - height) / 2;
-		glViewport(offsetWidth, offsetHeight, width, height);
-	}
-	else {
-		glViewport(0, 0, CONTENT_WIDTH_PX, CONTENT_HEIGHT_PX);
-	}
-}
-
-void setViewport1() {
-	glViewport(0, 0, CONTENT_WIDTH_PX, CONTENT_HEIGHT_PX);
-}
-
 void RenderSystem::setUniformShaderVars(
 	Entity entity,
 	const mat3& transform,
@@ -201,12 +174,10 @@ void RenderSystem::drawToScreen()
 	glUseProgram(effects[(GLuint)EFFECT_ASSET_ID::SCREEN]);
 	gl_has_errors();
 	// Clearing backbuffer
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	int w, h;
 	glfwGetFramebufferSize(window, &w, &h); // Note, this will be 2x the resolution given to glfwCreateWindow on retina displays
-
-	setViewport2();
-
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, w, h);
 	glDepthRange(0, 10);
 	glClearColor(0, 0, 0, 1);	// black default background
 	glClearDepth(1.f);
@@ -268,13 +239,15 @@ bool RenderSystem::is_outside_screen(vec2 entityPos) {
 // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture/
 void RenderSystem::draw()
 {
+	// Getting size of window
+	int w, h;
+	glfwGetFramebufferSize(window, &w, &h); // Note, this will be 2x the resolution given to glfwCreateWindow on retina displays
+
 	// First render to the custom framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
 	gl_has_errors();
 	// Clearing backbuffer
-
-	setViewport1();
-
+	glViewport(0, 0, w, h);
 	glDepthRange(0.00001, 10);
 	glClearColor(0, 0, 0, 1);	// black default background
 	glClearDepth(10.f);

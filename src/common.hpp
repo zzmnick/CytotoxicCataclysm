@@ -54,13 +54,9 @@ bool gl_has_errors();
 const bool USE_FULLSCREEN = true;
 const bool SHOW_DIALOGS = true;
 const int TARGET_REFRESH_RATE = 60;
-// Store monitor/video mode dimensions here
-extern int MONITOR_WIDTH;
-extern int MONITOR_HEIGHT;
 // This is the "in-game" screen
 const int CONTENT_WIDTH_PX = 1920;
 const int CONTENT_HEIGHT_PX = 1080;
-const float ASPECT_RATIO = (float) CONTENT_WIDTH_PX / CONTENT_HEIGHT_PX;
 const float SCREEN_RADIUS = (float) hypot(CONTENT_WIDTH_PX, CONTENT_HEIGHT_PX) / 2; // Half of screen diagonal
 const size_t NUM_REGIONS = 6;
 const float MAP_RADIUS = 10000;

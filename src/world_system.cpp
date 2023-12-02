@@ -104,17 +104,9 @@ GLFWwindow* WorldSystem::create_window() {
 		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 		window = glfwCreateWindow(CONTENT_WIDTH_PX, CONTENT_HEIGHT_PX, "Cytotoxic Cataclysm", monitor, nullptr);
 
-		glfwSetWindowMonitor(window, monitor, 0, 0, CONTENT_WIDTH_PX, CONTENT_HEIGHT_PX, TARGET_REFRESH_RATE);
-		const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
-		// save monitors actual dimensions
-		MONITOR_WIDTH = vidmode->width;
-		MONITOR_HEIGHT = vidmode->height;
-		printf("monitor: %d, %d\n", MONITOR_WIDTH, MONITOR_HEIGHT);
-		int w, h;
-		glfwGetFramebufferSize(window, &w, &h);
-		printf("framebuffer: %d, %d\n", w, h);
 		// When fullscreen we attempt to set the video mode to use a refresh rate of TARGET_REFRESH_RATE
-		int actual_refresh_rate = vidmode->refreshRate;
+		glfwSetWindowMonitor(window, monitor, 0, 0, CONTENT_WIDTH_PX, CONTENT_HEIGHT_PX, TARGET_REFRESH_RATE);
+		int actual_refresh_rate = glfwGetVideoMode(monitor)->refreshRate;
 		if (actual_refresh_rate != TARGET_REFRESH_RATE) {
 			printf("Warning: target refresh rate, %d, does not match actual refresh rate, %d\n", TARGET_REFRESH_RATE, actual_refresh_rate);
 		}
@@ -945,13 +937,13 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 }
 
 void WorldSystem::on_mouse_move(vec2 pos) {
-	vec2 mouseScreenCoord = vec2(pos.x - MONITOR_WIDTH / 2, pos.y - MONITOR_HEIGHT / 2);
+	vec2 mouseScreenCoord = vec2(pos.x - CONTENT_WIDTH_PX / 2, pos.y - CONTENT_HEIGHT_PX / 2);
 	Transform player_transform = registry.transforms.get(player);
 	float angle = player_transform.angle;
 	float offsetX = -60 * sin(angle);
 	float offsetY = -60 * cos(angle);
-	vec2 cursor_position = { clamp(mouseScreenCoord.x + offsetX, -MONITOR_WIDTH / 2.f + 60, MONITOR_WIDTH / 2.f - 60),
-							 clamp(mouseScreenCoord.y + offsetY, -MONITOR_HEIGHT / 2.f + 60, MONITOR_HEIGHT / 2.f - 60)};
+	vec2 cursor_position = { clamp(mouseScreenCoord.x + offsetX, -CONTENT_WIDTH_PX / 2.f + 60, CONTENT_WIDTH_PX / 2.f - 60),
+							 clamp(mouseScreenCoord.y + offsetY, - CONTENT_HEIGHT_PX / 2.f + 60, CONTENT_HEIGHT_PX / 2.f - 60)};
 
 	// set cursor/crosshair location
 	registry.transforms.get(cursor).position = cursor_position;
