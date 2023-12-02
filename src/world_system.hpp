@@ -25,6 +25,8 @@ public:
 	// Creates a window
 	GLFWwindow* create_window();
 
+	void on_controller_joy(int joy, int event);
+
 	// starts the game
 	void init(RenderSystem* renderer);
 
@@ -43,12 +45,20 @@ public:
 	// Should the game be over ?
 	bool is_over()const;
 
+
+
 	void startEntityDeath(Entity entity);
 
 private:
 	// Input callback functions
 	void on_key(int key, int, int action, int mod);
 	void on_mouse_move(vec2 pos);
+
+
+
+	void menu_controller(float elapsed_ms_since_last_update);
+
+	void on_controller();
 
 	// User input handlers
 	void control_movement(float elapsed_ms);
@@ -70,6 +80,7 @@ private:
 	float current_speed;
 	Entity player;
 	GAME_STATE state;
+	BUTTON_SELECT button_select= BUTTON_SELECT::NONE;
 
 	// UI references
 	Entity healthbar;

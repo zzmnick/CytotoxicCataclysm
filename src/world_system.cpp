@@ -15,6 +15,8 @@
 #include <iostream>
 
 std::unordered_map < int, int > keys_pressed;
+std::unordered_map < int, float > axes_state;
+const unsigned char *controller_buttons;
 vec2 mouse;
 const float SPAWN_RANGE = MAP_RADIUS *0.6f;
 const int MAX_RED_ENEMIES = 10;
@@ -24,6 +26,9 @@ const float ENEMY_SPAWN_PADDING = 50.f; // Padding to ensure off-screen spawn
 float enemy_spawn_cooldown = 5.f;
 const float INDIVIDUAL_SPAWN_INTERVAL = 1.0f;
 std::vector<ENEMY_ID> enemyTypes = { ENEMY_ID::RED, ENEMY_ID::GREEN, ENEMY_ID::YELLOW }; // Add more types as needed
+float menu_timer = 0.f;
+
+bool controller_mode = FALSE; //if most recent input is controller set to 1, if mouse/keyboard set to 0
 
 
 
@@ -129,9 +134,14 @@ GLFWwindow* WorldSystem::create_window() {
 	auto key_redirect = [](GLFWwindow* wnd, int _0, int _1, int _2, int _3) { ((WorldSystem*)glfwGetWindowUserPointer(wnd))->on_key(_0, _1, _2, _3); };
 	auto cursor_pos_redirect = [](GLFWwindow* wnd, double _0, double _1) { ((WorldSystem*)glfwGetWindowUserPointer(wnd))->on_mouse_move({ _0, _1 }); };
 	auto mouse_button_callback = [](GLFWwindow* wnd, int button, int action, int mods) { ((WorldSystem*)glfwGetWindowUserPointer(wnd))->on_key(button, 0, action, mods); };
+	auto controller_joystick_callback = [](int joy, int event) { ((WorldSystem*)glfwGetWindowUserPointer(glfwGetCurrentContext()))->on_controller_joy(joy, event); };
+
 	glfwSetKeyCallback(window, key_redirect);
 	glfwSetCursorPosCallback(window, cursor_pos_redirect);
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
+	glfwSetJoystickCallback(controller_joystick_callback);
+
+
 
 	//////////////////////////////////////
 	// Loading music and sounds with SDL
@@ -193,6 +203,19 @@ GLFWwindow* WorldSystem::create_window() {
 	Mix_VolumeChunk(soundChunks["enemy_hit"], 45);
 
 	return window;
+}
+
+void WorldSystem::on_controller_joy(int joy, int event) {
+
+
+
+	if (event == GLFW_CONNECTED) {
+		printf("Controller %d connected\n", joy);
+	}
+	else if (event == GLFW_DISCONNECTED) {
+		printf("Controller %d disconnected\n", joy);
+	}
+
 }
 
 void WorldSystem::init(RenderSystem* renderer_arg) {
@@ -629,10 +652,17 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 		registry.remove_all_components_of(registry.debugComponents.entities.back());
 
 	step_menu();
+	menu_controller(elapsed_ms_since_last_update);
+
+
+	int present = glfwJoystickPresent(GLFW_JOYSTICK_1);
+
 	if (state == GAME_STATE::START_MENU || state == GAME_STATE::PAUSE_MENU) {
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		registry.colors.get(cursor).a = 0.f;
 		return false;
+		
+
 	}
 
 	// Code below this line will happen only if not in start/pause menu
@@ -669,6 +699,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	step_enemySpawn(elapsed_ms_since_last_update);
 	step_timer_with_callback(elapsed_ms_since_last_update);
 	step_waypoints();
+	on_controller();
 
 	// Block velocity update for one step after collision to
 	// avoid going out of border / going through enemy
@@ -716,6 +747,7 @@ void WorldSystem::restart_game() {
 	/*************************[ setup new world ]*************************/
 	// Reset the game state
 	current_speed = 1.f;
+	button_select = BUTTON_SELECT::NONE;
 	state = GAME_STATE::START_MENU;
 	isShootingSoundQueued = false;
 	dialog_system = nullptr;
@@ -891,12 +923,16 @@ bool WorldSystem::is_over() const {
 	return bool(glfwWindowShouldClose(window));
 }
 
+
 // On key callback
 void WorldSystem::on_key(int key, int, int action, int mod) {
 	// key is of 'type' GLFW_KEY_
 	// action can be GLFW_PRESS GLFW_RELEASE GLFW_REPEAT
 
 	// Pausing game
+
+
+
 	if (action == GLFW_RELEASE && key == GLFW_KEY_ESCAPE) {
 		if (state == GAME_STATE::RUNNING && dialog_system == nullptr) {
 			state = GAME_STATE::PAUSE_MENU;
@@ -906,6 +942,7 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 	if (action == GLFW_PRESS && key == GLFW_MOUSE_BUTTON_LEFT) {
 		if (state == GAME_STATE::PAUSE_MENU || state == GAME_STATE::START_MENU) {
 			menu_system->recent_click_coord = mouse;
+			printf("click at %f, %f\n", mouse.x, mouse.y);
 		}
 		
 	}
@@ -945,7 +982,7 @@ void WorldSystem::on_mouse_move(vec2 pos) {
 	vec2 cursor_position = { clamp(mouseScreenCoord.x + offsetX, -CONTENT_WIDTH_PX / 2.f + 60, CONTENT_WIDTH_PX / 2.f - 60),
 							 clamp(mouseScreenCoord.y + offsetY, - CONTENT_HEIGHT_PX / 2.f + 60, CONTENT_HEIGHT_PX / 2.f - 60)};
 
-	// set cursor/crosshair location
+	//set cursor/crosshair location
 	registry.transforms.get(cursor).position = cursor_position;
 
 	// hide cursor if on top of player
@@ -957,9 +994,225 @@ void WorldSystem::on_mouse_move(vec2 pos) {
 		registry.colors.get(cursor).a = 1.f;
 	}
 
-	// set mouse for player angle
+	//set mouse for player angle
 	mouse = mouseScreenCoord;
 }
+
+void axesupdate() {
+	int axesCount;
+	const float* axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &axesCount);
+	axes_state[0] = axes[0];
+	axes_state[1] = axes[1];
+	axes_state[2] = axes[2];
+	axes_state[3] = axes[3];
+	axes_state[4] = axes[4];
+	axes_state[5] = axes[5];
+
+}
+
+void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
+	int present = glfwJoystickPresent(GLFW_JOYSTICK_1);
+
+	if (present) {
+		menu_timer -= elapsed_ms_since_last_update;
+		if (menu_timer > 0) {
+			return;
+		}
+		menu_timer = 150;
+
+		axesupdate();
+		int count;
+		const unsigned char* buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
+		controller_buttons = buttons;
+
+
+
+		if(state == GAME_STATE::START_MENU && button_select==BUTTON_SELECT::NONE){
+			if (axes_state[1] > 0.3 || axes_state[1] < -0.3 || buttons[15] || buttons[17]) {
+				button_select = BUTTON_SELECT::START;
+				mouse = { 0,-40 };
+			}
+		
+		}
+		else if (state == GAME_STATE::START_MENU && button_select == BUTTON_SELECT::START) {
+
+			if (axes_state[1] > 0.3 || buttons[17]) {
+				button_select = BUTTON_SELECT::LOAD;
+				mouse = { 0,150 };
+
+			}
+
+			if (axes_state[1] < -0.3 || buttons[15]) {
+				button_select = BUTTON_SELECT::EXIT;
+				mouse = { 0,350 };
+
+			}
+
+		}
+		else if (state == GAME_STATE::START_MENU && button_select == BUTTON_SELECT::LOAD) {
+
+			if (axes_state[1] > 0.3 || buttons[17]) {
+				button_select = BUTTON_SELECT::EXIT;
+				mouse = { 0,350 };
+
+			}
+
+			if (axes_state[1] < -0.3 || buttons[15]) {
+				button_select = BUTTON_SELECT::START;
+				mouse = { 0,-50 };
+
+			}
+
+		}
+		else if (state == GAME_STATE::START_MENU && button_select == BUTTON_SELECT::EXIT) {
+
+			if (axes_state[1] > 0.3 || buttons[17]) {
+				button_select = BUTTON_SELECT::START;
+				mouse = { 0,-50 };
+
+			}
+
+			if (axes_state[1] < -0.3 || buttons[15]) {
+				button_select = BUTTON_SELECT::LOAD;
+				mouse = { 0,150 };
+
+			}
+
+		}
+
+		else if (state == GAME_STATE::PAUSE_MENU && button_select == BUTTON_SELECT::NONE) {
+			if (axes_state[1] > 0.3 || axes_state[1] < -0.3 || buttons[17] || buttons[15]) {
+				button_select = BUTTON_SELECT::RESUME;
+				mouse = { 0,-200 };
+			}
+
+		}
+		else if (state == GAME_STATE::PAUSE_MENU && button_select == BUTTON_SELECT::RESUME) {
+			if (axes_state[1] > 0.3 || buttons[17]) {
+				button_select = BUTTON_SELECT::SAVE;
+				mouse = { 0,0 };
+
+			}
+
+			if (axes_state[1] < -0.3 || buttons[15]) {
+				button_select = BUTTON_SELECT::EXIT_CURR_PLAY;
+				mouse = { 0,400 };
+
+			}
+
+
+
+		}
+		else if (state == GAME_STATE::PAUSE_MENU && button_select == BUTTON_SELECT::SAVE) {
+			if (axes_state[1] > 0.3 || buttons[17]) {
+				button_select = BUTTON_SELECT::MUTE;
+				mouse = { 0,200 };
+
+			}
+
+			if (axes_state[1] < -0.3 || buttons[15]) {
+				button_select = BUTTON_SELECT::RESUME;
+				mouse = { 0,-200 };
+
+			}
+
+		}
+		else if (state == GAME_STATE::PAUSE_MENU && button_select == BUTTON_SELECT::MUTE) {
+			if (axes_state[1] > 0.3 || buttons[17]) {
+				button_select = BUTTON_SELECT::EXIT_CURR_PLAY;
+				mouse = { 0,400 };
+
+			}
+
+			if (axes_state[1] < -0.3 || buttons[15]) {
+				button_select = BUTTON_SELECT::SAVE;
+				mouse = { 0,0 };
+
+			}
+
+		}
+		else if (state == GAME_STATE::PAUSE_MENU && button_select == BUTTON_SELECT::EXIT_CURR_PLAY) {
+			if (axes_state[1] > 0.3 || buttons[17]) {
+				button_select = BUTTON_SELECT::RESUME;
+				mouse = { 0,-200 };
+
+			}
+
+			if (axes_state[1] < -0.3 || buttons[15]) {
+				button_select = BUTTON_SELECT::MUTE;
+				mouse = { 0,200 };
+
+			}
+
+		}
+
+
+		if (buttons[1]) {
+			if (state == GAME_STATE::PAUSE_MENU || state == GAME_STATE::START_MENU) {
+				menu_system->recent_click_coord = mouse;
+				controller_mode = 1;
+			}
+		}
+	}
+
+
+}
+
+
+void WorldSystem::on_controller() {
+	int present = glfwJoystickPresent(GLFW_JOYSTICK_1);
+	if (present) {
+		axesupdate();
+
+
+
+		int count;
+		const unsigned char* buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
+		controller_buttons = buttons;
+
+
+
+		if (buttons[9]) {
+			if (state == GAME_STATE::RUNNING && dialog_system == nullptr) {
+				state = GAME_STATE::PAUSE_MENU;
+				button_select = BUTTON_SELECT::NONE;
+			}
+		}
+		if (buttons[18]) {
+			controller_mode = 0;
+
+		}
+		if (buttons[16]) {
+			controller_mode = 1;
+
+		}
+	}
+	else {
+		axes_state[0] = 0.0;
+		axes_state[1] = 0.0;
+		axes_state[2] = 0.0;
+		axes_state[3] = 0.0;
+		axes_state[4] = 0.0;
+		axes_state[5] = 0.0;
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
 
 void WorldSystem::control_movement(float elapsed_ms) {
 	Motion& playermovement = registry.motions.get(player);
@@ -972,7 +1225,10 @@ void WorldSystem::control_movement(float elapsed_ms) {
 	if (keys_pressed[GLFW_KEY_S]) {
 		playermovement.velocity.y -= elapsed_ms * playermovement.acceleration_unit;
 	}
-	if ((!(keys_pressed[GLFW_KEY_S] || keys_pressed[GLFW_KEY_W])) || (keys_pressed[GLFW_KEY_S] && keys_pressed[GLFW_KEY_W])) {
+	playermovement.velocity.y -= elapsed_ms * playermovement.acceleration_unit * axes_state[1];
+
+
+	if ((!(keys_pressed[GLFW_KEY_S] || keys_pressed[GLFW_KEY_W]) || (keys_pressed[GLFW_KEY_S] && keys_pressed[GLFW_KEY_W]))&& (axes_state[1] <= 0.3 && axes_state[1] >= -0.3)) {
 		playermovement.velocity.y *= pow(playermovement.deceleration_unit, elapsed_ms);
 	}
 
@@ -983,7 +1239,9 @@ void WorldSystem::control_movement(float elapsed_ms) {
 	if (keys_pressed[GLFW_KEY_A]) {
 		playermovement.velocity.x -= elapsed_ms * playermovement.acceleration_unit;
 	}
-	if ((!(keys_pressed[GLFW_KEY_D] || keys_pressed[GLFW_KEY_A])) || (keys_pressed[GLFW_KEY_D] && keys_pressed[GLFW_KEY_A])) {
+	playermovement.velocity.x += elapsed_ms * playermovement.acceleration_unit * axes_state[0];
+
+	if ((!(keys_pressed[GLFW_KEY_D] || keys_pressed[GLFW_KEY_A]) || (keys_pressed[GLFW_KEY_D] && keys_pressed[GLFW_KEY_A])) && (axes_state[0] <= 0.3 && axes_state[0] >= -0.3)) {
 		playermovement.velocity.x *= pow(playermovement.deceleration_unit, elapsed_ms);
 	}
 	
@@ -1197,6 +1455,15 @@ Entity& WorldSystem::getPlayerBelonging(PLAYER_BELONGING_ID id) {
 }
 
 void WorldSystem::control_action() {
+	if (controller_buttons != NULL) {
+		if (axes_state[4] > 0.1) {
+			player_shoot();
+		}
+		if (axes_state[3] > 0.1) {
+			player_dash();
+		}
+	
+	}
 	if (keys_pressed[GLFW_MOUSE_BUTTON_LEFT]) {
 		player_shoot();
 	}
@@ -1212,12 +1479,45 @@ void WorldSystem::control_direction() {
 	assert(registry.transforms.has(player));
 	Transform& playertransform = registry.transforms.get(player);
 
-	float angle = atan2(mouse.y,-mouse.x) + playertransform.angle_offset;
-	playertransform.angle = angle;
+
+
+
+	int present = glfwJoystickPresent(GLFW_JOYSTICK_1);
+	if (present && controller_mode) {
+
+		if (!(axes_state[5] <= 0.4 && axes_state[5] >= -0.4) || !(axes_state[2] <= 0.4 && axes_state[2] >= -0.4)) {
+			float angle = atan2(axes_state[5] * abs(axes_state[5]), -axes_state[2] * abs(axes_state[2])) + playertransform.angle_offset;
+			playertransform.angle = angle;
+		}
+
+
+		float angle = playertransform.angle;
+
+		float offsetX = -200 * sin(angle + M_PI * 1.32);
+		float offsetY = -200 * cos(angle + M_PI * 1.32);
+		vec2 cursor_position = { offsetX,
+								 offsetY };
+		registry.transforms.get(cursor).position = cursor_position;
+	}
+	else {
+		float angle = atan2(mouse.y,-mouse.x) + playertransform.angle_offset;
+		playertransform.angle = angle;
+
+	}
+
+
+	// set cursor/crosshair location
+	
+
+
+
+
+
 }
 
 void WorldSystem::player_shoot() {
 	Weapon& playerWeapon = registry.weapons.get(player);
+
 	if (playerWeapon.attack_timer <= 0) {
 		createBullet(player, playerWeapon.size, playerWeapon.color);
 		playerWeapon.attack_timer = playerWeapon.attack_delay;

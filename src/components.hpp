@@ -84,6 +84,17 @@ enum class GAME_STATE {
 	RUNNING = DIALOG + 1
 };
 
+enum class BUTTON_SELECT {
+	START = 0,
+	LOAD = START + 1,
+	EXIT = LOAD + 1,
+	RESUME = EXIT + 1,
+	SAVE = RESUME + 1,
+	MUTE = SAVE + 1,
+	EXIT_CURR_PLAY = MUTE + 1,
+	NONE = EXIT_CURR_PLAY + 1
+};
+
 /**
  * The following enumerators represent global identifiers refering to graphic
  * assets. For example TEXTURE_ASSET_ID are the identifiers of each texture

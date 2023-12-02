@@ -52,7 +52,7 @@ bool gl_has_errors();
 
 // Game configuration
 const bool USE_FULLSCREEN = true;
-const bool SHOW_DIALOGS = true;
+const bool SHOW_DIALOGS = false;
 const int TARGET_REFRESH_RATE = 60;
 // This is the "in-game" screen
 const int CONTENT_WIDTH_PX = 1920;
