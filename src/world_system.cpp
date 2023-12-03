@@ -278,6 +278,7 @@ void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
 }
 
 void WorldSystem::startEntityDeath(Entity entity) {
+	if (registry.deathTimers.has(entity)) return;
 	DeathTimer& dt = registry.deathTimers.emplace(entity);
 	int buffer = 20; // to fix timing between animation and death
 
