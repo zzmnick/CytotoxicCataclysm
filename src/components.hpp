@@ -20,11 +20,11 @@ const int region_theme_count = (int)REGION_THEME_ID::REGION_THEME_COUNT;
 enum class REGION_GOAL_ID {
 	CURE = 0,
 	CANCER_CELL = CURE + 1,
-	MELEE_WEAPON = CANCER_CELL + 1,
-	DOUBLE_DAMAGE = MELEE_WEAPON + 1,
-	TEMP1 = DOUBLE_DAMAGE + 1,
-	TEMP2 = TEMP1 + 1,
-	REGION_GOAL_COUNT = TEMP2 + 1
+	SWORD_ATTACK = CANCER_CELL + 1,
+	MULTIPLE_BULLETS = SWORD_ATTACK + 1,
+	HEALTH_BOOST = MULTIPLE_BULLETS + 1,
+	DASH = HEALTH_BOOST + 1,
+	REGION_GOAL_COUNT = DASH + 1
 
 };
 const int region_goal_count = (int)REGION_GOAL_ID::REGION_GOAL_COUNT;
@@ -51,7 +51,9 @@ enum class COLLISION_TYPE {
 	WITH_BOUNDARY = 0,
 	PLAYER_WITH_ENEMY = WITH_BOUNDARY + 1,
 	PLAYER_WITH_CYST = PLAYER_WITH_ENEMY + 1,
-	ENEMY_WITH_ENEMY = PLAYER_WITH_CYST + 1,
+	PLAYER_WITH_CHEST = PLAYER_WITH_CYST + 1,
+	PLAYER_WITH_CURE = PLAYER_WITH_CHEST + 1,
+	ENEMY_WITH_ENEMY = PLAYER_WITH_CURE + 1,
 	BULLET_WITH_ENEMY = ENEMY_WITH_ENEMY + 1,
 	BULLET_WITH_PLAYER = BULLET_WITH_ENEMY + 1,
 	BULLET_WITH_BULLET = BULLET_WITH_PLAYER + 1,
@@ -127,7 +129,9 @@ enum class TEXTURE_ASSET_ID {
 	GREEN_ENEMY = RED_ENEMY + 1,
 	YELLOW_ENEMY = GREEN_ENEMY+ 1,
 	HEALTHBAR_FRAME = YELLOW_ENEMY + 1,
-	GUN = HEALTHBAR_FRAME + 1,
+	CHEST = HEALTHBAR_FRAME + 1,
+	CURE = CHEST + 1,
+	GUN = CURE + 1,
 	CYST = GUN + 1,
 	IMMUNITY_MOVING = CYST + 1,
 	IMMUNITY_DYING = IMMUNITY_MOVING + 1,
@@ -245,14 +249,23 @@ enum MENU_OPTION {
 	NONE = EXIT_CURR_PLAY + 1
 };
 
-enum class ATTACHMENT_TYPE {
+enum class ATTACHMENT_ID {
 	DASHING = 0,
 	SWORD = DASHING + 1,
 	GUN = SWORD + 1,
 	BACTERIOPHAGE_ARM = GUN + 1,
-	ATTACHMENT_TYPE_COUNT = BACTERIOPHAGE_ARM + 1,
+	ATTACHMENT_COUNT = BACTERIOPHAGE_ARM + 1,
 };
-const int attachment_type_count = (int)ATTACHMENT_TYPE::ATTACHMENT_TYPE_COUNT;
+const int attachment_count = (int)ATTACHMENT_ID::ATTACHMENT_COUNT;
+
+enum class PLAYER_ABILITY_ID {
+	SWORD = 0,
+	DASHING = SWORD + 1,
+	HEALTH_BOOST = DASHING + 1,
+	BULLET_BOOST = HEALTH_BOOST + 1,
+	PLAYER_ABILITY_COUNT = BULLET_BOOST + 1,
+};
+const int player_ability_count = (int)PLAYER_ABILITY_ID::PLAYER_ABILITY_COUNT;
 
 static std::unordered_map <ANIMATION_FRAME_COUNT, GEOMETRY_BUFFER_ID> animation_geo_map_general = {
 	{ANIMATION_FRAME_COUNT::IMMUNITY_DYING, GEOMETRY_BUFFER_ID::SPRITESHEET_IMMUNITY_DYING},
@@ -300,7 +313,7 @@ static std::unordered_map <REGION_THEME_ID, TEXTURE_ASSET_ID> region_texture_map
 // Player component
 struct Player
 {
-
+	bool isCureUnlocked = false;
 };
 
 struct Camera {
@@ -336,13 +349,17 @@ struct Motion {
 };
 
 struct Attachment {
-	ATTACHMENT_TYPE type;
+	ATTACHMENT_ID type;
 	Entity parent;
 	Transformation relative_transform_1;	// Before rotation
 	float moved_angle = 0.f;				// Rotation
 	Transformation relative_transform_2;	// After rotation
 	float angle_offset = 0.f;
 	float angle_freedom = 0.f;
+};
+
+struct PlayerAbility {
+	PLAYER_ABILITY_ID id;
 };
 
 // Stucture to store collision information
@@ -424,8 +441,19 @@ struct Region {
 	vec2 interest_point;
 };
 
+struct Chest {
+    REGION_GOAL_ID ability;
+    bool isOpened = false;
+    vec2 position;
+};
+
+struct Cure {
+
+};
+
 struct Health {
 	float health = 100.f;
+	float healthMultiplier = 1.0f;
 };
 
 struct PlayerHealthbar {

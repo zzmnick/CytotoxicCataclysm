@@ -15,13 +15,14 @@
 #include <iostream>
 
 std::unordered_map < int, int > keys_pressed;
+float spaceBarPressDuration = 0.0f;
 std::unordered_map < int, float > axes_state;
 const unsigned char *controller_buttons;
 vec2 mouse;
 const float SPAWN_RANGE = MAP_RADIUS *0.6f;
-const int MAX_RED_ENEMIES = 10;
-const int MAX_GREEN_ENEMIES = 5;
-const int MAX_YELLOW_ENEMIES = 3;
+const int MAX_RED_ENEMIES = 8;
+const int MAX_GREEN_ENEMIES = 4;
+const int MAX_YELLOW_ENEMIES = 4;
 const float ENEMY_SPAWN_PADDING = 50.f; // Padding to ensure off-screen spawn
 float enemy_spawn_cooldown = 5.f;
 const float INDIVIDUAL_SPAWN_INTERVAL = 1.0f;
@@ -172,6 +173,10 @@ GLFWwindow* WorldSystem::create_window() {
 	soundChunks["cyst_neg"] = Mix_LoadWAV(audio_path("sound/sfx_deathscream_robot1.wav").c_str());
 	soundChunks["cyst_empty"] = Mix_LoadWAV(audio_path("sound/sfx_sounds_interaction7.wav").c_str());
 	soundChunks["no_ammo"] = Mix_LoadWAV(audio_path("sound/sfx_wpn_noammo3.wav").c_str());
+	soundChunks["sword_unlock"] = Mix_LoadWAV(audio_path("sound/sword.wav").c_str());
+	soundChunks["dash_unlock"] = Mix_LoadWAV(audio_path("sound/dash.wav").c_str());
+	soundChunks["health_unlock"] = Mix_LoadWAV(audio_path("sound/health.wav").c_str());
+	soundChunks["bullet_unlock"] = Mix_LoadWAV(audio_path("sound/reload.wav").c_str());
 
 	// Check for failures
 	for (const auto& pair : backgroundMusic) {
@@ -188,7 +193,11 @@ GLFWwindow* WorldSystem::create_window() {
 	}
 
 	// Assign channels
-	Mix_AllocateChannels(10);
+	Mix_AllocateChannels(14);
+	chunkToChannel["bullet_unlock"] = 13;
+	chunkToChannel["health_unlock"] = 12;
+	chunkToChannel["dash_unlock"] = 11;
+	chunkToChannel["sword_unlock"] = 10;
 	chunkToChannel["player_hit"] = 9;
 	chunkToChannel["player_dash"] = 8;
 	chunkToChannel["player_death"] = 7;
@@ -201,6 +210,10 @@ GLFWwindow* WorldSystem::create_window() {
 	Mix_VolumeChunk(soundChunks["player_shoot_1"], 60);
 	Mix_VolumeChunk(soundChunks["player_dash"], 45);
 	Mix_VolumeChunk(soundChunks["enemy_hit"], 45);
+	Mix_VolumeChunk(soundChunks["sword_unlock"], 60);
+	Mix_VolumeChunk(soundChunks["dash_unlock"], 60);
+	Mix_VolumeChunk(soundChunks["health_unlock"], 60);
+	Mix_VolumeChunk(soundChunks["bullet_unlock"], 60);
 
 	return window;
 }
@@ -269,7 +282,14 @@ void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
 
 			if (registry.enemies.has(entity)) {
 				// Enemy is dead -> remove
-				ENEMY_ID type = registry.enemies.get(entity).type;
+				Enemy enemyComponent = registry.enemies.get(entity);
+				ENEMY_ID type = enemyComponent.type;
+
+				if (type == ENEMY_ID::BOSS) {
+					vec2 enemyDeathSpot = registry.transforms.get(entity).position;
+					createCure(enemyDeathSpot);
+				}
+
 				enemyCounts[type]--;
 			}
 			remove_entity(entity);
@@ -360,7 +380,9 @@ void WorldSystem::step_health() {
 
 void WorldSystem::step_healthbar(float elapsed_ms) {
 	PlayerHealthbar& bar = registry.healthbar.get(healthbar);
-	float current_health = registry.healthValues.get(player).health;
+	Health& playerHealth = registry.healthValues.get(player);
+	float current_health = playerHealth.health;
+	float healthMultiplier = playerHealth.healthMultiplier;
 
 	if (bar.previous_health != current_health) {
 		bar.timer_ms -= elapsed_ms;
@@ -373,7 +395,7 @@ void WorldSystem::step_healthbar(float elapsed_ms) {
 		float healthbar_scale = 0.f;
 		float normalized_time = bar.timer_ms / HEALTH_BAR_UPDATE_TIME_SLAP;
 		float new_health_pct = bar.previous_health * normalized_time + current_health * (1.f - normalized_time);
-		healthbar_scale = max(0.f, new_health_pct / 100.f);
+		healthbar_scale = max(0.f, (current_health / playerHealth.healthMultiplier) / 100.f);
 
 		// Update the scale of the healthbar
 		assert(registry.transforms.has(healthbar));
@@ -463,10 +485,21 @@ void WorldSystem::step_attack(float elapsed_ms) {
 }
 
 void WorldSystem::step_dash(float elapsed_ms) {
-	assert(registry.dashes.has(player));
-	Dash& playerDash = registry.dashes.get(player);
-	playerDash.active_timer_ms -= elapsed_ms;
-	playerDash.delay_timer_ms -= elapsed_ms;
+	if (registry.dashes.has(player)) {
+		Dash& playerDash = registry.dashes.get(player);
+		Entity dashingAnimationEntity = getAttachments(player, ATTACHMENT_ID::DASHING);
+		playerDash.active_timer_ms = max(playerDash.active_timer_ms - elapsed_ms, 0.f);
+		playerDash.delay_timer_ms = max(playerDash.delay_timer_ms - elapsed_ms, 0.f);
+
+		if (playerDash.active_timer_ms <= 0.f) {
+			//make dashing animation invisible
+			vec4& color = registry.colors.get(dashingAnimationEntity);
+			color = no_color;
+		} else {
+			vec4& color = registry.colors.get(dashingAnimationEntity);
+			color = dashing_default_color;
+		}
+	}
 }
 
 bool out_of_boundary_check(vec2 entityScale, vec2 entityPos) {
@@ -628,23 +661,19 @@ void WorldSystem::step_waypoints() {
 
 
 	float minDistance = MAP_RADIUS;
-	Entity closestWP;
+	Entity closestWP = Entity();
 	for (Entity wp : registry.waypoints.entities) {
 		Waypoint waypoint = registry.waypoints.get(wp);
-		//	TODO: dont remove waypoint here, do it when toggling region.is_cleared
-		//if (region.is_cleared) {
-		//	registry.waypoints.remove(wp);
-		//}
 		vec2 interest_point_screen_coord = vec2(renderer->createViewMatrix() * vec3(waypoint.interest_point, 1.0));
 		vec2 result = findIntersectionPoint(interest_point_screen_coord);
 
 		registry.transforms.get(wp).position = result;
 
-		float distance = length(interest_point_screen_coord);
-		if (distance < minDistance) {
-			minDistance = distance;
-			closestWP = wp;
-		}
+        float distance = length(interest_point_screen_coord);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestWP = wp;
+        }
 
 		const float minDistanceThreshold = 1500.f;
 		const float maxDistanceThreshold = 7500.f;
@@ -665,10 +694,10 @@ void WorldSystem::step_waypoints() {
 		}
 	}
 	// set closest icon alpha to 1 if not on screen and player not in center
-	if (length(registry.transforms.get(player).position) > 600.f) {
-		float& alpha = registry.colors.get(closestWP).a;
-		alpha = alpha == 0.f ? 0.f : 1.f;
-	}
+    if (registry.waypoints.has(closestWP) && length(registry.transforms.get(player).position) > 600.f) {
+        float& alpha = registry.colors.get(closestWP).a;
+        alpha = alpha == 0.f ? 0.f : 1.f;
+    }
 }
 
 void WorldSystem::update_camera() {
@@ -758,7 +787,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	control_action();
 
 	handle_shooting_sound_effect();
-
 	remove_garbage();
 	return true;
 }
@@ -831,24 +859,40 @@ void WorldSystem::restart_game() {
 	dialog_system = nullptr;
 	// Create a new player
 	player = createPlayer({ 0, 0 });
-	createSword(renderer, player);
 	effects_system->player = player;
-	// hardcode the boss position to upper right region, randomize later
-	vec2 boss_pos;
-	vec2 second_boss_pos;
 	if (DEBUG_MODE) {
-		boss_pos = { 100.f, 100.f };
-		second_boss_pos = { -100.f, 100.f };
+		createBoss(renderer, { 100.f, 100.f });
+		createSecondBoss(renderer, { -100.f, 100.f });
+	} else {
+		for (auto& region : registry.regions.components) {
+			if (region.goal == REGION_GOAL_ID::CURE) {
+				assert(region.boss == BOSS_ID::BACTERIOPHAGE);
+				createBoss(renderer, region.interest_point);
+			} else if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
+				continue;
+				// deactivated boss?
+			} else {
+				createChest(region.interest_point, region.goal);
+			}
+		}
 	}
-	else {
-		Region boss_region = registry.regions.components[0];
-		Region second_boss_region = registry.regions.components[1];
-		boss_pos = boss_region.interest_point;
-		second_boss_pos = second_boss_region.interest_point;
-	}
-	createBoss(renderer, boss_pos);
-	createSecondBoss(renderer, second_boss_pos);
 	createRandomCysts(rng);
+}
+
+// Call this method each frame to update the space bar duration
+void updateSpaceBarPressDuration() {
+	if (keys_pressed[GLFW_KEY_SPACE]) {
+		spaceBarPressDuration += 1;
+	} else {
+		spaceBarPressDuration = 0.0f;
+	}
+}
+
+bool isHoldingSpace(float time_ms) {
+    if (spaceBarPressDuration >= time_ms) {
+        return true;
+    }
+    return false;
 }
 
 // Compute collisions between entities
@@ -894,6 +938,96 @@ void WorldSystem::resolve_collisions() {
 			}
 
 			Mix_PlayChannel(chunkToChannel["player_hit"], soundChunks["player_hit"], 0);
+		}
+		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_CHEST) {
+			updateSpaceBarPressDuration();
+            Entity chestEntity = collision.other_entity;
+            Chest& chest = registry.chests.get(chestEntity);
+
+            if (!chest.isOpened && isHoldingSpace(100.0f)) {
+                chest.isOpened = true;
+				PlayerAbility& newAbility = registry.playerAbilities.emplace_with_duplicates(player);
+
+                // Grant the ability to the player
+				switch(chest.ability) {
+					case REGION_GOAL_ID::SWORD_ATTACK:{
+						newAbility.id = PLAYER_ABILITY_ID::SWORD;
+						createSword(renderer, player);
+
+						Mix_PlayChannel(chunkToChannel["sword_unlock"], soundChunks["sword_unlock"], 0);
+						std::cout << "Player received SWORD ability from chest." << std::endl;
+						break;
+					}
+					case REGION_GOAL_ID::MULTIPLE_BULLETS: {
+						newAbility.id = PLAYER_ABILITY_ID::BULLET_BOOST;
+						assert(registry.guns.has(player));
+						Gun& player_gun = registry.guns.get(player);
+						player_gun.attack_delay /= 2;
+
+						Mix_PlayChannel(chunkToChannel["bullet_unlock"], soundChunks["bullet_unlock"], 0);
+						std::cout << "Player received BULLET_BOOST ability from chest." << std::endl;
+						break;
+					}
+					case REGION_GOAL_ID::HEALTH_BOOST: {
+						newAbility.id = PLAYER_ABILITY_ID::HEALTH_BOOST;
+						Health& health = registry.healthValues.get(player);
+            			health.health = PLAYER_BOOST_HEALTH; // Double the health
+						health.healthMultiplier = 2.0f; // Double the health multiplier
+
+						Mix_PlayChannel(chunkToChannel["health_unlock"], soundChunks["health_unlock"], 0);
+						std::cout << "Player received HEALTH_BOOST ability from chest." << std::endl;
+						break;
+					}
+					case REGION_GOAL_ID::DASH: {
+						newAbility.id = PLAYER_ABILITY_ID::DASHING;
+						createDashing(player);
+
+						Mix_PlayChannel(chunkToChannel["dash_unlock"], soundChunks["dash_unlock"], 0);
+						std::cout << "Player received DASHING ability from chest." << std::endl;
+						break;
+					}
+					default:
+						std::cout << "Unknown ability. Error." << std::endl;
+				}
+
+				for (auto& region : registry.regions.components) {
+					if (region.interest_point == chest.position) {
+						region.is_cleared = true;
+						for (Entity wp : registry.waypoints.entities) {
+							Waypoint waypoint = registry.waypoints.get(wp);
+							if (waypoint.interest_point == region.interest_point) {
+								registry.remove_all_components_of(wp);
+								break;
+							}
+						}
+					}
+				}
+
+				garbage.push_back(chestEntity);
+            }
+        }
+		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_CURE) {
+			updateSpaceBarPressDuration();
+			Entity cureEntity = collision.other_entity;
+			Player& playerComponent = registry.players.get(player);
+
+			if (!playerComponent.isCureUnlocked && isHoldingSpace(100.0f)) {
+				
+				playerComponent.isCureUnlocked = true;
+				
+				for (auto& region : registry.regions.components) {
+					if (region.goal == REGION_GOAL_ID::CURE) {
+						region.is_cleared = true;
+					}
+					if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
+						createSecondBoss(renderer, region.interest_point);
+						createWaypoint(region);
+					}
+				}
+
+				garbage.push_back(cureEntity);
+				std::cout << "Cure acquired" << std::endl;
+			}
 		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_ENEMY) {
 			// When bullet collides with enemy, only enemy gets knocked back,
@@ -1040,6 +1174,15 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 		if (state == GAME_STATE::PAUSE_MENU || state == GAME_STATE::START_MENU) {
 			menu_system->recent_click_coord = mouse;
 			printf("click at %f, %f\n", mouse.x, mouse.y);
+		}
+	}
+
+	if (key == GLFW_KEY_SPACE) {
+		if (action == GLFW_PRESS) {
+			keys_pressed[key] = 1;
+			spaceBarPressDuration = 0.0f; // Reset duration on new press
+		} else if (action == GLFW_RELEASE) {
+			keys_pressed[key] = 0;
 		}
 	}
 
@@ -1294,7 +1437,6 @@ void WorldSystem::on_controller() {
 
 void WorldSystem::control_movement(float elapsed_ms) {
 	Motion& playermovement = registry.motions.get(player);
-	Dash& playerDash = registry.dashes.get(player);
 
 	// Vertical movement
 	if (keys_pressed[GLFW_KEY_W]) {
@@ -1323,23 +1465,13 @@ void WorldSystem::control_movement(float elapsed_ms) {
 		playermovement.velocity.x *= pow(playermovement.deceleration_unit, elapsed_ms);
 	}
 
-	Entity dashingAnimationEntity = getAttachments(player, ATTACHMENT_TYPE::DASHING);
-	//If player is dashing then it can go over the max velocity
-	if (playerDash.active_timer_ms <= 0) {
+	// If player is NOT dashing then its velocity need to be normalized
+	if (!registry.dashes.has(player) || registry.dashes.get(player).active_timer_ms <= 0) {
 		float magnitude = length(playermovement.velocity);
 		if (magnitude > playermovement.max_velocity) {
 			playermovement.velocity *= (playermovement.max_velocity / magnitude);
 		}
-		//make dashing animation invisible
-		vec4& color = registry.colors.get(dashingAnimationEntity);
-		color = no_color;
 	}
-	else {
-		vec4& color = registry.colors.get(dashingAnimationEntity);
-		color = dashing_default_color;
-	}
-
-
 }
 
 void WorldSystem::clear_game_state() {
@@ -1523,7 +1655,16 @@ json WorldSystem::serializeGameState() {
     return gameState;
 }
 
-Entity& WorldSystem::getAttachments(Entity character, ATTACHMENT_TYPE type = ATTACHMENT_TYPE::ATTACHMENT_TYPE_COUNT) {
+bool hasPlayerAbility(PLAYER_ABILITY_ID abilityId) {
+    for (uint i = 0; i < registry.playerAbilities.components.size(); i++) {
+		if (registry.playerAbilities.components[i].id == abilityId) {
+			return true;
+		}
+    }
+    return false;
+}
+
+Entity& WorldSystem::getAttachments(Entity character, ATTACHMENT_ID type = ATTACHMENT_ID::ATTACHMENT_COUNT) {
 	Entity attachment_entity;
 	for (uint i = 0; i < registry.attachments.size(); i++) {
 		Attachment& att = registry.attachments.components[i];
@@ -1611,29 +1752,32 @@ void WorldSystem::player_shoot() {
 	if (playerGun.attack_timer <= 0) {
 		createBullet(player, playerGun.bullet_size, playerGun.bullet_color);
 		playerGun.attack_timer = playerGun.attack_delay;
-	}
-	else if (playerGun.attack_timer > PLAYER_ATTACK_DELAY * 2 &&
+	} else if (playerGun.attack_timer > PLAYER_ATTACK_DELAY * 2 &&
 		!Mix_Playing(chunkToChannel["player_shoot_1"])) {
 		// for attack delay effect or long cooldown attacks
 		Mix_PlayChannel(chunkToChannel["player_shoot_1"], soundChunks["no_ammo"], 0);
-
 	}
 }
 
 void WorldSystem::player_sword_slash() {
-	Melee& player_sword = registry.melees.get(player);
-	if (player_sword.attack_timer <= 0) {
-		// Do the slashing
-		player_sword.attack_timer = player_sword.attack_delay;
-		Entity sword_entity = player_sword.melee_entity;
-		assert(registry.attachments.has(sword_entity) && registry.motions.has(sword_entity));
-		Attachment& att = registry.attachments.get(sword_entity);
-		Motion& sword_motion = registry.motions.get(sword_entity);
-		sword_motion.angular_velocity = sword_motion.max_angular_velocity;
+	if (registry.melees.has(player)) {
+		Melee& player_sword = registry.melees.get(player);
+		if (player_sword.attack_timer <= 0) {
+			// Do the slashing
+			player_sword.attack_timer = player_sword.attack_delay;
+			Entity sword_entity = player_sword.melee_entity;
+			assert(registry.attachments.has(sword_entity) && registry.motions.has(sword_entity));
+			Attachment& att = registry.attachments.get(sword_entity);
+			Motion& sword_motion = registry.motions.get(sword_entity);
+			sword_motion.angular_velocity = sword_motion.max_angular_velocity;
+		}
 	}
 }
 
 void WorldSystem::player_dash() {
+	// Check if the player's dash ability is unlocked
+	if (!registry.dashes.has(player)) return;
+    
 	Dash& playerDash = registry.dashes.get(player);
 	if (playerDash.delay_timer_ms > 0) { //make sure player dash cooldown is 0 if not don't allow them to dash
 		return;

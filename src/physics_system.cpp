@@ -269,6 +269,10 @@ void collisionhelper(Entity entity_1, Entity entity_2) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::PLAYER_WITH_ENEMY, entity_2);
 		} else if (registry.cysts.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::PLAYER_WITH_CYST, entity_2);
+		} else if (registry.chests.has(entity_2)) {
+			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::PLAYER_WITH_CHEST, entity_2);
+		} else if (registry.cure.has(entity_2)) {
+			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::PLAYER_WITH_CURE, entity_2);
 		}
 	// Enemy Collisions
 	} else if (registry.enemies.has(entity_1)) {
@@ -276,7 +280,7 @@ void collisionhelper(Entity entity_1, Entity entity_2) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::ENEMY_WITH_ENEMY, entity_2);
 		}
 	// Sword collisions
-	} else if (registry.attachments.has(entity_1) && registry.attachments.get(entity_1).type == ATTACHMENT_TYPE::SWORD) {
+	} else if (registry.attachments.has(entity_1) && registry.attachments.get(entity_1).type == ATTACHMENT_ID::SWORD) {
 		if (registry.enemies.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::SWORD_WITH_ENEMY, entity_2);
 		} else if (registry.cysts.has(entity_2)) {
@@ -289,7 +293,7 @@ void collisionhelper(Entity entity_1, Entity entity_2) {
 float get_angle_velocity(Transform& transform, Motion& motion, float elapsed_seconds) {
 	float target_angle = atan2f(motion.force.y, motion.force.x);
 	float angle_remaining = target_angle - transform.angle - transform.angle_offset;
-	if (fabs(angle_remaining) < ANGLE_PERCISION) {
+	if (fabs(angle_remaining) < ANGLE_PRECISION) {
 		return 0.f;
 	} else if (fabs(angle_remaining) > M_PI) {
 		// Handle the case where angle is wrapping
@@ -379,7 +383,7 @@ void step_attachment_movement(float elapsed_ms) {
 				// Update angle based on constant angle velocity (used for sword)
 				new_moved_angle += motion.angular_velocity * elapsed_seconds;
 			}
-			if (fabs(new_moved_angle - attachment.angle_offset) > ANGLE_PERCISION) {
+			if (fabs(new_moved_angle - attachment.angle_offset) > ANGLE_PRECISION) {
 				float rotate_direction = sign(new_moved_angle);
 				attachment.moved_angle = rotate_direction * min(attachment.angle_freedom, fabs(new_moved_angle));
 			}
@@ -407,7 +411,7 @@ void step_attachment_movement(float elapsed_ms) {
 				angle = -angle;
 			}
 			// Special case for dashing effect attachment
-			if (attachment.type == ATTACHMENT_TYPE::DASHING) {
+			if (attachment.type == ATTACHMENT_ID::DASHING) {
 				vec2 parent_velocity = registry.motions.get(parent).velocity;
 				angle = atan2f(parent_velocity.y, parent_velocity.x);
 			}

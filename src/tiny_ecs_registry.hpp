@@ -23,6 +23,7 @@ public:
 	ComponentContainer<DebugComponent> debugComponents;
 	ComponentContainer<vec4> colors;
 	ComponentContainer<Region> regions;
+	ComponentContainer<Chest> chests;
 	ComponentContainer<Health> healthValues;
 	ComponentContainer<PlayerHealthbar> healthbar;
 	ComponentContainer<Gun> guns;
@@ -41,6 +42,8 @@ public:
 	ComponentContainer<Melee> melees;
 	ComponentContainer<Waypoint> waypoints;
 	ComponentContainer<Boss> bosses;
+	ComponentContainer<Cure> cure;
+	ComponentContainer<PlayerAbility> playerAbilities;
 	
 
 	// constructor that adds all containers for looping over them
@@ -59,6 +62,7 @@ public:
 		registry_list.push_back(&debugComponents);
 		registry_list.push_back(&colors);
 		registry_list.push_back(&regions);
+		registry_list.push_back(&chests);
 		registry_list.push_back(&healthValues);
 		registry_list.push_back(&projectiles);
 		registry_list.push_back(&invincibility);
@@ -76,6 +80,8 @@ public:
 		registry_list.push_back(&melees);
 		registry_list.push_back(&waypoints);
 		registry_list.push_back(&bosses);
+		registry_list.push_back(&cure);
+		registry_list.push_back(&playerAbilities);
 	}
 
 	void clear_all_components() {

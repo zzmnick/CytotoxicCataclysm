@@ -132,5 +132,5 @@ private:
 	void save_game();
 	json serializeGameState();
 
-	Entity& getAttachments(Entity character, ATTACHMENT_TYPE type);
+	Entity& getAttachments(Entity character, ATTACHMENT_ID type);
 };

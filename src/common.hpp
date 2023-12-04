@@ -74,4 +74,5 @@ const float FRIEND_BOSS_DIFFICULTY = 1.0f;	// 1 : normal | <1 : easy | >1 : hard
 const float play_animation_threshold = 40.0f;
 const vec4 dashing_default_color = vec4(1, 100, 10, 1.f);
 const vec4 no_color = vec4(0, 0, 0, 0);
-const float ANGLE_PERCISION = 0.01;
+const float PLAYER_BOOST_HEALTH = 200.0f;
+const float ANGLE_PRECISION = 0.01;

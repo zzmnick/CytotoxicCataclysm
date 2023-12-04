@@ -13,6 +13,7 @@ const vec2 RED_ENEMY_TEXTURE_SIZE = { 48.f, 40.f };
 const vec2 GREEN_ENEMY_TEXTURE_SIZE = { 40.f, 40.f };
 const vec2 YELLOW_ENEMY_TEXTURE_SIZE = { 63.f, 60.f };
 const vec2 HEALTHBAR_TEXTURE_SIZE = { 530.f, 80.f };
+const vec2 CHEST_TEXTURE_SIZE = { 358.f, 366.f };
 const vec2 BACTERIOPHAGE_TEXTURE_SIZE = { 180.f, 689.f };
 const vec2 BACTERIOPHAGE_ARM_TEXTURE_SIZE = { 174.f, 33.f };
 const vec2 DIALOG_TEXTURE_SIZE = { 1920.f, 1080.f };
@@ -26,6 +27,7 @@ const vec2 START_TITLE_TEXTURE_SIZE = {2928.f, 824.f};
 const vec2 PAUSE_TITLE_TEXTURE_SIZE = {1193.f, 143.f};
 const vec2 QUESTION_TEXTURE_SIZE = {30.f, 54.f};
 const vec2 SKULL_TEXTURE_SIZE = {45.f, 42.f};
+const vec2 CURE_TEXTURE_SIZE = {21.f, 39.f};
 
 const float IMMUNITY_TEXTURE_ANGLE = -M_PI / 4;
 
@@ -34,6 +36,8 @@ const vec2 PLAYER_SIZE = IMMUNITY_TEXTURE_SIZE * 3.f;
 const vec2 RED_ENEMY_SIZE = RED_ENEMY_TEXTURE_SIZE * 2.f;
 const vec2 GREEN_ENEMY_SIZE = GREEN_ENEMY_TEXTURE_SIZE * 4.f;
 const vec2 YELLOW_ENEMY_SIZE = YELLOW_ENEMY_TEXTURE_SIZE * 1.5f;
+const vec2 CHEST_SIZE = CHEST_TEXTURE_SIZE * 0.5f;
+const vec2 CURE_SIZE = CURE_TEXTURE_SIZE * 2.0f;
 const vec2 BACTERIOPHAGE_BOSS_SIZE = BACTERIOPHAGE_TEXTURE_SIZE * 0.7f;
 const vec2 FRIEND_BOSS_SIZE = FRIEND_TEXTURE_SIZE * 3.f;
 
@@ -42,6 +46,7 @@ const vec2 FRIEND_BOSS_SIZE = FRIEND_TEXTURE_SIZE * 3.f;
 Entity createPlayer(vec2 pos);
 Entity createDashing(Entity dasher);
 Entity createSword(RenderSystem* renderer, Entity& playerEntity);
+Entity createCure(vec2 pos);
 Entity createGun(Entity holder);
 // enemies
 Entity createRedEnemy(vec2 pos, float health = 40.0);
@@ -57,6 +62,7 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health = 250.0);
 void createRandomRegions(size_t num_regions, std::default_random_engine& rng);
 void createRandomCysts(std::default_random_engine& rng);
 void createCyst(vec2 pos, float health = 50.0);
+Entity createChest(vec2 pos, REGION_GOAL_ID ability);
 Entity createBullet(Entity shooter, vec2 scale, vec4 color);
 
 /*************************[ UI ]*************************/

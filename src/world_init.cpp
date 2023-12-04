@@ -23,8 +23,7 @@ Entity createPlayer(vec2 pos)
 	registry.motions.insert(entity, { { 0.f, 0.f } });
 
 	// Create an (empty) Player component to be able to refer to all players
-	registry.players.emplace(entity);
-	registry.dashes.emplace(entity);
+	Player& playerComp = registry.players.emplace(entity);
 
 	createGun(entity);
 
@@ -44,34 +43,34 @@ Entity createPlayer(vec2 pos)
 
 	// Add color for player
 	registry.colors.insert(entity, { 1.f,1.f,1.f,1.f });
-	createDashing(entity);
 	return entity;
 }
 
 Entity createDashing(Entity dasher) {
-	auto placeHolder = Entity();
+	Dash& dash_component = registry.dashes.emplace(dasher);
 
-	Attachment& attachment = registry.attachments.emplace(placeHolder);
+	Entity dash_entity = Entity();
+	Attachment& attachment = registry.attachments.emplace(dash_entity);
 	attachment.parent = dasher;
 	attachment.relative_transform_2.scale(DASHING_TEXTURE_SIZE / vec2(8, 1));
-	attachment.type = ATTACHMENT_TYPE::DASHING;
+	attachment.type = ATTACHMENT_ID::DASHING;
 
-	Animation& animation = registry.animations.emplace(placeHolder);
+	Animation& animation = registry.animations.emplace(dash_entity);
 	animation.total_frame = (int)ANIMATION_FRAME_COUNT::DASHING;
 	animation.update_period_ms = 50;
 
-	registry.transforms.emplace(placeHolder);
-	registry.motions.emplace(placeHolder);		// This motion is with respect to parent
-	registry.colors.insert(placeHolder, dashing_default_color);
+	registry.transforms.emplace(dash_entity);
+	registry.motions.emplace(dash_entity);		// This motion is with respect to parent
+	registry.colors.insert(dash_entity, dashing_default_color);
 
 	registry.renderRequests.insert(
-		placeHolder,
+		dash_entity,
 		{ TEXTURE_ASSET_ID::DASHING,
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITESHEET_DASHING,
 			RENDER_ORDER::OBJECTS });
 
-	return placeHolder;
+	return dash_entity;
 }
 
 
@@ -85,7 +84,7 @@ Entity createGun(Entity holder) {
 
 	Entity gun_entity = Entity();
 	Attachment& attachment = registry.attachments.emplace(gun_entity);
-	attachment.type = ATTACHMENT_TYPE::GUN;
+	attachment.type = ATTACHMENT_ID::GUN;
 	attachment.parent = holder;
 	attachment.relative_transform_1.translate({ 40.f, -15.f });
 	attachment.relative_transform_1.rotate(IMMUNITY_TEXTURE_ANGLE + M_PI / 2);
@@ -116,7 +115,7 @@ Entity createSword(RenderSystem* renderer, Entity& holder) {
 
 	Attachment& attachment = registry.attachments.emplace(melee_entity);
 	attachment.parent = holder;
-	attachment.type = ATTACHMENT_TYPE::SWORD;
+	attachment.type = ATTACHMENT_ID::SWORD;
 	attachment.angle_freedom = M_PI / 3.f;
 
 	attachment.relative_transform_1.rotate(M_PI  - M_PI / 4.f);	// Setting the sword to face in correct direction
@@ -184,6 +183,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 		  RENDER_ORDER::BOSS });
 
 	createBossArms(renderer, entity, transform.scale);
+	std::cout << "Creating boss at position: " << pos.x << ", " << pos.y << std::endl;
 	return entity;
 }
 
@@ -206,7 +206,7 @@ void createBossArms(RenderSystem* renderer, Entity bossEntity, vec2 bossSize) {
 			registry.meshPtrs.emplace(entity, &mesh);
 
 			Attachment& articulated = registry.attachments.emplace(entity);
-			articulated.type = ATTACHMENT_TYPE::BACTERIOPHAGE_ARM;
+			articulated.type = ATTACHMENT_ID::BACTERIOPHAGE_ARM;
 			articulated.parent = parent_entity;
 			articulated.angle_freedom = M_PI / 6.f * (arm_part_idx + 1);
 
@@ -269,31 +269,31 @@ void createBossArms(RenderSystem* renderer, Entity bossEntity, vec2 bossSize) {
 
 Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 	// Create boss components
-	auto entity = Entity();
+	auto boss_entity = Entity();
 	// Assuming boss is a type of enemy
-	registry.collidePlayers.emplace(entity);
-	Dash& enemy_dash = registry.dashes.emplace(entity);
+	registry.collidePlayers.emplace(boss_entity);
+	Dash& enemy_dash = registry.dashes.emplace(boss_entity);
 	enemy_dash.delay_duration_ms = PLAYER_DASH_DELAY / FRIEND_BOSS_DIFFICULTY * 2.f;
 	enemy_dash.active_duration_ms = 50.f;
 
-	Enemy& new_enemy = registry.enemies.emplace(entity);
+	Enemy& new_enemy = registry.enemies.emplace(boss_entity);
 	// Setting initial components values
 	new_enemy.type = ENEMY_ID::FRIENDBOSS;
 
-	Transform& transform = registry.transforms.emplace(entity);
+	Transform& transform = registry.transforms.emplace(boss_entity);
 	transform.position = pos;
 	transform.angle_offset = IMMUNITY_TEXTURE_ANGLE + M_PI / 2.f;
 	transform.angle = transform.angle_offset;
 	transform.scale = FRIEND_BOSS_SIZE;
 
-	Motion& motion = registry.motions.emplace(entity);
+	Motion& motion = registry.motions.emplace(boss_entity);
 
 	motion.max_velocity = 350.f; // TODO: Dummy boss for now, change this later
 
-	Health& enemyHealth = registry.healthValues.emplace(entity);
+	Health& enemyHealth = registry.healthValues.emplace(boss_entity);
 	enemyHealth.health = health;
 
-	Gun& weapon = registry.guns.emplace(entity);
+	Gun& weapon = registry.guns.emplace(boss_entity);
 	weapon.damage = 15.f;
 	weapon.bullet_color = {1.f, 0.8f, 0.8f, 1.f};
 	weapon.bullet_speed = 800.f * FRIEND_BOSS_DIFFICULTY;
@@ -301,16 +301,19 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 	weapon.angle_offset = IMMUNITY_TEXTURE_ANGLE;
 	weapon.attack_delay = PLAYER_ATTACK_DELAY / FRIEND_BOSS_DIFFICULTY * 1.2f;
 
-	registry.bosses.emplace(entity);
+	registry.bosses.emplace(boss_entity);
 
 	// Add to render_request
 	registry.renderRequests.insert(
-		entity,
+		boss_entity,
 		{ TEXTURE_ASSET_ID::FRIEND,
 		  EFFECT_ASSET_ID::TEXTURED,
 		  GEOMETRY_BUFFER_ID::SPRITE,
 		  RENDER_ORDER::BOSS });
-	return entity;
+
+	std::cout << "Creating second boss at position: " << pos.x << ", " << pos.y << std::endl;
+
+	return boss_entity;
 }
 
 Entity createBossClone(vec2 pos, float health) {
@@ -446,6 +449,71 @@ Entity createYellowEnemy(vec2 pos, float health) {
 	return entity;
 }
 
+Entity createChest(vec2 pos, REGION_GOAL_ID ability) {
+    auto entity = Entity();
+
+    // Set up the transform for the chest
+    Transform& transform = registry.transforms.emplace(entity);
+    transform.position = pos;
+	transform.scale = CHEST_SIZE;
+
+	// Motion component only needed for collision check, set all to 0
+	Motion& motion = registry.motions.emplace(entity);
+	motion.velocity = { 0.f, 0.f };
+	motion.max_velocity = 50.f;
+	motion.acceleration_unit = 0.f;
+	motion.deceleration_unit = 0.f;
+	motion.allow_accel = false;
+
+    // Create the chest component
+    Chest& chest = registry.chests.emplace(entity);
+    chest.ability = ability;
+    chest.position = pos;
+
+    // Add render requests for the chest
+    registry.renderRequests.insert(
+        entity,
+        { TEXTURE_ASSET_ID::CHEST,
+          EFFECT_ASSET_ID::TEXTURED,
+          GEOMETRY_BUFFER_ID::SPRITE,
+          RENDER_ORDER::OBJECTS }
+    );
+
+	std::cout << "Creating chest (Entity ID: " << entity << ") at position: " << chest.position.x << ", " << chest.position.y << " with ability: " << static_cast<int>(chest.ability) << std::endl;
+
+    return entity;
+}
+
+Entity createCure(vec2 pos) {
+	auto entity = Entity();
+
+	Transform& transform = registry.transforms.emplace(entity);
+    transform.position = pos;
+	transform.scale = CURE_SIZE;
+
+	// Motion component only needed for collision check, set all to 0
+	Motion& motion = registry.motions.emplace(entity);
+	motion.velocity = { 0.f, 0.f };
+	motion.max_velocity = 50.f;
+	motion.acceleration_unit = 0.f;
+	motion.deceleration_unit = 0.f;
+	motion.allow_accel = false;
+
+	Cure& cure = registry.cure.emplace(entity);
+
+	registry.renderRequests.insert(
+        entity,
+        { TEXTURE_ASSET_ID::CURE,
+          EFFECT_ASSET_ID::TEXTURED,
+          GEOMETRY_BUFFER_ID::SPRITE,
+          RENDER_ORDER::OBJECTS }
+    );
+
+	std::cout << "Cure dropped at position: " << pos.x << ", " << pos.y << std::endl;
+
+	return entity;
+}
+
 void createRandomRegions(size_t num_regions, std::default_random_engine& rng) {
 	assert(region_theme_count >= num_regions);
 	assert(region_goal_count >= num_regions);
@@ -464,7 +532,7 @@ void createRandomRegions(size_t num_regions, std::default_random_engine& rng) {
 	for (uint i = 0; i < boss_type_count; i++) {
 		unused_bosses.push_back(static_cast<BOSS_ID>(i));
 	}
-	std::shuffle(unused_bosses.begin(), unused_bosses.end(), rng);
+	//std::shuffle(unused_bosses.begin(), unused_bosses.end(), rng);
 
 	float angle = 0.f;
 
@@ -478,15 +546,31 @@ void createRandomRegions(size_t num_regions, std::default_random_engine& rng) {
 		// Set region unique goal
 		region.goal = unused_goals.back();
 		unused_goals.pop_back();
+
 		// Set region boss (if needs a boss)
-		if (region.goal == REGION_GOAL_ID::CURE || region.goal == REGION_GOAL_ID::CANCER_CELL) {
-			region.boss = unused_bosses.back();
-			unused_bosses.pop_back();
+		if (region.goal == REGION_GOAL_ID::CURE) {
+			region.boss = BOSS_ID::BACTERIOPHAGE;
+		} else if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
+			region.boss = BOSS_ID::FRIEND;
+		} else {
+			region.boss = BOSS_ID::BOSS_COUNT;
 		}
+
+		// Calculate interest point for the region
+		float interest_distance = MAP_RADIUS * 0.6;
+		float center_angle = angle + (M_PI * 2 / num_regions) / 2; // Center of the angle span for the region
+		vec2 interest_point;
+		interest_point.x = interest_distance * cos(center_angle);
+		interest_point.y = interest_distance * sin(center_angle);
+		region.interest_point = vec2(round(interest_point.x), round(interest_point.y));
+		std::cout << "Region " << i+1 << ": Interest Point (X, Y) = (" << region.interest_point.x << ", " << region.interest_point.y << ")\n";
+
+
 		// Set region regular enemy (non-unique)
-		std::uniform_int_distribution<int> int_dist(0, enemy_type_count - 1);
-		ENEMY_ID enemy = static_cast<ENEMY_ID>(int_dist(rng));
-		region.enemy = enemy;
+		// Did not implement this feature
+		//std::uniform_int_distribution<int> int_dist(0, enemy_type_count - 1);
+		//ENEMY_ID enemy = static_cast<ENEMY_ID>(int_dist(rng));
+		//region.enemy = enemy;
 
 		// Add region to renderRequests and transforms
 		registry.renderRequests.insert(
@@ -500,18 +584,6 @@ void createRandomRegions(size_t num_regions, std::default_random_engine& rng) {
 			entity,
 			{ { 0.f, 0.f }, { MAP_RADIUS * 1.5f, MAP_RADIUS * 1.5f }, angle, false }
 		);
-
-		// Calculate interest point for the region
-		float interest_distance = MAP_RADIUS * 0.6;
-		float center_angle = angle + (M_PI * 2 / num_regions) / 2; // Center of the angle span for the region
-		vec2 interest_point;
-		interest_point.x = interest_distance * cos(center_angle);
-		interest_point.y = interest_distance * sin(center_angle);
-
-		// Store the interest point in the Region component
-		region.interest_point = interest_point;
-
-		std::cout << "Region " << i + 1 << ": Interest Point (X, Y) = (" << interest_point.x << ", " << interest_point.y << ")\n";
 
 		// Update angle
 		angle += (M_PI * 2 / num_regions);
@@ -770,7 +842,7 @@ void loadRegions(const json& regionsData) {
 void createWaypoints() {
 	for (const Region& region : registry.regions.components) {
 		if (region.is_cleared) continue;
-		if (region.boss == BOSS_ID::FRIEND) continue; // don't show second boss yet TODO: call createWaypoint for second boss when appropriate
+		if (region.boss == BOSS_ID::FRIEND) continue; // don't show second boss yet
 		createWaypoint(region);
 	}
 }
@@ -783,10 +855,9 @@ void createWaypoint(Region region) {
 	registry.transforms.insert(entity, {vec2(0.f, 0.f), vec2(30.f, 30.f), 0.f, true });
 
 	TEXTURE_ASSET_ID texture;
-	if (region.boss == BOSS_ID::BACTERIOPHAGE) {
+	if (region.boss != BOSS_ID::BOSS_COUNT) {
 		waypoint.icon_scale = SKULL_TEXTURE_SIZE;
 		texture = TEXTURE_ASSET_ID::ICON_SKULL;
-
 	} else {
 		// this includes second boss
 		waypoint.icon_scale = QUESTION_TEXTURE_SIZE;
@@ -799,5 +870,6 @@ void createWaypoint(Region region) {
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITE,
 			RENDER_ORDER::UI });
+
 	registry.colors.insert(entity, { 1.f,1.f,1.f,0.f });
 }

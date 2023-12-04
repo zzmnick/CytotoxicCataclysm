@@ -43,6 +43,8 @@ class RenderSystem {
 		textures_path("green_enemy.png"),
 		textures_path("yellow_enemy.png"),
 		textures_path("healthbarframe.png"),
+		textures_path("chest.png"),
+		textures_path("cure.PNG"),
 		textures_path("gun.png"),
 		textures_path("cyst.png"),
 		textures_path("immunity_moving.png"),

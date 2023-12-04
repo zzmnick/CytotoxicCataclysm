@@ -38,13 +38,11 @@ void AISystem::move_enemies(float elapsed_ms) {
 			vec2 target_point = playerTransform.position;
 			if (enemyAttribute.type == ENEMY_ID::BOSS) {
 				float enemy_player_dist = length(playerTransform.position - enemytransform.position);
-				if (enemy_player_dist > CONTENT_WIDTH_PX) {
-					vec2 interest_point = registry.regions.components[0].interest_point;
-					float enemy_interest_dist = length(enemytransform.position - interest_point);
-					if (enemy_interest_dist < 50.f) {
-						target_point = enemytransform.position;	// Do not move
-					} else {
-						target_point = interest_point;
+				if (enemy_player_dist > CONTENT_WIDTH_PX / 2) {
+					for (auto& region : registry.regions.components) {
+						if (region.goal == REGION_GOAL_ID::CURE) {
+							target_point = region.interest_point;
+						}
 					}
 				}
 			} else if (enemyAttribute.type == ENEMY_ID::FRIENDBOSS) {
@@ -94,7 +92,7 @@ void AISystem::move_articulated_part(float elapsed_seconds, Entity partEntity, M
 	} else {
 		// Retract the articulated part to the original position
 		Attachment& att = registry.attachments.get(partEntity);
-		if (fabs(att.moved_angle) > ANGLE_PERCISION) {
+		if (fabs(att.moved_angle) > ANGLE_PRECISION) {
 			float angle_remaining = -att.moved_angle;
 			float required_velocity = fabs(angle_remaining) / elapsed_seconds;
 			float velocity_magnitude = fmin(required_velocity, partMotion.max_angular_velocity);

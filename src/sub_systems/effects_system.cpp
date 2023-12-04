@@ -90,6 +90,7 @@ void EffectsSystem::handle_damage_effect() {
 	float prev_damage = weapon.damage;
 	weapon.damage *= DAMAGE_MULTIPLIER;
 
+	float prev_delay = weapon.attack_delay;
 	weapon.attack_delay *= ATTACK_DELAY_MULTIPLIER;
 
 	float prev_speed = weapon.bullet_speed;
@@ -105,10 +106,10 @@ void EffectsSystem::handle_damage_effect() {
 
 	TimedEvent& effect_timer = registry.timedEvents.emplace(entity);
 	effect_timer.timer_ms = DAMAGE_EFFECT_TIME;
-	effect_timer.callback = [this, prev_damage, prev_speed, prev_size, prev_color]() {
+	effect_timer.callback = [this, prev_damage, prev_delay, prev_speed, prev_size, prev_color]() {
 		Gun& weapon = registry.guns.get(player);
 		weapon.damage = prev_damage;
-		weapon.attack_delay = PLAYER_ATTACK_DELAY;
+		weapon.attack_delay = prev_delay;
 		weapon.bullet_speed = prev_speed;
 		weapon.bullet_size = prev_size;
 		weapon.bullet_color = prev_color;
@@ -186,7 +187,11 @@ void EffectsSystem::handle_direction_effect() {
 }
 
 void EffectsSystem::handle_no_attack_effect() {
-	registry.guns.get(player).attack_delay = 99999.f;
+	Gun& weapon = registry.guns.get(player);
+
+	float prev_delay = weapon.attack_delay;
+	weapon.attack_delay = 99999.f;
+
 	Mix_Chunk* prev_sound = soundChunks["player_shoot_1"];
 	soundChunks["player_shoot_1"] = soundChunks["no_ammo"];
 
@@ -194,8 +199,8 @@ void EffectsSystem::handle_no_attack_effect() {
 
 	TimedEvent& effect_timer = registry.timedEvents.emplace(entity);
 	effect_timer.timer_ms = NO_ATTACK_TIME;
-	effect_timer.callback = [this, prev_sound]() {
-		registry.guns.get(player).attack_delay = PLAYER_ATTACK_DELAY;
+	effect_timer.callback = [this, prev_sound, prev_delay]() {
+		registry.guns.get(player).attack_delay = prev_delay;
 		registry.guns.get(player).attack_timer = 0;
 		soundChunks["player_shoot_1"] = prev_sound;
 		getEffect(CYST_EFFECT_ID::NO_ATTACK).is_active = false;
