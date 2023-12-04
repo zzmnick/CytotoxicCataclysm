@@ -38,10 +38,10 @@ WorldSystem::WorldSystem() {
 	rng = std::default_random_engine(std::random_device()());
 	allow_accel = true;
 	enemyCounts[ENEMY_ID::RED] = 0;
-    enemyCounts[ENEMY_ID::GREEN] = 0;
+	enemyCounts[ENEMY_ID::GREEN] = 0;
 	enemyCounts[ENEMY_ID::YELLOW] = 0;
 	maxEnemies[ENEMY_ID::RED] = MAX_RED_ENEMIES;
-    maxEnemies[ENEMY_ID::GREEN] = MAX_GREEN_ENEMIES;
+	maxEnemies[ENEMY_ID::GREEN] = MAX_GREEN_ENEMIES;
 	maxEnemies[ENEMY_ID::YELLOW] = MAX_YELLOW_ENEMIES;
 	state = GAME_STATE::START_MENU;
 }
@@ -230,7 +230,7 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	cursor = createCrosshair();
 	createRandomRegions(NUM_REGIONS, rng);
 	createWaypoints();
-	healthbar = createHealthbar({ -CONTENT_WIDTH_PX * 0.34, -CONTENT_HEIGHT_PX * 0.43 }, STATUSBAR_SCALE);
+	healthbar = createHealthbar({ -CONTENT_WIDTH_PX * 0.34, CONTENT_HEIGHT_PX * 0.43 }, STATUSBAR_SCALE);
 	createCamera({ 0.f, 0.f });
 
 	// Set all states to default
@@ -272,9 +272,23 @@ void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
 				ENEMY_ID type = registry.enemies.get(entity).type;
 				enemyCounts[type]--;
 			}
-			registry.remove_all_components_of(entity);
+			remove_entity(entity);
 		}
 	}
+}
+
+void WorldSystem::remove_entity(Entity entity) {
+	// Remove all attachments of the entity recursively before removing itself
+	// Iterating backwards and updating i since multiple entities can be removed
+	for (int i = (int)registry.attachments.components.size() - 1;
+		i >= 0 && registry.attachments.components.size() > 0;
+		i = min(i-1, (int)registry.attachments.components.size() - 1)
+	) {
+		if (registry.attachments.components[i].parent == entity) {
+			remove_entity(registry.attachments.entities[i]);
+		}
+	}
+	registry.remove_all_components_of(entity);
 }
 
 void WorldSystem::startEntityDeath(Entity entity) {
@@ -296,8 +310,8 @@ void WorldSystem::startEntityDeath(Entity entity) {
 		assert(registry.motions.has(entity));
 		registry.motions.remove(entity);
 
-		if (registry.weapons.has(entity)) {
-			registry.weapons.remove(entity);
+		if (registry.guns.has(entity)) {
+			registry.guns.remove(entity);
 		}
 		if (registry.dashes.has(entity)) {
 			registry.dashes.remove(entity);
@@ -390,15 +404,21 @@ void WorldSystem::step_invincibility(float elapsed_ms) {
 			// Flash once every 200ms
 			flashAlpha = mod(ceil(timer / 100.f), 2.f);
 		}
-		
+
 		// set alpha values
 		vec4& player_color = registry.colors.get(player);
-		// TODO generalize to include sword, maybe get current belonging?
-		vec4& weapon_color = registry.colors.get(getPlayerBelonging(PLAYER_BELONGING_ID::GUN));
-		vec4& sword_color = registry.colors.get(getPlayerBelonging(PLAYER_BELONGING_ID::SWORD));
 		player_color.a = flashAlpha;
-		weapon_color.a = flashAlpha;
-		sword_color.a = flashAlpha;
+		
+		// set alpha value for all attachments of  the player
+		for (uint i = 0; i < registry.attachments.size(); i++) {
+			Attachment& att = registry.attachments.components[i];
+			if (att.parent == player) {
+				Entity att_entity = registry.attachments.entities[i];
+				if (registry.colors.has(att_entity)) {
+					registry.colors.get(att_entity).a = flashAlpha;
+				}
+			}
+		}
 	}
 	// Step Eneny and cyst invincibility to sword
 	for (uint i = 0; i < registry.enemies.components.size(); i++) {
@@ -416,16 +436,37 @@ void WorldSystem::step_invincibility(float elapsed_ms) {
 }
 
 void WorldSystem::step_attack(float elapsed_ms) {
-	assert(registry.weapons.has(player));
-	Weapon& playerWeapon = registry.weapons.get(player);
-	playerWeapon.attack_timer = max(playerWeapon.attack_timer - elapsed_ms, 0.f);
+	if (registry.guns.has(player)) {
+		Gun& player_gun = registry.guns.get(player);
+		player_gun.attack_timer = max(player_gun.attack_timer - elapsed_ms, 0.f);
+	}
+	if (registry.melees.has(player)) {
+		Melee& player_sword = registry.melees.get(player);
+		// More efficient with if-else
+		float old_timer = player_sword.attack_timer;
+		if (old_timer > 0.f) {
+			player_sword.attack_timer = max(old_timer - elapsed_ms, 0.f);
+			
+			if (player_sword.attack_timer <= 0) {
+				// Stop sword and set position to the original
+				Entity sword_entity = player_sword.melee_entity;
+				assert(registry.attachments.has(sword_entity) && registry.motions.has(sword_entity));
+				Attachment& att = registry.attachments.get(sword_entity);
+				Motion& sword_motion = registry.motions.get(sword_entity);
+				sword_motion.angular_velocity = 0;
+				att.moved_angle = att.angle_offset;
+			}
+		}
+		
+
+	}
 }
 
 void WorldSystem::step_dash(float elapsed_ms) {
 	assert(registry.dashes.has(player));
 	Dash& playerDash = registry.dashes.get(player);
-	playerDash.active_dash_ms -= elapsed_ms;
-	playerDash.timer_ms -= elapsed_ms;
+	playerDash.active_timer_ms -= elapsed_ms;
+	playerDash.delay_timer_ms -= elapsed_ms;
 }
 
 bool out_of_boundary_check(vec2 entityScale, vec2 entityPos) {
@@ -436,18 +477,18 @@ bool out_of_boundary_check(vec2 entityScale, vec2 entityPos) {
 }
 
 void WorldSystem::spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 player_velocity) {
-    std::uniform_real_distribution<float> angle_randomness(-M_PI/4, M_PI/4);  // 45 degrees randomness
+	std::uniform_real_distribution<float> angle_randomness(-M_PI / 4, M_PI / 4);  // 45 degrees randomness
 
-    // Determine the angle for spawning based on player's velocity
-    float player_movement_angle = atan2(player_velocity.y, player_velocity.x);
-    float random_offset = angle_randomness(rng);
-    float angle = length(player_velocity) > 0.001f 
-        ? player_movement_angle + random_offset
-        : uniform_dist(rng) * 2 * M_PI;
+	// Determine the angle for spawning based on player's velocity
+	float player_movement_angle = atan2(player_velocity.y, player_velocity.x);
+	float random_offset = angle_randomness(rng);
+	float angle = length(player_velocity) > 0.001f
+		? player_movement_angle + random_offset
+		: uniform_dist(rng) * 2 * M_PI;
 
-    // Calculate spawn position around the player, but off-screen
-    vec2 offset = {cos(angle) * (SCREEN_RADIUS + ENEMY_SPAWN_PADDING), sin(angle) * (SCREEN_RADIUS + ENEMY_SPAWN_PADDING)};
-    vec2 spawn_position = player_position + offset;
+	// Calculate spawn position around the player, but off-screen
+	vec2 offset = { cos(angle) * (SCREEN_RADIUS + ENEMY_SPAWN_PADDING), sin(angle) * (SCREEN_RADIUS + ENEMY_SPAWN_PADDING) };
+	vec2 spawn_position = player_position + offset;
 
     switch (type) {
         case ENEMY_ID::RED:
@@ -474,50 +515,50 @@ void WorldSystem::spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 pla
 void WorldSystem::spawnEnemiesNearInterestPoint(vec2 player_position) {
 	vec2 player_velocity = registry.motions.get(player).velocity;
 
-    std::uniform_int_distribution<int> type_dist(0, static_cast<int>(enemyTypes.size()) - 1);
-    ENEMY_ID randomType = enemyTypes[type_dist(rng)];
+	std::uniform_int_distribution<int> type_dist(0, static_cast<int>(enemyTypes.size()) - 1);
+	ENEMY_ID randomType = enemyTypes[type_dist(rng)];
 
-    if (enemyCounts[randomType] < getMaxEnemiesForType(randomType)) {
-        spawnEnemyOfType(randomType, player_position, player_velocity);
-    }
+	if (enemyCounts[randomType] < getMaxEnemiesForType(randomType)) {
+		spawnEnemyOfType(randomType, player_position, player_velocity);
+	}
 
 }
 
 int WorldSystem::getMaxEnemiesForType(ENEMY_ID type) {
-    auto it = maxEnemies.find(type);
-    if (it != maxEnemies.end()) {
-        return it->second;
-    }
-    return 0;
+	auto it = maxEnemies.find(type);
+	if (it != maxEnemies.end()) {
+		return it->second;
+	}
+	return 0;
 }
 
 float calculateSpawnProbability(vec2 player_position) {
-    float nearest_distance = FLT_MAX;
-    for (const Region& region : registry.regions.components) {
-        float distance = length(player_position - region.interest_point);
-        nearest_distance = std::min(nearest_distance, distance);
-    }
-    // Convert distance to a probability (closer to interest point = higher probability)
-    return 1.0f - (nearest_distance / SPAWN_RANGE);
+	float nearest_distance = FLT_MAX;
+	for (const Region& region : registry.regions.components) {
+		float distance = length(player_position - region.interest_point);
+		nearest_distance = std::min(nearest_distance, distance);
+	}
+	// Convert distance to a probability (closer to interest point = higher probability)
+	return 1.0f - (nearest_distance / SPAWN_RANGE);
 }
 
 void WorldSystem::step_enemySpawn(float elapsed_ms) {
-    float elapsed_seconds = elapsed_ms / 1000.f; // Convert milliseconds to seconds
+	float elapsed_seconds = elapsed_ms / 1000.f; // Convert milliseconds to seconds
 
-    // Decrease the spawn cooldown timer
-    enemy_spawn_cooldown -= elapsed_seconds;
+	// Decrease the spawn cooldown timer
+	enemy_spawn_cooldown -= elapsed_seconds;
 
-    if (enemy_spawn_cooldown <= 0.f) {
-        vec2 player_position = registry.transforms.get(player).position;
-        float spawn_probability = calculateSpawnProbability(player_position);
-        
-        std::uniform_real_distribution<float> spawn_chance(0.f, 1.f);
-        if (spawn_chance(rng) < spawn_probability) {
-            spawnEnemiesNearInterestPoint(player_position);
-        }
+	if (enemy_spawn_cooldown <= 0.f) {
+		vec2 player_position = registry.transforms.get(player).position;
+		float spawn_probability = calculateSpawnProbability(player_position);
 
-// Reset the cooldown timer for the next individual enemy spawn
-enemy_spawn_cooldown = INDIVIDUAL_SPAWN_INTERVAL;
+		std::uniform_real_distribution<float> spawn_chance(0.f, 1.f);
+		if (spawn_chance(rng) < spawn_probability) {
+			spawnEnemiesNearInterestPoint(player_position);
+		}
+
+		// Reset the cooldown timer for the next individual enemy spawn
+		enemy_spawn_cooldown = INDIVIDUAL_SPAWN_INTERVAL;
 	}
 }
 
@@ -612,7 +653,7 @@ void WorldSystem::step_waypoints() {
 		registry.transforms.get(wp).scale = waypoint.icon_scale * 0.35f * scale + 27.f;
 
 		if (scale > 0.4) {
-			registry.colors.get(wp).a = scale + 0.1;
+			registry.colors.get(wp).a = scale + 0.1f;
 		}
 		else {
 			registry.colors.get(wp).a = 0.00001f; // since 0.f will indicate on-screen
@@ -652,18 +693,21 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	while (registry.debugComponents.entities.size() > 0)
 		registry.remove_all_components_of(registry.debugComponents.entities.back());
 
+	if (DEBUG_MODE)
+		create_debug_lines();
 	step_menu();
 	menu_controller(elapsed_ms_since_last_update);
-
-
 	int present = glfwJoystickPresent(GLFW_JOYSTICK_1);
 
-	if (state == GAME_STATE::START_MENU || state == GAME_STATE::PAUSE_MENU) {
+	if (state == GAME_STATE::ENDED) {
+		return false;
+	} else if (state == GAME_STATE::START_MENU || state == GAME_STATE::PAUSE_MENU) {
+		// No screen darkening effect or crosshair in menus
+		ScreenState& screen = registry.screenStates.components[0];
+		screen.screen_darken_factor = 0.f;
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		registry.colors.get(cursor).a = 0.f;
 		return false;
-		
-
 	}
 
 	// Code below this line will happen only if not in start/pause menu
@@ -719,12 +763,45 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	return true;
 }
 
+// Draw debug line for all mesh edges in debug mode
+void WorldSystem::create_debug_lines() {
+	for (uint i = 0; i < registry.meshPtrs.components.size(); i++) {
+		Entity entity = registry.meshPtrs.entities[i];
+		if (registry.transforms.has(entity)) {
+			const Transform transform = registry.transforms.get(entity);
+			const Mesh* mesh = registry.meshPtrs.components[i];
+
+			Transformation t_matrix;
+			t_matrix.translate(transform.position);
+			t_matrix.rotate(transform.angle);
+			t_matrix.scale(transform.scale);
+
+			std::vector<vec2> vertex_pos;
+			for (TexturedVertex v : mesh->texture_vertices) {
+				vec3 world_pos = t_matrix.mat * vec3(v.position.x, v.position.y, 1.f);
+				vertex_pos.push_back(vec2(world_pos.x, world_pos.y));
+
+			}
+			// For each edge of triangle, create a debug line
+			for (int v = 0; v < vertex_pos.size(); v++) {
+				vec2 point_1 = vertex_pos[v];
+				vec2 point_2 = vertex_pos[(v + 1) % vertex_pos.size()];
+				vec2 line_pos = (point_1 + point_2) / 2.f;
+				vec2 diff = point_2 - point_1;
+				float line_len = length(diff);
+				float line_angle = atan2f(diff.y, diff.x);
+				createLine(line_pos, line_angle, { line_len, 2.f });
+			}
+		}
+	}
+}
+
 // Reset the world state to its initial state
 void WorldSystem::restart_game() {
 	/*************************[ cleanup ]*************************/
 	// Debugging for memory/component leaks
 	registry.list_all_components();
-	printf("Restarting\n");
+	printf("==============\nRestarting\n==============\n");
 	// reverse active effects
 	for (auto event : registry.timedEvents.components) {
 		event.callback();
@@ -739,9 +816,9 @@ void WorldSystem::restart_game() {
 	delete dialog_system;
 	dialog_system = nullptr;
 	// Reset enemy counts
-    for (auto &count : enemyCounts) {
-        count.second = 0;
-    }
+	for (auto& count : enemyCounts) {
+		count.second = 0;
+	}
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
@@ -757,10 +834,20 @@ void WorldSystem::restart_game() {
 	createSword(renderer, player);
 	effects_system->player = player;
 	// hardcode the boss position to upper right region, randomize later
-	Region boss_region = registry.regions.components[0];
-	createBoss(renderer, boss_region.interest_point);
-	Region second_boss_region = registry.regions.components[1];
-	createSecondBoss(renderer, second_boss_region.interest_point);
+	vec2 boss_pos;
+	vec2 second_boss_pos;
+	if (DEBUG_MODE) {
+		boss_pos = { 100.f, 100.f };
+		second_boss_pos = { -100.f, 100.f };
+	}
+	else {
+		Region boss_region = registry.regions.components[0];
+		Region second_boss_region = registry.regions.components[1];
+		boss_pos = boss_region.interest_point;
+		second_boss_pos = second_boss_region.interest_point;
+	}
+	createBoss(renderer, boss_pos);
+	createSecondBoss(renderer, second_boss_pos);
 	createRandomCysts(rng);
 }
 
@@ -801,8 +888,10 @@ void WorldSystem::resolve_collisions() {
 			allow_accel = false;
 
 			// Update player health
-			Health& playerHealth = registry.healthValues.get(entity);
-			playerHealth.health -= 10.0;
+			if (!DEBUG_MODE) {
+				Health& playerHealth = registry.healthValues.get(entity);
+				playerHealth.health -= 10.0;
+			}
 
 			Mix_PlayChannel(chunkToChannel["player_hit"], soundChunks["player_hit"], 0);
 		}
@@ -838,6 +927,9 @@ void WorldSystem::resolve_collisions() {
 			garbage.push_back(entity);
 		}
 		else if (collision.collision_type == COLLISION_TYPE::SWORD_WITH_ENEMY) {
+			assert(registry.attachments.has(entity));
+			Entity sword_holder = registry.attachments.get(entity).parent;
+			assert(registry.melees.has(sword_holder));
 			Entity enemy_entity = collision.other_entity;
 			Enemy& enemyAttrib = registry.enemies.get(enemy_entity);
 			if (enemyAttrib.sword_attack_cd <= 0.f) {
@@ -854,7 +946,7 @@ void WorldSystem::resolve_collisions() {
 
 				// Deal damage to enemy
 				Health& enemyHealth = registry.healthValues.get(enemy_entity);
-				enemyHealth.health -= registry.melees.get(entity).damage;
+				enemyHealth.health -= registry.melees.get(sword_holder).damage;
 
 				// Give enemy invincibility to sword for a moment after taking an attack
 				enemyAttrib.sword_attack_cd = 500.f;
@@ -864,13 +956,17 @@ void WorldSystem::resolve_collisions() {
 			
 		}
 		else if (collision.collision_type == COLLISION_TYPE::SWORD_WITH_CYST) {
+			assert(registry.attachments.has(entity));
+			Entity sword_holder = registry.attachments.get(entity).parent;
+			assert(registry.melees.has(sword_holder));
+
 			Entity cyst = collision.other_entity;
 			Cyst& cyst_attrib = registry.cysts.get(cyst);
 			
 			if (cyst_attrib.sword_attack_cd <= 0.f) {
 			// Deal damage to cyst
 			Health& health = registry.healthValues.get(cyst);
-			health.health -= registry.melees.get(entity).damage;
+			health.health -= registry.melees.get(sword_holder).damage;
 
 			// Give cyst invincibility to sword for a moment after taking an attack
 			cyst_attrib.sword_attack_cd = 500.f;
@@ -886,7 +982,7 @@ void WorldSystem::resolve_collisions() {
 			motion.velocity = 150.f * knockback_direction;
 			allow_accel = false;
 		}
-		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_PLAYER 
+		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_PLAYER
 			&& !registry.invincibility.has(player)) {
 
 			registry.invincibility.emplace(player);
@@ -921,7 +1017,7 @@ void WorldSystem::resolve_collisions() {
 
 // Should the game be over ?
 bool WorldSystem::is_over() const {
-	return bool(glfwWindowShouldClose(window));
+	return state == GAME_STATE::ENDED || bool(glfwWindowShouldClose(window));
 }
 
 
@@ -945,7 +1041,6 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 			menu_system->recent_click_coord = mouse;
 			printf("click at %f, %f\n", mouse.x, mouse.y);
 		}
-		
 	}
 
 	if (action == GLFW_PRESS) {
@@ -975,7 +1070,7 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 }
 
 void WorldSystem::on_mouse_move(vec2 pos) {
-	vec2 mouseScreenCoord = vec2(pos.x - CONTENT_WIDTH_PX / 2, pos.y - CONTENT_HEIGHT_PX / 2);
+	vec2 mouseScreenCoord = vec2(pos.x - CONTENT_WIDTH_PX / 2, CONTENT_HEIGHT_PX / 2 - pos.y);
 	Transform player_transform = registry.transforms.get(player);
 	float angle = player_transform.angle;
 	float offsetX = -60 * sin(angle);
@@ -1031,7 +1126,7 @@ void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
 		if(state == GAME_STATE::START_MENU && button_select==BUTTON_SELECT::NONE){
 			if (axes_state[1] > 0.3 || axes_state[1] < -0.3 || buttons[15] || buttons[17]) {
 				button_select = BUTTON_SELECT::START;
-				mouse = { 0,-40 };
+				mouse = { 0,40 };
 			}
 		
 		}
@@ -1039,13 +1134,13 @@ void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
 
 			if (axes_state[1] > 0.3 || buttons[17]) {
 				button_select = BUTTON_SELECT::LOAD;
-				mouse = { 0,150 };
+				mouse = { 0,-150 };
 
 			}
 
 			if (axes_state[1] < -0.3 || buttons[15]) {
 				button_select = BUTTON_SELECT::EXIT;
-				mouse = { 0,350 };
+				mouse = { 0,-350 };
 
 			}
 
@@ -1054,13 +1149,13 @@ void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
 
 			if (axes_state[1] > 0.3 || buttons[17]) {
 				button_select = BUTTON_SELECT::EXIT;
-				mouse = { 0,350 };
+				mouse = { 0,-350 };
 
 			}
 
 			if (axes_state[1] < -0.3 || buttons[15]) {
 				button_select = BUTTON_SELECT::START;
-				mouse = { 0,-50 };
+				mouse = { 0,50 };
 
 			}
 
@@ -1069,13 +1164,13 @@ void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
 
 			if (axes_state[1] > 0.3 || buttons[17]) {
 				button_select = BUTTON_SELECT::START;
-				mouse = { 0,-50 };
+				mouse = { 0,50 };
 
 			}
 
 			if (axes_state[1] < -0.3 || buttons[15]) {
 				button_select = BUTTON_SELECT::LOAD;
-				mouse = { 0,150 };
+				mouse = { 0,-150 };
 
 			}
 
@@ -1084,7 +1179,7 @@ void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
 		else if (state == GAME_STATE::PAUSE_MENU && button_select == BUTTON_SELECT::NONE) {
 			if (axes_state[1] > 0.3 || axes_state[1] < -0.3 || buttons[17] || buttons[15]) {
 				button_select = BUTTON_SELECT::RESUME;
-				mouse = { 0,-200 };
+				mouse = { 0,200 };
 			}
 
 		}
@@ -1097,7 +1192,7 @@ void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
 
 			if (axes_state[1] < -0.3 || buttons[15]) {
 				button_select = BUTTON_SELECT::EXIT_CURR_PLAY;
-				mouse = { 0,400 };
+				mouse = { 0,-400 };
 
 			}
 
@@ -1107,13 +1202,13 @@ void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
 		else if (state == GAME_STATE::PAUSE_MENU && button_select == BUTTON_SELECT::SAVE) {
 			if (axes_state[1] > 0.3 || buttons[17]) {
 				button_select = BUTTON_SELECT::MUTE;
-				mouse = { 0,200 };
+				mouse = { 0,-200 };
 
 			}
 
 			if (axes_state[1] < -0.3 || buttons[15]) {
 				button_select = BUTTON_SELECT::RESUME;
-				mouse = { 0,-200 };
+				mouse = { 0,200 };
 
 			}
 
@@ -1121,7 +1216,7 @@ void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
 		else if (state == GAME_STATE::PAUSE_MENU && button_select == BUTTON_SELECT::MUTE) {
 			if (axes_state[1] > 0.3 || buttons[17]) {
 				button_select = BUTTON_SELECT::EXIT_CURR_PLAY;
-				mouse = { 0,400 };
+				mouse = { 0,-400 };
 
 			}
 
@@ -1135,13 +1230,13 @@ void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
 		else if (state == GAME_STATE::PAUSE_MENU && button_select == BUTTON_SELECT::EXIT_CURR_PLAY) {
 			if (axes_state[1] > 0.3 || buttons[17]) {
 				button_select = BUTTON_SELECT::RESUME;
-				mouse = { 0,-200 };
+				mouse = { 0,200 };
 
 			}
 
 			if (axes_state[1] < -0.3 || buttons[15]) {
 				button_select = BUTTON_SELECT::MUTE;
-				mouse = { 0,200 };
+				mouse = { 0,-200 };
 
 			}
 
@@ -1171,8 +1266,6 @@ void WorldSystem::on_controller() {
 		const unsigned char* buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
 		controller_buttons = buttons;
 
-
-
 		if (buttons[9]) {
 			if (state == GAME_STATE::RUNNING && dialog_system == nullptr) {
 				state = GAME_STATE::PAUSE_MENU;
@@ -1197,23 +1290,7 @@ void WorldSystem::on_controller() {
 		axes_state[5] = 0.0;
 
 	}
-
-
-
-
-
-
-
-
-
-
-
 }
-
-
-
-
-
 
 void WorldSystem::control_movement(float elapsed_ms) {
 	Motion& playermovement = registry.motions.get(player);
@@ -1245,15 +1322,14 @@ void WorldSystem::control_movement(float elapsed_ms) {
 	if ((!(keys_pressed[GLFW_KEY_D] || keys_pressed[GLFW_KEY_A]) || (keys_pressed[GLFW_KEY_D] && keys_pressed[GLFW_KEY_A])) && (axes_state[0] <= 0.3 && axes_state[0] >= -0.3)) {
 		playermovement.velocity.x *= pow(playermovement.deceleration_unit, elapsed_ms);
 	}
-	
-	Entity& dashingAnimationEntity = getPlayerBelonging(PLAYER_BELONGING_ID::DASHING);
-	float magnitude = length(playermovement.velocity);
+
+	Entity dashingAnimationEntity = getAttachments(player, ATTACHMENT_TYPE::DASHING);
 	//If player is dashing then it can go over the max velocity
-	if (playerDash.active_dash_ms <= 0) {
-		if (magnitude > playermovement.max_velocity || magnitude < -playermovement.max_velocity) {
+	if (playerDash.active_timer_ms <= 0) {
+		float magnitude = length(playermovement.velocity);
+		if (magnitude > playermovement.max_velocity) {
 			playermovement.velocity *= (playermovement.max_velocity / magnitude);
 		}
-		
 		//make dashing animation invisible
 		vec4& color = registry.colors.get(dashingAnimationEntity);
 		color = no_color;
@@ -1263,7 +1339,7 @@ void WorldSystem::control_movement(float elapsed_ms) {
 		color = dashing_default_color;
 	}
 
-	
+
 }
 
 void WorldSystem::clear_game_state() {
@@ -1447,12 +1523,14 @@ json WorldSystem::serializeGameState() {
     return gameState;
 }
 
-Entity& WorldSystem::getPlayerBelonging(PLAYER_BELONGING_ID id) {
-	for (uint i = 0; i < registry.playerBelongings.size(); i++) {
-		PlayerBelonging& pb = registry.playerBelongings.components[i];
-		if(pb.id == id) return registry.playerBelongings.entities[i];
+Entity& WorldSystem::getAttachments(Entity character, ATTACHMENT_TYPE type = ATTACHMENT_TYPE::ATTACHMENT_TYPE_COUNT) {
+	Entity attachment_entity;
+	for (uint i = 0; i < registry.attachments.size(); i++) {
+		Attachment& att = registry.attachments.components[i];
+		if (att.parent == character && att.type == type)
+			attachment_entity = registry.attachments.entities[i];
 	}
-	return player;
+	return attachment_entity;
 }
 
 void WorldSystem::control_action() {
@@ -1461,12 +1539,18 @@ void WorldSystem::control_action() {
 			player_shoot();
 		}
 		if (axes_state[3] > 0.1) {
+			player_sword_slash();
+		}
+		if (controller_buttons[4]) {
 			player_dash();
 		}
 	
 	}
 	if (keys_pressed[GLFW_MOUSE_BUTTON_LEFT]) {
 		player_shoot();
+	}
+	if (keys_pressed[GLFW_MOUSE_BUTTON_RIGHT]) {
+		player_sword_slash();
 	}
 	if (keys_pressed[GLFW_KEY_LEFT_CONTROL]) {
 		player_dash();
@@ -1477,53 +1561,58 @@ void WorldSystem::control_direction() {
 	if (registry.deathTimers.has(player)) {
 		return;
 	}
+
+	// Set player angle
 	assert(registry.transforms.has(player));
 	Transform& playertransform = registry.transforms.get(player);
-
-
-
+	Transform& cursortransform = registry.transforms.get(cursor);
 
 	int present = glfwJoystickPresent(GLFW_JOYSTICK_1);
 	if (present && controller_mode) {
 
+		//float controller_angle = playertransform.angle;
 		if (!(axes_state[5] <= 0.4 && axes_state[5] >= -0.4) || !(axes_state[2] <= 0.4 && axes_state[2] >= -0.4)) {
-			float angle = atan2(axes_state[5] * abs(axes_state[5]), -axes_state[2] * abs(axes_state[2])) + playertransform.angle_offset;
-			playertransform.angle = angle;
+			float controller_angle = atan2f(-axes_state[5] * abs(axes_state[5]), axes_state[2] * abs(axes_state[2]));
+			playertransform.angle = controller_angle + playertransform.angle_offset;
+			
+			// Set cursor position
+			const float offset_pixels = 40.f; // Same as the gun
+			const float dist_to_cursor = 200.f;
+			Transformation t;
+			t.rotate(controller_angle);
+			t.translate({ dist_to_cursor, -offset_pixels });
+			cursortransform.position = t.mat[2];
 		}
 
+	} else {
+		float mouse_angle = atan2f(mouse.y, mouse.x);
+		playertransform.angle = mouse_angle + playertransform.angle_offset;
 
-		float angle = playertransform.angle;
+		// Set cursor position to be in front of the gun
+		const float offset_pixels = 40.f; // Same as the gun
+		Transformation t;
+		t.rotate(mouse_angle);
+		t.translate({ length(mouse), -offset_pixels });
+		cursortransform.position = t.mat[2];
 
-		float offsetX = -200 * sin(angle + M_PI * 1.32);
-		float offsetY = -200 * cos(angle + M_PI * 1.32);
-		vec2 cursor_position = { offsetX,
-								 offsetY };
-		registry.transforms.get(cursor).position = cursor_position;
+
+	}
+	// hide cursor if on top of player
+	if (length(cursortransform.position) < 70) {
+		registry.colors.get(cursor).a = 0.f;
 	}
 	else {
-		float angle = atan2(mouse.y,-mouse.x) + playertransform.angle_offset;
-		playertransform.angle = angle;
-
+		registry.colors.get(cursor).a = 1.f;
 	}
-
-
-	// set cursor/crosshair location
-	
-
-
-
-
-
 }
 
 void WorldSystem::player_shoot() {
-	Weapon& playerWeapon = registry.weapons.get(player);
-
-	if (playerWeapon.attack_timer <= 0) {
-		createBullet(player, playerWeapon.size, playerWeapon.color);
-		playerWeapon.attack_timer = playerWeapon.attack_delay;
+	Gun& playerGun = registry.guns.get(player);
+	if (playerGun.attack_timer <= 0) {
+		createBullet(player, playerGun.bullet_size, playerGun.bullet_color);
+		playerGun.attack_timer = playerGun.attack_delay;
 	}
-	else if (playerWeapon.attack_timer > ATTACK_DELAY * 2 &&
+	else if (playerGun.attack_timer > PLAYER_ATTACK_DELAY * 2 &&
 		!Mix_Playing(chunkToChannel["player_shoot_1"])) {
 		// for attack delay effect or long cooldown attacks
 		Mix_PlayChannel(chunkToChannel["player_shoot_1"], soundChunks["no_ammo"], 0);
@@ -1531,9 +1620,22 @@ void WorldSystem::player_shoot() {
 	}
 }
 
+void WorldSystem::player_sword_slash() {
+	Melee& player_sword = registry.melees.get(player);
+	if (player_sword.attack_timer <= 0) {
+		// Do the slashing
+		player_sword.attack_timer = player_sword.attack_delay;
+		Entity sword_entity = player_sword.melee_entity;
+		assert(registry.attachments.has(sword_entity) && registry.motions.has(sword_entity));
+		Attachment& att = registry.attachments.get(sword_entity);
+		Motion& sword_motion = registry.motions.get(sword_entity);
+		sword_motion.angular_velocity = sword_motion.max_angular_velocity;
+	}
+}
+
 void WorldSystem::player_dash() {
 	Dash& playerDash = registry.dashes.get(player);
-	if (playerDash.timer_ms > 0) { //make sure player dash cooldown is 0 if not don't allow them to dash
+	if (playerDash.delay_timer_ms > 0) { //make sure player dash cooldown is 0 if not don't allow them to dash
 		return;
 	}
 
@@ -1569,14 +1671,14 @@ void WorldSystem::player_dash() {
 
 	playerMovement.velocity += playerDash.max_dash_velocity * dashDirection;
 
-	playerDash.timer_ms = 800.f;
-	playerDash.active_dash_ms = 100.f;
+	playerDash.delay_timer_ms = playerDash.delay_duration_ms;
+	playerDash.active_timer_ms = playerDash.active_duration_ms;
 
 	Mix_PlayChannel(chunkToChannel["player_dash"], soundChunks["player_dash"], 0);
 }
 
 void WorldSystem::handle_shooting_sound_effect() {
-	Weapon& playerWeapon = registry.weapons.get(player);
+	Gun& playerWeapon = registry.guns.get(player);
 
 	auto play_or_queue_sound = [&]() {
 		if (!Mix_Playing(chunkToChannel["player_shoot_1"])) {
@@ -1613,7 +1715,7 @@ void WorldSystem::step_menu() {
 			load_game();
 			state = GAME_STATE::RUNNING;
 		} else if (option == MENU_OPTION::EXIT_GAME) {
-			exit(EXIT_SUCCESS);
+			state = GAME_STATE::ENDED;
 		}
 	} else if (state == GAME_STATE::PAUSE_MENU) {
 		MENU_OPTION option = menu_system->poll_pause_menu();

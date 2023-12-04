@@ -290,10 +290,7 @@ void RenderSystem::draw()
 					// Transformation
 					Transformation transformation;
 					transformation.translate(transform.position);
-					if (!registry.noRotates.has(entity)) {  //This is for the yellow enemy and other enemies that we don't want to render rotation
-						transformation.rotate(transform.angle);
-
-					}
+					transformation.rotate(transform.angle);
 					transformation.scale(transform.scale);
 					// Note, its not very efficient to access elements indirectly via the entity
 					// albeit iterating through all Sprites in sequence. A good point to optimize
@@ -322,18 +319,10 @@ void RenderSystem::draw()
 mat3 RenderSystem::createProjectionMatrix()
 {
 	// Fake projection matrix, scales with respect to window coordinates
-	float left = 0.f;
-	float top = 0.f;
-
 	gl_has_errors();
-	float right = (float)CONTENT_WIDTH_PX;
-	float bottom = (float)CONTENT_HEIGHT_PX;
-
-	float sx = 2.f / (right - left);
-	float sy = 2.f / (bottom - top);
-	//float tx = -(right + left) / (right - left);
-	//float ty = -(top + bottom) / (top - bottom);
-	return { {sx, 0.f, 0.f}, {0.f, -sy, 0.f}, {0.f, 0.f, 1.f} };
+	Transformation projection;
+	projection.scale({ 2.f / CONTENT_WIDTH_PX, 2.f / CONTENT_HEIGHT_PX });
+	return projection.mat;
 }
 
 mat3 RenderSystem::createViewMatrix()
@@ -342,8 +331,7 @@ mat3 RenderSystem::createViewMatrix()
 	
 	assert(registry.camera.size() == 1);
 	vec2 cameraPos = registry.camera.components[0].position;
-	offset.x = -cameraPos.x;
-	offset.y = cameraPos.y;
-
-	return { {1.f, 0.f, 0.f}, {0.f, -1.f, 0.f}, {offset.x, offset.y, 1.f} };
+	Transformation view;
+	view.translate(-cameraPos);
+	return view.mat;
 }

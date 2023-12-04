@@ -276,7 +276,7 @@ void collisionhelper(Entity entity_1, Entity entity_2) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::ENEMY_WITH_ENEMY, entity_2);
 		}
 	// Sword collisions
-	} else if (registry.melees.has(entity_1)) {
+	} else if (registry.attachments.has(entity_1) && registry.attachments.get(entity_1).type == ATTACHMENT_TYPE::SWORD) {
 		if (registry.enemies.has(entity_2)) {
 			registry.collisions.emplace_with_duplicates(entity_1, COLLISION_TYPE::SWORD_WITH_ENEMY, entity_2);
 		} else if (registry.cysts.has(entity_2)) {
@@ -285,47 +285,56 @@ void collisionhelper(Entity entity_1, Entity entity_2) {
 	}
 }
 
+// Calculates angle of the entity based on result of all the forces acting on it
+float get_angle_velocity(Transform& transform, Motion& motion, float elapsed_seconds) {
+	float target_angle = atan2f(motion.force.y, motion.force.x);
+	float angle_remaining = target_angle - transform.angle - transform.angle_offset;
+	if (fabs(angle_remaining) < ANGLE_PERCISION) {
+		return 0.f;
+	} else if (fabs(angle_remaining) > M_PI) {
+		// Handle the case where angle is wrapping
+		angle_remaining = (2 * M_PI - fabs(angle_remaining)) * -sign(angle_remaining);
+	}
+	float required_velocity = fabs(angle_remaining) / elapsed_seconds;
+	float velocity_magnitude = min(required_velocity, motion.max_angular_velocity);
+	return velocity_magnitude * sign(angle_remaining);
+}
+
 // Step movement for all entities with Motion component
 void step_movement(float elapsed_ms) {
 	// Move NPC based on how much time has passed, this is to (partially) avoid
 	// having entities move at different speed based on the machine.
+	float elapsed_seconds = elapsed_ms / 1000.f;	// Since velocities are in units per second
 	auto& motion_container = registry.motions;
 	for (uint i = 0; i < motion_container.size(); i++)
 	{
 		Entity entity = motion_container.entities[i];
 		assert(registry.transforms.has(entity));
 		Transform& transform = registry.transforms.get(entity);
-		
 		Motion& motion = motion_container.components[i];
-		if (registry.playerBelongings.has(entity)) {
-			Entity playerEntity = registry.players.entities[0];
-			Transform player_transform = registry.transforms.get(playerEntity);
+		if (registry.attachments.has(entity)) {
+			// will deal with these separately
+			continue;
+		} else {
+			// Update velocity based on forces
+			if (length(motion.force) > 0.f) {
+				motion.velocity += motion.force * elapsed_ms * motion.acceleration_unit;
 
-			PlayerBelonging& pb = registry.playerBelongings.get(entity);
-			if (pb.id == PLAYER_BELONGING_ID::GUN) {
-				
-				Weapon weapon = registry.weapons.get(playerEntity);
-				transform.position.x = player_transform.position.x + (weapon.offset.x) * cos(player_transform.angle);
-				transform.position.y = player_transform.position.y + weapon.offset.y * sin(player_transform.angle);
-				transform.angle = player_transform.angle + transform.angle_offset;
+				// Normalize velocity if not dashing
+				if (!registry.dashes.has(entity) || registry.dashes.get(entity).active_timer_ms <= 0) {
+					float magnitude = length(motion.velocity);
+					if (magnitude > motion.max_velocity) {
+						motion.velocity *= (motion.max_velocity / magnitude);
+					}
+				}
+				motion.angular_velocity = get_angle_velocity(transform, motion, elapsed_seconds);
 			}
-			else if (pb.id == PLAYER_BELONGING_ID::DASHING) {
-				motion.velocity = registry.motions.get(playerEntity).velocity;
-				transform.angle = atan2(motion.velocity.y, motion.velocity.x);
-			}
-			else if (pb.id == PLAYER_BELONGING_ID::SWORD) {
-				Melee melee = registry.melees.get(entity);
-				transform.position.x = player_transform.position.x + melee.offset.x * cos(player_transform.angle) - melee.offset.y * sin(player_transform.angle);
-				transform.position.y = player_transform.position.y + melee.offset.x * sin(player_transform.angle) + melee.offset.y * cos(player_transform.angle);
-				transform.angle = player_transform.angle + transform.angle_offset;
-			}
-			else {
-				motion.velocity = registry.motions.get(playerEntity).velocity;
-				transform.angle = player_transform.angle;
-			}
+
+			// Update transform based on velocities
+			transform.position += motion.velocity * elapsed_seconds;
+			transform.angle += motion.angular_velocity * elapsed_seconds;
+			transform.angle = fmod(transform.angle, 2 * M_PI);
 		}
-		float step_seconds = elapsed_ms / 1000.f;
-		transform.position += motion.velocity * step_seconds;
 
 		if (registry.animations.has(entity) && registry.players.has(entity)) {
 			bool speed_above_threshold = (abs(length(motion.velocity)) - play_animation_threshold) > 0.0f;
@@ -340,6 +349,77 @@ void step_movement(float elapsed_ms) {
 		
 	}
 }
+
+void step_attachment_movement(float elapsed_ms) {
+	float elapsed_seconds = elapsed_ms / 1000.f;	// Since velocities are in units per second
+	auto& attachment_container = registry.attachments;
+	for (uint i = 0; i < attachment_container.size(); i++)
+	{
+		Entity entity = attachment_container.entities[i];
+		if (registry.transforms.has(entity) && registry.motions.has(entity)) {
+			Transform& transform = registry.transforms.get(entity);
+			Motion& motion = registry.motions.get(entity);
+			Attachment& attachment = registry.attachments.get(entity);
+			Entity parent = attachment.parent;
+			assert(registry.transforms.has(parent));
+			Transform& parent_transform = registry.transforms.get(parent);
+
+			// 1st part of relative transformation
+			Transformation pos_calculator;
+			pos_calculator.translate(parent_transform.position);
+			pos_calculator.rotate(parent_transform.angle);
+			pos_calculator.mat = pos_calculator.mat * attachment.relative_transform_1.mat;
+
+			float new_moved_angle = attachment.moved_angle;
+			if (length(motion.force) > 0.f) {
+				// Update angle based on force (used to control boss arms)
+				new_moved_angle += get_angle_velocity(transform, motion, elapsed_seconds) * elapsed_seconds;
+			}
+			else if (abs(motion.angular_velocity) > 0.f) {
+				// Update angle based on constant angle velocity (used for sword)
+				new_moved_angle += motion.angular_velocity * elapsed_seconds;
+			}
+			if (fabs(new_moved_angle - attachment.angle_offset) > ANGLE_PERCISION) {
+				float rotate_direction = sign(new_moved_angle);
+				attachment.moved_angle = rotate_direction * min(attachment.angle_freedom, fabs(new_moved_angle));
+			}
+			else {
+				attachment.moved_angle = attachment.angle_offset;
+			}
+			pos_calculator.rotate(attachment.moved_angle);
+
+			// 2nd part of relative transformation
+			pos_calculator.mat = pos_calculator.mat * attachment.relative_transform_2.mat;
+
+			// Decompose the result matrix to position + angle + scale
+			bool flipped = glm::determinant(glm::mat2(pos_calculator.mat)) < 0;
+			if (flipped) {
+				pos_calculator.mat[0][0] = -pos_calculator.mat[0][0];
+				pos_calculator.mat[1][1] = -pos_calculator.mat[1][1];
+			}
+			float angle = atan2f(pos_calculator.mat[0][1], pos_calculator.mat[0][0]);
+			vec2 scale = { 1.f, 1.f };
+			scale.x = length(pos_calculator.mat[0]);
+			scale.y = length(pos_calculator.mat[1]);
+			if (flipped) {
+				// The only possible flipping at the moment is horizontal
+				scale.x = -scale.x;
+				angle = -angle;
+			}
+			// Special case for dashing effect attachment
+			if (attachment.type == ATTACHMENT_TYPE::DASHING) {
+				vec2 parent_velocity = registry.motions.get(parent).velocity;
+				angle = atan2f(parent_velocity.y, parent_velocity.x);
+			}
+
+			// Update transform
+			transform.position = { pos_calculator.mat[2] };
+			transform.angle = angle;
+			transform.scale = scale;
+		}
+	}
+}
+
 
 // duplicate of the one in render_system.cpp
 bool is_outside_screen(vec2 entityPos) {
@@ -391,8 +471,9 @@ void check_collision() {
 				continue;
 			}
 
-			//player's belongings(ie. dashing, sword) cannot hurt the player; ignore collisions between player's belongings
-			if ((registry.players.has(entity_i) || registry.playerBelongings.has(entity_i)) && (registry.players.has(entity_j) || registry.playerBelongings.has(entity_j))) {
+			// ignore collision between an attachment (ie. dashing, sword) and its owner
+			if ((registry.attachments.has(entity_i) && registry.attachments.get(entity_i).parent == entity_j)
+				|| (registry.attachments.has(entity_j) && registry.attachments.get(entity_j).parent == entity_i)) {
 				continue;
 			}
 
@@ -429,5 +510,6 @@ void check_collision() {
 void PhysicsSystem::step(float elapsed_ms)
 {
 	step_movement(elapsed_ms);
+	step_attachment_movement(elapsed_ms);	// Should handle these after setting all the positions
 	check_collision();
 }

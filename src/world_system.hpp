@@ -66,6 +66,7 @@ private:
 	void control_action();
 
 	void player_shoot();
+	void player_sword_slash();
 	void player_dash();
 
 	// restart level
@@ -123,11 +124,13 @@ private:
 	int getMaxEnemiesForType(ENEMY_ID type);
 
 	void remove_garbage();
+	void remove_entity(Entity entity);
+	void create_debug_lines();
 
 	void clear_game_state();
 	void load_game();
 	void save_game();
 	json serializeGameState();
 
-	Entity& getPlayerBelonging(PLAYER_BELONGING_ID id);
+	Entity& getAttachments(Entity character, ATTACHMENT_TYPE type);
 };

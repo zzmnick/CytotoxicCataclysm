@@ -24,8 +24,8 @@ class RenderSystem {
 	// Associated id with .obj path
 	const std::vector < std::pair<GEOMETRY_BUFFER_ID, std::string>> mesh_paths =
 	{
-		  std::pair<GEOMETRY_BUFFER_ID, std::string>(GEOMETRY_BUFFER_ID::BACTERIOPHAGE, mesh_path("bacteriophage.obj"))
-		  // specify meshes of other assets here
+		  std::pair<GEOMETRY_BUFFER_ID, std::string>(GEOMETRY_BUFFER_ID::BACTERIOPHAGE, mesh_path("bacteriophage.obj")),
+		  std::pair<GEOMETRY_BUFFER_ID, std::string>(GEOMETRY_BUFFER_ID::BACTERIOPHAGE_ARM, mesh_path("bacteriophage_arm.obj"))
 	};
 
 	const std::vector < std::pair<GEOMETRY_BUFFER_ID, std::string>> mesh_paths_color_vector =
@@ -52,6 +52,7 @@ class RenderSystem {
 		textures_path("immunity_blink.png"),
 		textures_path("cyst_animation.png"),
 		textures_path("bacteriophage.png"),
+		textures_path("bacteriophage_arm.png"),
 		textures_path("dashing.png"),
 		textures_path("friend.png"),
 

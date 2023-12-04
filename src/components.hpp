@@ -81,7 +81,8 @@ enum class GAME_STATE {
 	START_MENU = 0,
 	PAUSE_MENU = START_MENU + 1,
 	DIALOG = PAUSE_MENU + 1,
-	RUNNING = DIALOG + 1
+	RUNNING = DIALOG + 1,
+	ENDED = RUNNING + 1
 };
 
 enum class BUTTON_SELECT {
@@ -135,7 +136,8 @@ enum class TEXTURE_ASSET_ID {
 	IMMUNITY_BLINKING = GREEN_ENEMY_DYING + 1,
 	CYST_SHINE = IMMUNITY_BLINKING + 1,
 	BACTERIOPHAGE = CYST_SHINE + 1,
-	DASHING = BACTERIOPHAGE + 1,
+	BACTERIOPHAGE_ARM = BACTERIOPHAGE + 1,
+	DASHING = BACTERIOPHAGE_ARM + 1,
 	FRIEND = DASHING + 1,
 
 	// Background
@@ -201,7 +203,8 @@ enum class GEOMETRY_BUFFER_ID {
 	SPRITESHEET_CYST_SHINE = SPRITESHEET_IMMUNITY_BLINKING + 1,
 	SPRITESHEET_DASHING = SPRITESHEET_CYST_SHINE + 1,
 	BACTERIOPHAGE = SPRITESHEET_DASHING + 1,
-	SWORD = BACTERIOPHAGE + 1,
+	BACTERIOPHAGE_ARM = BACTERIOPHAGE + 1,
+	SWORD = BACTERIOPHAGE_ARM + 1,
 	MENU_BACKGROUND = SWORD + 1,
 	GEOMETRY_COUNT = MENU_BACKGROUND + 1
 };
@@ -209,10 +212,11 @@ const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 
 enum class RENDER_ORDER {
 	BACKGROUND = 0,
-	OBJECTS_BK = BACKGROUND + 1,
-	PLAYER = OBJECTS_BK + 1,
-	OBJECTS_FR = PLAYER + 1,
-	BOSS = OBJECTS_FR + 1,
+	OBJECTS = BACKGROUND + 1,
+	PLAYER = OBJECTS + 1,
+	ENEMIES_BK = PLAYER + 1,
+	ENEMIES_FR = ENEMIES_BK + 1,
+	BOSS = ENEMIES_FR + 1,
 	UI = BOSS + 1,
 	MENU = UI + 1,
 	RENDER_ORDER_COUNT = MENU + 1
@@ -240,6 +244,15 @@ enum MENU_OPTION {
     EXIT_CURR_PLAY = UNMUTE_SOUND + 1,
 	NONE = EXIT_CURR_PLAY + 1
 };
+
+enum class ATTACHMENT_TYPE {
+	DASHING = 0,
+	SWORD = DASHING + 1,
+	GUN = SWORD + 1,
+	BACTERIOPHAGE_ARM = GUN + 1,
+	ATTACHMENT_TYPE_COUNT = BACTERIOPHAGE_ARM + 1,
+};
+const int attachment_type_count = (int)ATTACHMENT_TYPE::ATTACHMENT_TYPE_COUNT;
 
 static std::unordered_map <ANIMATION_FRAME_COUNT, GEOMETRY_BUFFER_ID> animation_geo_map_general = {
 	{ANIMATION_FRAME_COUNT::IMMUNITY_DYING, GEOMETRY_BUFFER_ID::SPRITESHEET_IMMUNITY_DYING},
@@ -312,34 +325,24 @@ struct Transform {
 
 // Data relevant to the movement of entities
 struct Motion {
-	vec2 velocity = { 0.f, 0.f };
-	float max_velocity = 400.f;
+	vec2 velocity = { 0.f, 0.f };	// Pixels per second
+	float angular_velocity = 0.f;	// Radians per second
+	vec2 force = { 0.f, 0.f };
+	float max_velocity = 400.f;		// Pixels per second
+	float max_angular_velocity = 2.f * M_PI;	// Radians per second
 	float acceleration_unit = 1.0f;
 	float deceleration_unit = 0.995f;
 	bool allow_accel = true;
 };
 
-// Identifies actions allowed by the player
-struct Action {
-	bool move_up = true;
-	bool move_down = true;
-	bool move_right = true;
-	bool move_left = true;
-	bool rotate = true;
-	bool dash = true;
-	bool shoot = true;
-};
-
-enum class PLAYER_BELONGING_ID {
-	DASHING = 0,
-	SWORD = DASHING + 1,
-	GUN = SWORD + 1,
-	PLAYER_BELONGING_COUNT = GUN + 1,
-};
-const int player_belonging_count = (int)PLAYER_BELONGING_ID::PLAYER_BELONGING_COUNT;
-
-struct PlayerBelonging {
-	PLAYER_BELONGING_ID id;
+struct Attachment {
+	ATTACHMENT_TYPE type;
+	Entity parent;
+	Transformation relative_transform_1;	// Before rotation
+	float moved_angle = 0.f;				// Rotation
+	Transformation relative_transform_2;	// After rotation
+	float angle_offset = 0.f;
+	float angle_freedom = 0.f;
 };
 
 // Stucture to store collision information
@@ -434,17 +437,6 @@ struct Invincibility {
 	float timer_ms = 700.f;
 };
 
-struct Weapon {
-	float damage = 10.f;
-	float attack_timer = ATTACK_DELAY;
-	float attack_delay = ATTACK_DELAY;
-	float angle_offset = 0.0f;
-	float bullet_speed = 500.f;
-	vec4 color = { 1.f, 1.2f, 0.2f, 1.f };
-	vec2 size = { 10.f, 10.f };
-	vec2 offset = { 0.f, 0.f };
-};
-
 struct Projectile {
 	float damage = 10.f;
 	
@@ -460,13 +452,11 @@ struct Animation {
 	float loop_interval = 0.f; // how often to repeat the animation if > 0; otherwise loop right away
 };
 
-struct NoRotate {
-
-};
-
 struct Dash {
-	float timer_ms = 400.f;
-	float active_dash_ms = 0.f;
+	float delay_duration_ms = PLAYER_DASH_DELAY;	// Delay between dashes
+	float delay_timer_ms = 0.f;				// Working version of delay_duration_ms
+	float active_duration_ms = 100.f;		// Duration that the entity is dashing
+	float active_timer_ms = 0.f;			// Working version of active_duration_ms
 	float dash_speed = 5.f;
 	float max_dash_velocity = 2000.f;
 };
@@ -498,10 +488,23 @@ struct MenuButton {
 	bool highlight;
 };
 
+struct Gun {
+	//Entity gun_entity;
+	float damage = 10.f;
+	float attack_timer = 0.f;
+	float attack_delay = PLAYER_ATTACK_DELAY;
+	float angle_offset = 0.0f;
+	float bullet_speed = 500.f;
+	vec4 bullet_color = { 1.f, 1.2f, 0.2f, 1.f };
+	vec2 bullet_size = { 10.f, 10.f };
+	vec2 offset = { 0.f, 0.f };
+};
+
 struct Melee {
-	vec2 offset = {0.f, 0.f};
-	vec2 pivot = {0.f, 0.f};
+	Entity melee_entity;
 	float damage = 20.f;
+	float attack_timer = 0.f;
+	float attack_delay = PLAYER_ATTACK_DELAY;
 };
 
 

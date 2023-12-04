@@ -16,7 +16,8 @@ layout(location = 0) out vec4 color;
 
 void main()
 {
-	float brightness = 0.9f;
+	float brightness = 0.8f;
+	float saturation = 0.9f;
 	float origin_dist = length(worldcoord);
 	if (origin_dist > mapRadius) {
 		discard;
@@ -34,6 +35,8 @@ void main()
 	if (brightness < 0.01f) {
 		discard;
 	}
-	color = texture(sampler0, vec2(texcoord.x, texcoord.y));
-	color *= brightness;
+	vec4 temp_color = texture(sampler0, vec2(texcoord.x, texcoord.y));
+	temp_color *= brightness;
+	float gray = (temp_color.r + temp_color.g + temp_color.b) / 3;
+	color = (saturation * temp_color + (1 - saturation) * gray); 
 }

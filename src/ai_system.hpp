@@ -16,6 +16,7 @@ private:
 	Entity player; // Keep reference to player entity
 	void move_enemies(float elapsed_ms);
 	void enemy_shoot(float elapsed_ms);
+	void move_articulated_part(float elapsed_seconds, Entity partEntity, Motion& partMotion, Transform& partTranform, Transform& playerTransform);
 	void enemy_dash(float elapsed_ms);
 	void enemy_special_attack(Entity enemy);
 	void spread_attack(Entity enemy);

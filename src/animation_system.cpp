@@ -16,10 +16,10 @@ void RenderSystem::initAnimation(GEOMETRY_BUFFER_ID gid, ANIMATION_FRAME_COUNT f
     textured_spritesheet_vertices[3].position = { -1.f / 2, -1.f / 2, 0.f };
     //from {0,0} to {1,1}
     float fcount_f = (int)fcount * 1.f;
-    textured_spritesheet_vertices[0].texcoord = { 0.f / fcount_f, 1.f };
-    textured_spritesheet_vertices[1].texcoord = { 1.f / fcount_f, 1.f };
-    textured_spritesheet_vertices[2].texcoord = { 1.f / fcount_f, 0.f };
-    textured_spritesheet_vertices[3].texcoord = { 0.f / fcount_f, 0.f };
+    textured_spritesheet_vertices[0].texcoord = { 0.f / fcount_f, 0.f };
+    textured_spritesheet_vertices[1].texcoord = { 1.f / fcount_f, 0.f };
+    textured_spritesheet_vertices[2].texcoord = { 1.f / fcount_f, 1.f };
+    textured_spritesheet_vertices[3].texcoord = { 0.f / fcount_f, 1.f };
 
     const std::vector<uint16_t> textured_spritesheet_indices = { 0, 3, 1, 1, 3, 2 };
     bindVBOandIBO(gid, textured_spritesheet_vertices, textured_spritesheet_indices);
@@ -36,10 +36,10 @@ void RenderSystem::initAnimation_dashing() {
     //from {0,0} to {1,1}
     int num_frame = (int)ANIMATION_FRAME_COUNT::DASHING;
 
-    textured_spritesheet_vertices[0].texcoord = { 0.f / num_frame, 1.f };
-    textured_spritesheet_vertices[1].texcoord = { 1.f / num_frame, 1.f };
-    textured_spritesheet_vertices[2].texcoord = { 1.f / num_frame, 0.f };
-    textured_spritesheet_vertices[3].texcoord = { 0.f / num_frame, 0.f };
+    textured_spritesheet_vertices[0].texcoord = { 0.f / num_frame, 0.f };
+    textured_spritesheet_vertices[1].texcoord = { 1.f / num_frame, 0.f };
+    textured_spritesheet_vertices[2].texcoord = { 1.f / num_frame, 1.f };
+    textured_spritesheet_vertices[3].texcoord = { 0.f / num_frame, 1.f };
 
 
     const std::vector<uint16_t> textured_spritesheet_indices = { 0, 3, 1, 1, 3, 2 };

@@ -17,7 +17,11 @@ void DialogSystem::add_regular_dialog(TEXTURE_ASSET_ID asset) {
 	dialogs.push_back({
 		asset, 0.f, {0,0},
 		[this]() {
-			return ((std::unordered_map<int, int>&) this->keys_pressed)[GLFW_MOUSE_BUTTON_LEFT];
+			auto keys = (std::unordered_map<int, int>&) this->keys_pressed;
+			for (auto keyVal = keys.begin(); keyVal != keys.end(); ++keyVal) {
+				if (keyVal->second) return true;
+			}
+			return false;
 		}
 		});
 }
@@ -55,7 +59,10 @@ void DialogSystem::populate_dialogs() {
 	add_regular_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO1);
 	add_regular_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO2);
 	add_regular_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO3);
-	add_tutorial_dialogs();
+	add_regular_dialog(TEXTURE_ASSET_ID::TUTORIAL_MOVEMENT);
+	add_regular_dialog(TEXTURE_ASSET_ID::TUTORIAL_ROTATE);
+	add_regular_dialog(TEXTURE_ASSET_ID::TUTORIAL_SHOOT);
+	add_regular_dialog(TEXTURE_ASSET_ID::TUTORIAL_PAUSE);
 }
 
 DialogSystem::~DialogSystem() {
@@ -96,9 +103,13 @@ bool DialogSystem::step(float elapsed_ms) {
 			if (current_stage.is_action_performed()) {
 				registry.transforms.remove(rendered_entity);
 				registry.renderRequests.remove(rendered_entity);
-				current_status = DIALOG_STATUS::ACTION_TIMER;
+				// UPDATED: Removed action timer based on feedback from users
+				current_status = DIALOG_STATUS::DISPLAY;
+				current_dialog_idx++;
 			}
-			return false;
+			else {
+				return false;
+			}
 			break;
 		case DIALOG_STATUS::ACTION_TIMER:
 			current_stage.action_timer -= elapsed_ms;

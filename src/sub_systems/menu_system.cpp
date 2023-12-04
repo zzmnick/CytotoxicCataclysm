@@ -126,7 +126,7 @@ void MenuSystem::draw_start_menu() {
     // Create title
     auto title_entity = Entity();
     Transform& title_transform = registry.transforms.emplace(title_entity);
-    title_transform.position = {0.f, -320.f};
+    title_transform.position = {0.f, 320.f};
     title_transform.scale = START_TITLE_TEXTURE_SIZE * 0.4f;
     title_transform.is_screen_coord = true;
 
@@ -140,9 +140,9 @@ void MenuSystem::draw_start_menu() {
     registry.menuElems.emplace(title_entity);
 
     // Create buttons
-    create_menu_button({0.f, -50.f}, TEXTURE_ASSET_ID::MENU_START, MENU_OPTION::START_GAME);
-    create_menu_button({0.f, 150.f}, TEXTURE_ASSET_ID::MENU_LOAD, MENU_OPTION::LOAD_GAME);
-    create_menu_button({0.f, 350.f}, TEXTURE_ASSET_ID::MENU_EXIT, MENU_OPTION::EXIT_GAME);
+    create_menu_button({0.f, 50.f}, TEXTURE_ASSET_ID::MENU_START, MENU_OPTION::START_GAME);
+    create_menu_button({0.f, -150.f}, TEXTURE_ASSET_ID::MENU_LOAD, MENU_OPTION::LOAD_GAME);
+    create_menu_button({0.f, -350.f}, TEXTURE_ASSET_ID::MENU_EXIT, MENU_OPTION::EXIT_GAME);
 }
 
 void MenuSystem::draw_pause_menu() {
@@ -158,7 +158,7 @@ void MenuSystem::draw_pause_menu() {
     // Create title (Game Paused)
     auto title_entity = Entity();
     Transform& title_transform = registry.transforms.emplace(title_entity);
-    title_transform.position = {0.f, -400.f};
+    title_transform.position = {0.f, 400.f};
     title_transform.scale = PAUSE_TITLE_TEXTURE_SIZE;
     title_transform.is_screen_coord = true;
 
@@ -172,14 +172,14 @@ void MenuSystem::draw_pause_menu() {
     registry.menuElems.emplace(title_entity);
 
     // Create buttons
-    create_menu_button({0.f, -200.f}, TEXTURE_ASSET_ID::MENU_RESUME, MENU_OPTION::RESUME_GAME);
+    create_menu_button({0.f, 200.f}, TEXTURE_ASSET_ID::MENU_RESUME, MENU_OPTION::RESUME_GAME);
     create_menu_button({0.f, 0.f}, TEXTURE_ASSET_ID::MENU_SAVE, MENU_OPTION::SAVE_GAME);
     if (is_muted) {
-        create_menu_button({0.f, 200.f}, TEXTURE_ASSET_ID::MENU_UNMUTE, MENU_OPTION::UNMUTE_SOUND);
+        create_menu_button({0.f, -200.f}, TEXTURE_ASSET_ID::MENU_UNMUTE, MENU_OPTION::UNMUTE_SOUND);
     } else {
-        create_menu_button({0.f, 200.f}, TEXTURE_ASSET_ID::MENU_MUTE, MENU_OPTION::MUTE_SOUND);
+        create_menu_button({0.f, -200.f}, TEXTURE_ASSET_ID::MENU_MUTE, MENU_OPTION::MUTE_SOUND);
     }
-    create_menu_button({0.f, 400.f}, TEXTURE_ASSET_ID::MENU_EXIT, MENU_OPTION::EXIT_CURR_PLAY);
+    create_menu_button({0.f, -400.f}, TEXTURE_ASSET_ID::MENU_EXIT, MENU_OPTION::EXIT_CURR_PLAY);
 }
 
 bool MenuSystem::check_button_click(Entity entity) {

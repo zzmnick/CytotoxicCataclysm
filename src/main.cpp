@@ -13,6 +13,12 @@
 
 using Clock = std::chrono::high_resolution_clock;
 
+void reset_forces() {
+	for (Motion& m : registry.motions.components) {
+		m.force = { 0.f, 0.f };
+	}
+}
+
 // Entry point
 int main()
 {
@@ -49,18 +55,22 @@ int main()
 			(float)(std::chrono::duration_cast<std::chrono::microseconds>(now - t)).count() / 1000;
 		t = now;
 
+		reset_forces();
 		bool isNotPaused = world_system.step(elapsed_ms);
-		
 		if (isNotPaused) {
+			ai_system.step(elapsed_ms);
 			physics_system.step(elapsed_ms);
 			world_system.resolve_collisions();
-			ai_system.step(elapsed_ms);
 			render_system.animationSys_step(elapsed_ms);
 			world_system.update_camera();
 		}
 		
 		render_system.draw();
 	}
+
+	// Debugging for memory/component leaks
+	printf("==============\nEnding\n==============\n");
+	registry.list_all_components();
 
 	return EXIT_SUCCESS;
 }

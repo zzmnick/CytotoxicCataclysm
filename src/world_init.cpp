@@ -16,9 +16,9 @@ Entity createPlayer(vec2 pos)
 	// Setting initial bullet_transform values
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
-	transform.angle = 0.f;
-	transform.scale = IMMUNITY_TEXTURE_SIZE * 3.f;
-	transform.angle_offset = M_PI + IMMUNITY_TEXTURE_ANGLE;
+	transform.scale = PLAYER_SIZE;
+	transform.angle_offset = IMMUNITY_TEXTURE_ANGLE;
+	transform.angle = transform.angle_offset;
 
 	registry.motions.insert(entity, { { 0.f, 0.f } });
 
@@ -48,98 +48,97 @@ Entity createPlayer(vec2 pos)
 	return entity;
 }
 
-Entity createGun(Entity player) {
-	Weapon& weapon = registry.weapons.emplace(player);
-	weapon.angle_offset = IMMUNITY_TEXTURE_ANGLE;
-	weapon.offset = { 60.f,60.f };
-	weapon.bullet_speed = 1400.f;
-	weapon.size = { 15.f, 15.f };
-	weapon.damage = 10.f;
+Entity createDashing(Entity dasher) {
+	auto placeHolder = Entity();
 
-	Entity gun = Entity();
-	registry.playerBelongings.insert(gun, { PLAYER_BELONGING_ID::GUN });
+	Attachment& attachment = registry.attachments.emplace(placeHolder);
+	attachment.parent = dasher;
+	attachment.relative_transform_2.scale(DASHING_TEXTURE_SIZE / vec2(8, 1));
+	attachment.type = ATTACHMENT_TYPE::DASHING;
 
-	Motion player_motion = registry.motions.get(player);
-	registry.motions.insert(gun, player_motion);
+	Animation& animation = registry.animations.emplace(placeHolder);
+	animation.total_frame = (int)ANIMATION_FRAME_COUNT::DASHING;
+	animation.update_period_ms = 50;
 
-	Transform player_transform = registry.transforms.get(player);
-	Transform& gun_transform = registry.transforms.insert(gun, player_transform);
-	gun_transform.angle_offset = weapon.angle_offset + M_PI/2;
-	gun_transform.scale *= 1.5f;
-	gun_transform.position.x += weapon.offset.x * cos(player_transform.angle);
-	gun_transform.position.y += weapon.offset.y * sin(player_transform.angle);
+	registry.transforms.emplace(placeHolder);
+	registry.motions.emplace(placeHolder);		// This motion is with respect to parent
+	registry.colors.insert(placeHolder, dashing_default_color);
 
 	registry.renderRequests.insert(
-		gun,
+		placeHolder,
+		{ TEXTURE_ASSET_ID::DASHING,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITESHEET_DASHING,
+			RENDER_ORDER::OBJECTS });
+
+	return placeHolder;
+}
+
+
+Entity createGun(Entity holder) {
+	Gun& gun_component = registry.guns.emplace(holder);
+	gun_component.angle_offset = IMMUNITY_TEXTURE_ANGLE;
+	gun_component.offset = { 40.f, 50.f };
+	gun_component.bullet_speed = 1400.f;
+	gun_component.bullet_size = { 15.f, 15.f };
+	gun_component.damage = 10.f;
+
+	Entity gun_entity = Entity();
+	Attachment& attachment = registry.attachments.emplace(gun_entity);
+	attachment.type = ATTACHMENT_TYPE::GUN;
+	attachment.parent = holder;
+	attachment.relative_transform_1.translate({ 40.f, -15.f });
+	attachment.relative_transform_1.rotate(IMMUNITY_TEXTURE_ANGLE + M_PI / 2);
+	attachment.relative_transform_2.scale(GUN_TEXTURE_SIZE * vec2(0.5f, 1.f));
+	//attachment.relative_transform_2.translate({ 0.1f, 0.f }); // This can bring the gun forward or back
+
+	registry.transforms.emplace(gun_entity);
+	registry.motions.emplace(gun_entity);		// This motion is with respect to parent
+	registry.colors.insert(gun_entity, { 1.f,1.f,1.f,1.f });
+
+	registry.renderRequests.insert(
+		gun_entity,
 		{ TEXTURE_ASSET_ID::GUN,
 		  EFFECT_ASSET_ID::TEXTURED,
 		  GEOMETRY_BUFFER_ID::SPRITE,
 		  RENDER_ORDER::PLAYER });
 
-	registry.colors.insert(gun, { 1.f,1.f,1.f,1.f });
-
-	return gun;
+	return gun_entity;
 }
 
-Entity createDashing(Entity& playerEntity) {
-	auto entity = Entity();
-	PlayerBelonging& pb = registry.playerBelongings.emplace(entity);
-	pb.id = PLAYER_BELONGING_ID::DASHING;
-	registry.renderRequests.insert(
-		entity,
-		{ TEXTURE_ASSET_ID::DASHING,
-			EFFECT_ASSET_ID::TEXTURED,
-			GEOMETRY_BUFFER_ID::SPRITESHEET_DASHING,
-			RENDER_ORDER::OBJECTS_BK });
+Entity createSword(RenderSystem* renderer, Entity& holder) {
+	Melee& melee_component = registry.melees.emplace(holder);
 
-	Animation& animation = registry.animations.emplace(entity);
-	animation.total_frame = (int)ANIMATION_FRAME_COUNT::DASHING;
-	animation.update_period_ms = 50;
-
-	//same as player's
-	Motion playerMotion_copy = registry.motions.get(playerEntity);
-	registry.motions.insert(entity, playerMotion_copy);
-
-	Transform playerTrans_copy = registry.transforms.get(playerEntity);
-	registry.transforms.insert(entity, playerTrans_copy);
-
-	vec4& color = registry.colors.emplace(entity);
-	color = dashing_default_color;
-
-	return entity;
-}
-
-Entity createSword(RenderSystem* renderer, Entity& playerEntity) {
-	auto entity = Entity();
+	Entity melee_entity = Entity();
+	melee_component.melee_entity = melee_entity;
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SWORD);
-	registry.meshPtrs.emplace(entity, &mesh);
+	registry.meshPtrs.emplace(melee_entity, &mesh);
 
-	PlayerBelonging& pb = registry.playerBelongings.emplace(entity);
-	pb.id = PLAYER_BELONGING_ID::SWORD;
+	Attachment& attachment = registry.attachments.emplace(melee_entity);
+	attachment.parent = holder;
+	attachment.type = ATTACHMENT_TYPE::SWORD;
+	attachment.angle_freedom = M_PI / 3.f;
 
-	Melee& melee = registry.melees.emplace(entity);
-	melee.offset = {100.f, -5.f};
-	
-	//same as player's
-	Motion playerMotion_copy = registry.motions.get(playerEntity);
-	registry.motions.insert(entity, playerMotion_copy);
-	
+	attachment.relative_transform_1.rotate(M_PI  - M_PI / 4.f);	// Setting the sword to face in correct direction
+	attachment.relative_transform_1.translate({15.f, -20.f});	// Putting the center of sword in the hand
+	attachment.relative_transform_1.rotate(-M_PI / 12);			// Rotate to be closer to body
+	//attachment.relative_transform_1.rotate(M_PI / 4);			// Rotate to be closer to body
+	attachment.relative_transform_2.scale(SWORD_SIZE);
+	attachment.relative_transform_2.translate({ -0.29f, -0.39f }); // Adjust the pivot point so the handle is in hand
 
-	Transform playerTrans_copy = registry.transforms.get(playerEntity);
-	playerTrans_copy.scale = SWORD_SIZE;
-	playerTrans_copy.angle_offset += 0.3f;
-	registry.transforms.insert(entity, playerTrans_copy);
+	registry.transforms.emplace(melee_entity);
+	Motion& motion = registry.motions.emplace(melee_entity);		// This motion is with respect to parent
+	motion.max_angular_velocity = 8 * M_PI;
+	registry.colors.insert(melee_entity, { 1.f,1.f,1.f,1.f });
 
 	registry.renderRequests.insert(
-		entity,
+		melee_entity,
 		{ TEXTURE_ASSET_ID::TEXTURE_COUNT,
 			EFFECT_ASSET_ID::COLOURED,
 			GEOMETRY_BUFFER_ID::SWORD,
-			RENDER_ORDER::OBJECTS_BK });
+			RENDER_ORDER::OBJECTS });
 
-	registry.colors.insert(entity, { 1.f,1.f,1.f,1.f });
-
-	return entity;
+	return melee_entity;
 
 }
 
@@ -151,26 +150,28 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 
 	registry.collidePlayers.emplace(entity);
 	Motion& motion = registry.motions.emplace(entity);
-	Health& enemyHealth = registry.healthValues.emplace(entity);
+	motion.max_velocity = 250.f; // TODO: Dummy boss for now, change this later
+	motion.max_angular_velocity = M_PI / 6.f;
+
+	Transform& transform = registry.transforms.emplace(entity);
+	transform.position = pos;
+	transform.scale = BACTERIOPHAGE_BOSS_SIZE;
+	transform.angle_offset = -M_PI / 2;
+	transform.angle = transform.angle_offset;
+
+	registry.healthValues.insert(entity, {health});
 
 	// Setting initial components values
 	Enemy& new_enemy = registry.enemies.emplace(entity);
 	new_enemy.type = ENEMY_ID::BOSS;
 
-	Transform& transform = registry.transforms.emplace(entity);
-	transform.position = pos;
-	transform.angle = M_PI;
-	transform.scale = BACTERIOPHAGE_SIZE;
-	motion.max_velocity = 250.f; // TODO: Dummy boss for now, change this later
-	enemyHealth.health = health;
-	transform.angle_offset = M_PI / 2;
-
-	Weapon& weapon = registry.weapons.emplace(entity);
+	Gun& weapon = registry.guns.emplace(entity);
 	weapon.damage = 15.f;
-	weapon.angle_offset = M_PI + M_PI / 2;
+	weapon.offset = { BACTERIOPHAGE_BOSS_SIZE.y / 2.f - 10.f, 0.f };
+	weapon.angle_offset = M_PI / 2;
 	weapon.bullet_speed = 800.f;
-	weapon.size = { 45.f, 45.f };
-	weapon.color = { 0.f, 0.992f, 1.f, 1.f };
+	weapon.bullet_size = { 45.f, 45.f };
+	weapon.bullet_color = { 0.f, 0.992f, 1.f, 1.f };
 
 	registry.bosses.emplace(entity);
 
@@ -179,9 +180,91 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 		entity,
 		{ TEXTURE_ASSET_ID::BACTERIOPHAGE,
 		  EFFECT_ASSET_ID::TEXTURED,
-		  GEOMETRY_BUFFER_ID::BACTERIOPHAGE,
+		  GEOMETRY_BUFFER_ID::SPRITE,
 		  RENDER_ORDER::BOSS });
+
+	createBossArms(renderer, entity, transform.scale);
 	return entity;
+}
+
+void createBossArms(RenderSystem* renderer, Entity bossEntity, vec2 bossSize) {
+	// Create boss arm parts
+	// Odd arms are on one side and even arms on the other.
+	uint arms_count = 6;
+	uint arm_parts_count = 3;
+	vec2 first_joint_pos[] = { {0.21f, -0.32f}, {0.22f, -0.32f}, {0.21f, -0.32f} };	// Relative to the size of the boss
+	vec2 middle_joint_pos = { 0.5, 0.f };	// Relative to the size of the arm
+
+	for (uint arm_idx = 0; arm_idx < arms_count; arm_idx++) {
+		Entity parent_entity = bossEntity;
+		vec2 parent_size = bossSize;
+		for (uint arm_part_idx = 0; arm_part_idx < arm_parts_count; arm_part_idx++) {
+			uint arm_pair_idx = (uint)(arm_idx / 2);
+
+			auto entity = Entity();
+			Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::BACTERIOPHAGE_ARM);
+			registry.meshPtrs.emplace(entity, &mesh);
+
+			Attachment& articulated = registry.attachments.emplace(entity);
+			articulated.type = ATTACHMENT_TYPE::BACTERIOPHAGE_ARM;
+			articulated.parent = parent_entity;
+			articulated.angle_freedom = M_PI / 6.f * (arm_part_idx + 1);
+
+			// Calculate and store the relative position of joint (pivot) with respect to its parent
+			vec2 flipper = { 1.f, 1.f };
+			if (arm_idx % 2 == 1 ) {
+				// Flip the left arms from origin
+				flipper = { -1.f, 1.f };
+			}
+			vec2 pos = (arm_part_idx == 0 ? first_joint_pos[arm_pair_idx] : middle_joint_pos) * parent_size;
+			float angle = 0.f;
+			if (arm_part_idx == 0) {
+				// Angle of the first joint
+				float base_angle = M_PI / 6.f;
+				float arm_separation = 2.f;
+				float delta_angle = -M_PI / 6.f * ((float)arm_pair_idx / (arms_count / 2)) * arm_separation;
+				angle = base_angle + delta_angle;
+			}
+			else {
+				// Angle of the middle joints
+				angle = -M_PI / 3;
+			}
+
+			// Set arm part size
+			float length_to_thickness_ratio = 1.f;
+			length_to_thickness_ratio += (1.f - (float)arm_pair_idx / (arms_count / 2.f));
+			length_to_thickness_ratio += ((float)arm_part_idx / arm_parts_count) * 1.5f;
+			length_to_thickness_ratio /= 1.5f;
+			float boss_size_factor = length(bossSize) / 800.f;
+			vec2 size = BACTERIOPHAGE_ARM_TEXTURE_SIZE * vec2(length_to_thickness_ratio, 2.f / length_to_thickness_ratio) * boss_size_factor;
+
+			articulated.relative_transform_1.scale(flipper);
+			articulated.relative_transform_1.translate(pos);
+			articulated.relative_transform_1.rotate(angle);
+			articulated.angle_offset = angle;
+			articulated.relative_transform_2.scale(size);
+			articulated.relative_transform_2.translate({ 0.47f, -0.3f }); // Setting the pivot point to the joint
+
+			// The following transform will be adjusted in physics_system to follow its parent
+			registry.transforms.emplace(entity);
+			Motion& motion = registry.motions.emplace(entity);		// This motion is with respect to parent
+			motion.max_angular_velocity = M_PI / 6.f;
+			registry.enemies.insert(entity, { ENEMY_ID::ENEMY_COUNT });
+			registry.healthValues.insert(entity, { 200.f });
+
+			// Add to render_request
+			registry.renderRequests.insert(
+				entity,
+				{ TEXTURE_ASSET_ID::BACTERIOPHAGE_ARM,
+				  EFFECT_ASSET_ID::TEXTURED,
+				  GEOMETRY_BUFFER_ID::SPRITE,
+				  RENDER_ORDER::ENEMIES_FR });
+
+			// Update parent to current part
+			parent_entity = entity;
+			parent_size = size;
+		}
+	}
 }
 
 Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
@@ -190,6 +273,8 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 	// Assuming boss is a type of enemy
 	registry.collidePlayers.emplace(entity);
 	Dash& enemy_dash = registry.dashes.emplace(entity);
+	enemy_dash.delay_duration_ms = PLAYER_DASH_DELAY / FRIEND_BOSS_DIFFICULTY * 2.f;
+	enemy_dash.active_duration_ms = 50.f;
 
 	Enemy& new_enemy = registry.enemies.emplace(entity);
 	// Setting initial components values
@@ -197,9 +282,9 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
-	transform.angle = 0.f;
-	transform.angle_offset = M_PI + 0.7f;
-	transform.scale = FRIEND_TEXTURE_SIZE * 3.f;
+	transform.angle_offset = IMMUNITY_TEXTURE_ANGLE + M_PI / 2.f;
+	transform.angle = transform.angle_offset;
+	transform.scale = FRIEND_BOSS_SIZE;
 
 	Motion& motion = registry.motions.emplace(entity);
 
@@ -208,11 +293,13 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 	Health& enemyHealth = registry.healthValues.emplace(entity);
 	enemyHealth.health = health;
 
-	Weapon& weapon = registry.weapons.emplace(entity);
+	Gun& weapon = registry.guns.emplace(entity);
 	weapon.damage = 15.f;
-	weapon.bullet_speed = 1000.f;
-	weapon.angle_offset = 0.7f;
-	weapon.offset = { 60.f,60.f };
+	weapon.bullet_color = {1.f, 0.8f, 0.8f, 1.f};
+	weapon.bullet_speed = 800.f * FRIEND_BOSS_DIFFICULTY;
+	weapon.bullet_size = { 20.f, 20.f };
+	weapon.angle_offset = IMMUNITY_TEXTURE_ANGLE;
+	weapon.attack_delay = PLAYER_ATTACK_DELAY / FRIEND_BOSS_DIFFICULTY * 1.2f;
 
 	registry.bosses.emplace(entity);
 
@@ -240,9 +327,9 @@ Entity createBossClone(vec2 pos, float health) {
 
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
-	transform.angle = 0.f;
-	transform.angle_offset = M_PI + 0.7f;
-	transform.scale = FRIEND_TEXTURE_SIZE * 3.f;
+	transform.angle_offset = IMMUNITY_TEXTURE_ANGLE + M_PI / 2.f;
+	transform.angle = transform.angle_offset;
+	transform.scale = FRIEND_BOSS_SIZE;
 
 	Motion& motion = registry.motions.emplace(entity);
 
@@ -272,7 +359,8 @@ Entity createRedEnemy(vec2 pos, float health) {
 
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
-	transform.angle = M_PI;
+	transform.angle_offset = -M_PI / 2;
+	transform.angle = transform.angle_offset;
 	transform.scale = RED_ENEMY_SIZE;
 
 	Motion& motion = registry.motions.emplace(entity);
@@ -286,7 +374,7 @@ Entity createRedEnemy(vec2 pos, float health) {
 		{ TEXTURE_ASSET_ID::RED_ENEMY,
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITE,
-			RENDER_ORDER::OBJECTS_FR });
+			RENDER_ORDER::ENEMIES_BK });
 
 	return entity;
 }
@@ -300,9 +388,7 @@ Entity createGreenEnemy(vec2 pos, float health) {
 
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
-	transform.angle = M_PI;
 	transform.scale = GREEN_ENEMY_SIZE;
-	transform.angle_offset = M_PI + 0.8f;
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 200;
@@ -315,7 +401,7 @@ Entity createGreenEnemy(vec2 pos, float health) {
 		{ TEXTURE_ASSET_ID::GREEN_ENEMY_MOVING,
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITESHEET_GREEN_ENEMY_MOVING,
-			RENDER_ORDER::OBJECTS_FR });
+			RENDER_ORDER::ENEMIES_BK });
 
 	Animation& animation = registry.animations.emplace(entity);
 	animation.update_period_ms *= 2;
@@ -327,14 +413,13 @@ Entity createGreenEnemy(vec2 pos, float health) {
 Entity createYellowEnemy(vec2 pos, float health) {
 	// Create enemy components
 	auto entity = Entity();
-	registry.noRotates.emplace(entity);
 	registry.collidePlayers.emplace(entity);
 
-	Weapon& weapon = registry.weapons.emplace(entity);
+	Gun& weapon = registry.guns.emplace(entity);
 	weapon.attack_delay = 900.f;
 	weapon.bullet_speed = 400.f;
-	weapon.size = { 25.f, 25.f };
-	weapon.color = { 0.718f, 1.f, 0.f, 1.f };
+	weapon.bullet_size = { 25.f, 25.f };
+	weapon.bullet_color = { 0.718f, 1.f, 0.f, 1.f };
 
 	Enemy& new_enemy = registry.enemies.emplace(entity);
 	new_enemy.type = ENEMY_ID::YELLOW;
@@ -342,10 +427,11 @@ Entity createYellowEnemy(vec2 pos, float health) {
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
 	transform.scale = YELLOW_ENEMY_SIZE;
-	transform.angle_offset = M_PI;
+	transform.angle = 1;
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 0.0f;
+	motion.max_angular_velocity = M_PI;
 
 	Health& enemyHealth = registry.healthValues.emplace(entity);
 	enemyHealth.health = health;
@@ -356,11 +442,11 @@ Entity createYellowEnemy(vec2 pos, float health) {
 		{ TEXTURE_ASSET_ID::YELLOW_ENEMY,
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITE,
-			RENDER_ORDER::OBJECTS_FR });
+			RENDER_ORDER::ENEMIES_BK });
 	return entity;
 }
 
-void createRandomRegions(size_t num_regions, std::default_random_engine& rng){
+void createRandomRegions(size_t num_regions, std::default_random_engine& rng) {
 	assert(region_theme_count >= num_regions);
 	assert(region_goal_count >= num_regions);
 
@@ -421,10 +507,11 @@ void createRandomRegions(size_t num_regions, std::default_random_engine& rng){
 		vec2 interest_point;
 		interest_point.x = interest_distance * cos(center_angle);
 		interest_point.y = interest_distance * sin(center_angle);
-		
+
 		// Store the interest point in the Region component
 		region.interest_point = interest_point;
-		std::cout << "Region " << i+1 << ": Interest Point (X, Y) = (" << interest_point.x << ", " << interest_point.y << ")\n";
+
+		std::cout << "Region " << i + 1 << ": Interest Point (X, Y) = (" << interest_point.x << ", " << interest_point.y << ")\n";
 
 		// Update angle
 		angle += (M_PI * 2 / num_regions);
@@ -438,7 +525,7 @@ void createRandomCysts(std::default_random_engine& rng) {
 
 	const float LOWER_RADIUS = 0.18f * MAP_RADIUS;
 	const float UPPER_RADIUS = 0.98f * MAP_RADIUS;
-	const float MEAN_POINT   = 0.27f * MAP_RADIUS; // actual mean is approx = max_radius - mean_point
+	const float MEAN_POINT = 0.27f * MAP_RADIUS; // actual mean is approx = max_radius - mean_point
 
 	std::exponential_distribution<float> radius_distribution(1.f / MEAN_POINT);
 	std::uniform_real_distribution<float> angle_distribution(0.f, ANGLE);
@@ -492,7 +579,7 @@ void createCyst(vec2 pos, float health) {
 
 	Transform& transform = registry.transforms.emplace(cyst_entity);
 	transform.position = pos;
-	transform.scale = CYST_TEXTURE_SIZE * 3.f;
+	transform.scale = CYST_TEXTURE_SIZE * 4.f;
 
 	Animation& animation = registry.animations.emplace(cyst_entity);
 	animation.total_frame = (int)ANIMATION_FRAME_COUNT::CYST_SHINE;
@@ -504,26 +591,27 @@ void createCyst(vec2 pos, float health) {
 		{ TEXTURE_ASSET_ID::CYST_SHINE,
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITESHEET_CYST_SHINE,
-			RENDER_ORDER::OBJECTS_FR });
+			RENDER_ORDER::ENEMIES_BK });
 }
 
-Entity createLine(vec2 position, vec2 scale) {
+Entity createLine(vec2 position, float angle, vec2 scale) {
 	Entity entity = Entity();
 
-	// Store a reference to the potentially re-used mesh object (the value is stored in the resource cache)
 	registry.renderRequests.insert(
 		entity,
 		{ TEXTURE_ASSET_ID::TEXTURE_COUNT,
-			EFFECT_ASSET_ID::TEXTURED,
+			EFFECT_ASSET_ID::COLOURED,
 			GEOMETRY_BUFFER_ID::DEBUG_LINE,
 			RENDER_ORDER::UI });
 
-	// Create bullet_transform
+	registry.colors.insert(entity, { 1.f,0.f,0.f,1.f });
+
 	Transform& transform = registry.transforms.emplace(entity);
-	transform.angle = 0.f;
+	transform.angle = angle;
 	transform.position = position;
 	transform.scale = scale;
-	transform.is_screen_coord = true;
+	transform.is_screen_coord = false;
+
 
 	registry.debugComponents.emplace(entity);
 	return entity;
@@ -574,12 +662,15 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 
 	// Set initial position and velocity
 	Transform& shooter_transform = registry.transforms.get(shooter);
-	Weapon& weapon = registry.weapons.get(shooter);
+	Gun& weapon = registry.guns.get(shooter);
 
-	bullet_transform.position = {
-		shooter_transform.position.x + weapon.offset.x * cos(shooter_transform.angle),
-		shooter_transform.position.y + weapon.offset.y * sin(shooter_transform.angle)
-	};
+	Transformation t;
+	t.translate(shooter_transform.position);
+	t.rotate(shooter_transform.angle + shooter_transform.angle_offset);
+	t.translate(weapon.offset);
+	//t.rotate(weapon.angle_offset);
+
+	bullet_transform.position = t.mat[2];
 	bullet_transform.scale = scale;
 	bullet_transform.angle = 0.0;
 
@@ -589,12 +680,8 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 		bullet_motion.velocity = { cos(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed, 
 			sin(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed};
 
-
 	}
 	else {
-
-
-
 		vec2 bullet_direction = normalize(vec2(cos(shooter_transform.angle - weapon.angle_offset), sin(shooter_transform.angle - weapon.angle_offset)));
 
 		float projection = dot(shooter_motion.velocity, bullet_direction);
@@ -629,7 +716,7 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 		{ TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no txture is needed
 			EFFECT_ASSET_ID::COLOURED,
 			GEOMETRY_BUFFER_ID::BULLET,
-			RENDER_ORDER::OBJECTS_BK });
+			RENDER_ORDER::OBJECTS });
 
 	return bullet_entity;
 }
