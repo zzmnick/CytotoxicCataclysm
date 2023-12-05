@@ -203,3 +203,18 @@ We had the following discrepancies in Milestone 3 compared to the development pl
 * [Creative][advanced/basic][27][Story elements]: Since all pieces of the game come together in MS4, we decided to use this feature once we have all the dialogs.
 * [creative][advanced][1][Simple rendering effects]: More rendering effects have been added in this milestone in addition to what has been implemented in previous milestones, so this feature is included in this milestone for grading
 * (Not for marks)[Section interest points]: A few of the power-ups were implemented but the textures were not ready. So we decided to move to Milestone 4.
+
+
+
+## Music
+"Voxel Revolution" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0 License
+http://creativecommons.org/licenses/by/4.0/
+
+## Additional Art 
+Sound Effects: The Essential Retro Video Game Sound Effects Collection by Juhani Junkala
+https://opengameart.org/content/512-sound-effects-8-bit-style
+Keyboard Sprite by: xPheRe
+https://xphere.itch.io/pixel-keyboard-layout
+Joystick Sprite by: Juliano (lightUP)
+https://julianoferreiradelima.itch.io/gamepads-assets-pixelart

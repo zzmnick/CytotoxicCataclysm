@@ -32,7 +32,6 @@ float menu_timer = 0.f;
 bool controller_mode = FALSE; //if most recent input is controller set to 1, if mouse/keyboard set to 0
 
 
-
 // Create the world
 WorldSystem::WorldSystem() {
 	// Seeding rng with random device
@@ -241,23 +240,29 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 
 	// Create world entities that don't reset
 	cursor = createCrosshair();
-	createRandomRegions(NUM_REGIONS, rng);
-	createWaypoints();
 	healthbar = createHealthbar({ -CONTENT_WIDTH_PX * 0.34, CONTENT_HEIGHT_PX * 0.43 }, STATUSBAR_SCALE);
 	createCamera({ 0.f, 0.f });
 
 	// Set all states to default
-	restart_game();
-
+	restart_game(true);
 
 	// Create dialog_system
 	if (SHOW_DIALOGS) {
 		dialog_system = new DialogSystem(keys_pressed, mouse);
 	}
 
+	button_select = BUTTON_SELECT::NONE;
+	state = GAME_STATE::START_MENU;
 }
 
-void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
+bool isKeyPressed() {
+	for (auto keyVal = keys_pressed.begin(); keyVal != keys_pressed.end(); ++keyVal) {
+		if (keyVal->second) return true;
+	}
+	return false;
+}
+
+void WorldSystem::step_deathTimer(float elapsed_ms) {
 	for (uint i = 0; i < registry.deathTimers.components.size(); i++) {
 		DeathTimer& timer = registry.deathTimers.components[i];
 		Entity entity = registry.deathTimers.entities[i];
@@ -265,16 +270,19 @@ void WorldSystem::step_deathTimer(ScreenState& screen, float elapsed_ms) {
 		timer.timer_ms -= elapsed_ms;
 
 		if (entity == player) {
+
 			if (timer.timer_ms <= 0) {
 				// Player is dead -> restart
-				registry.deathTimers.remove(entity);
-				screen.screen_darken_factor = 0;
-				restart_game();
+				if (isKeyPressed()) {
+					registry.deathTimers.remove(entity);
+					registry.remove_all_components_of(death_screen);
+					restart_game();
+				}
 				return;
 			}
 			else {
-				// Player is dying -> set screen darken factor
-				screen.screen_darken_factor = 1 - timer.timer_ms / DEATH_EFFECT_DURATION;
+				// Player is dying -> darken death screen texture
+				registry.colors.get(death_screen).a = min(1.f, 1 - timer.timer_ms / DEATH_EFFECT_DURATION);
 			}
 		}
 		else if (timer.timer_ms <= 0) {
@@ -311,6 +319,49 @@ void WorldSystem::remove_entity(Entity entity) {
 	registry.remove_all_components_of(entity);
 }
 
+void WorldSystem::triggerEndOfGame() {
+	// do story
+
+	// do end credits
+	state = GAME_STATE::CREDITS;
+	createCredits();
+
+	return;
+}
+
+void WorldSystem::step_roll_credits(float elapsed_ms) {
+	const float start_position = -DIALOG_TEXTURE_SIZE.y;
+	const float distance = CONTENT_HEIGHT_PX + DIALOG_TEXTURE_SIZE.y;
+	const float fade_time = 2500.f;
+	const float title_start_position = -DIALOG_TEXTURE_SIZE.y*1.4;
+
+	for (auto entity : registry.credits.entities) {
+		// rolling the credits
+		Credits& credits = registry.credits.get(entity);
+		credits.timer += elapsed_ms;
+		registry.transforms.get(entity).position.y = start_position + credits.timer / credits.total_time * distance;
+		float title_y = min(0.f, title_start_position + credits.timer / credits.total_time * distance);
+		registry.transforms.get(credits.title).position.y = title_y;
+
+		// start fading background and title
+		if (credits.timer > credits.total_time - fade_time) {
+			registry.colors.get(credits.background).a = 1.f - (credits.timer - (credits.total_time - fade_time)) / fade_time;
+			registry.colors.get(credits.title).a = 1.f - (credits.timer - (credits.total_time - fade_time)) / fade_time;
+		}
+		
+		// end condition
+		if (credits.timer > credits.total_time) {
+			state = GAME_STATE::RUNNING;
+			registry.remove_all_components_of(credits.background);
+			registry.remove_all_components_of(credits.title);
+			registry.remove_all_components_of(entity);
+			return;
+		}
+		break;
+	}
+}
+
+
 void WorldSystem::startEntityDeath(Entity entity) {
 	if (registry.deathTimers.has(entity)) return;
 	DeathTimer& dt = registry.deathTimers.emplace(entity);
@@ -324,6 +375,22 @@ void WorldSystem::startEntityDeath(Entity entity) {
 		RenderSystem::animationSys_switchAnimation(player,
 			ANIMATION_FRAME_COUNT::IMMUNITY_DYING,
 			static_cast<int>(ceil((DEATH_EFFECT_DURATION + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::IMMUNITY_DYING))));
+
+		int scenario = 1;
+		for (auto boss : registry.bosses.entities) {
+			if (length(vec2(renderer->createViewMatrix() * vec3(registry.transforms.get(boss).position, 1.f))) < SCREEN_RADIUS) {
+				scenario = 2;
+				break;
+			}
+		}
+		death_screen = createDeathScreen(scenario);
+		registry.motions.get(player).max_velocity *= 0.f;
+		registry.collideEnemies.remove(player);
+		registry.guns.get(player).attack_timer = 9999.f;
+		if (registry.melees.has(player)) {
+			registry.melees.get(player).attack_timer = 9999.f;
+		}
+
 	}
 	else if (registry.enemies.has(entity)) {
 		// Immobilize enemy
@@ -354,7 +421,20 @@ void WorldSystem::startEntityDeath(Entity entity) {
 					startEntityDeath(enemyentity);
 				}
 			}
-			
+			registry.game.get(game_entity).isSecondBossDefeated = true;
+			// remove second boss waypoint
+			for (auto region : registry.regions.components) {
+				if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
+					for (auto wp : registry.waypoints.entities) {
+						if (registry.waypoints.get(wp).interest_point == region.interest_point) {
+							registry.remove_all_components_of(wp);
+							break;
+						}
+					}
+					break;
+				}
+			}
+			triggerEndOfGame();
 		}
 	}
 	else if (registry.cysts.has(entity)) {
@@ -758,8 +838,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// Code below this line will happen only if not in start/pause menu
 
 	// Processing the player state
-	assert(registry.screenStates.components.size() <= 1);
-	ScreenState& screen = registry.screenStates.components[0];
 	// Step dialog if active
 	if (dialog_system != nullptr) {
 		if (dialog_system->is_finished()) {
@@ -771,7 +849,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 					GAME_STATE::RUNNING : GAME_STATE::DIALOG;
 		}
 	}
-	step_deathTimer(screen, elapsed_ms_since_last_update);
+	step_deathTimer(elapsed_ms_since_last_update);
+	if (state == GAME_STATE::CREDITS) step_roll_credits(elapsed_ms_since_last_update);
 
 	if (state != GAME_STATE::RUNNING) return false;
 	/*************************[ gameplay ]*************************/
@@ -804,6 +883,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 
 	handle_shooting_sound_effect();
 	remove_garbage();
+
 	return true;
 }
 
@@ -841,7 +921,23 @@ void WorldSystem::create_debug_lines() {
 }
 
 // Reset the world state to its initial state
-void WorldSystem::restart_game() {
+void WorldSystem::restart_game(bool hard_reset) {
+	if (hard_reset) {
+		// remove all persistent game state 
+		while (registry.regions.entities.size() > 0) {
+			registry.remove_all_components_of(registry.regions.entities.back());
+		}
+		while (registry.waypoints.entities.size() > 0) {
+			registry.remove_all_components_of(registry.waypoints.entities.back());
+		}
+		registry.remove_all_components_of(game_entity);
+
+		// recreate all persistent game state 
+		createRandomRegions(NUM_REGIONS, rng);
+		createWaypoints();
+		registry.game.emplace(game_entity);
+	}
+
 	/*************************[ cleanup ]*************************/
 	// Debugging for memory/component leaks
 	registry.list_all_components();
@@ -857,8 +953,6 @@ void WorldSystem::restart_game() {
 	// All that have a motion
 	while (registry.motions.entities.size() > 0)
 		registry.remove_all_components_of(registry.motions.entities.back());
-	delete dialog_system;
-	dialog_system = nullptr;
 	// Reset enemy counts
 	for (auto& count : enemyCounts) {
 		count.second = 0;
@@ -869,10 +963,8 @@ void WorldSystem::restart_game() {
 	/*************************[ setup new world ]*************************/
 	// Reset the game state
 	current_speed = 1.f;
-	button_select = BUTTON_SELECT::NONE;
-	state = GAME_STATE::START_MENU;
+	state = GAME_STATE::RUNNING;
 	isShootingSoundQueued = false;
-	dialog_system = nullptr;
 	// Create a new player
 	player = createPlayer({ 0, 0 });
 	effects_system->player = player;
@@ -882,16 +974,34 @@ void WorldSystem::restart_game() {
 	} else {
 		for (auto& region : registry.regions.components) {
 			if (region.goal == REGION_GOAL_ID::CURE) {
-				assert(region.boss == BOSS_ID::BACTERIOPHAGE);
-				createBoss(renderer, region.interest_point);
+				if (!registry.game.get(game_entity).isCureUnlocked) {
+					createBoss(renderer, region.interest_point);
+				}
 			} else if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
-				continue;
-				// deactivated boss?
+				if (registry.game.get(game_entity).isCureUnlocked && !registry.game.get(game_entity).isSecondBossDefeated) {
+					createSecondBoss(renderer, region.interest_point);
+				}
 			} else {
 				createChest(region.interest_point, region.goal);
 			}
 		}
 	}
+	if (hasPlayerAbility(PLAYER_ABILITY_ID::SWORD)) {
+		createSword(renderer, player);
+	}
+	if (hasPlayerAbility(PLAYER_ABILITY_ID::DASHING)) {
+		createDashing(player);
+	}
+	if (hasPlayerAbility(PLAYER_ABILITY_ID::HEALTH_BOOST)) {
+		Health& health = registry.healthValues.get(player);
+		health.health = PLAYER_BOOST_HEALTH; // Double the health
+		health.healthMultiplier = 2.0f; // Double the health multiplier
+	}
+	if (hasPlayerAbility(PLAYER_ABILITY_ID::BULLET_BOOST)) {
+		Gun& player_gun = registry.guns.get(player);
+		player_gun.attack_delay /= 2;
+	}
+
 	createRandomCysts(rng);
 }
 
@@ -947,6 +1057,9 @@ void WorldSystem::resolve_collisions() {
 		}
 		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_ENEMY
 			&& !registry.invincibility.has(entity)) {
+
+			if (!registry.collideEnemies.has(player)) continue;
+
 			registry.invincibility.emplace(entity);
 
 			// When player collides with enemy, only player gets knocked back,
@@ -975,7 +1088,7 @@ void WorldSystem::resolve_collisions() {
 
             if (!chest.isOpened && isHoldingSpace(100.0f)) {
                 chest.isOpened = true;
-				PlayerAbility& newAbility = registry.playerAbilities.emplace_with_duplicates(player);
+				PlayerAbility& newAbility = registry.playerAbilities.emplace_with_duplicates(game_entity);
 
                 // Grant the ability to the player
 				switch(chest.ability) {
@@ -1036,27 +1149,28 @@ void WorldSystem::resolve_collisions() {
             }
         }
 		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_CURE) {
-			updateSpaceBarPressDuration();
 			Entity cureEntity = collision.other_entity;
 			Player& playerComponent = registry.players.get(player);
 
-			if (!playerComponent.isCureUnlocked && isHoldingSpace(100.0f)) {
+			registry.game.get(game_entity).isCureUnlocked = true;
 				
-				playerComponent.isCureUnlocked = true;
-				
-				for (auto& region : registry.regions.components) {
-					if (region.goal == REGION_GOAL_ID::CURE) {
-						region.is_cleared = true;
-					}
-					if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
-						createSecondBoss(renderer, region.interest_point);
-						createWaypoint(region);
+			for (auto& region : registry.regions.components) {
+				if (region.goal == REGION_GOAL_ID::CURE) {
+					region.is_cleared = true;
+					for (auto wp : registry.waypoints.entities) {
+						if (registry.waypoints.get(wp).interest_point == region.interest_point) {
+							registry.remove_all_components_of(wp);
+							break;
+						}
 					}
 				}
-
-				garbage.push_back(cureEntity);
-				std::cout << "Cure acquired" << std::endl;
+				if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
+					createSecondBoss(renderer, region.interest_point);
+					createWaypoint(region);
+				}
 			}
+
+			garbage.push_back(cureEntity);
 		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_ENEMY) {
 			// When bullet collides with enemy, only enemy gets knocked back,
@@ -1153,6 +1267,8 @@ void WorldSystem::resolve_collisions() {
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_PLAYER
 			&& !registry.invincibility.has(player)) {
 
+			if (!registry.collideEnemies.has(player)) continue;
+
 			registry.invincibility.emplace(player);
 
 			Transform& player_transform = registry.transforms.get(player);
@@ -1196,9 +1312,6 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 	// action can be GLFW_PRESS GLFW_RELEASE GLFW_REPEAT
 
 	// Pausing game
-
-
-
 	if (action == GLFW_RELEASE && key == GLFW_KEY_ESCAPE) {
 		if (state == GAME_STATE::RUNNING && dialog_system == nullptr) {
 			state = GAME_STATE::PAUSE_MENU;
@@ -1473,6 +1586,12 @@ void WorldSystem::on_controller() {
 void WorldSystem::control_movement(float elapsed_ms) {
 	Motion& playermovement = registry.motions.get(player);
 
+
+	// FOR TESTING
+	if (keys_pressed[GLFW_KEY_P]) {
+		triggerEndOfGame();
+	}
+
 	// Vertical movement
 	if (keys_pressed[GLFW_KEY_W]) {
 		playermovement.velocity.y += elapsed_ms * playermovement.acceleration_unit;
@@ -1690,7 +1809,7 @@ json WorldSystem::serializeGameState() {
     return gameState;
 }
 
-bool hasPlayerAbility(PLAYER_ABILITY_ID abilityId) {
+bool WorldSystem::hasPlayerAbility(PLAYER_ABILITY_ID abilityId) {
     for (uint i = 0; i < registry.playerAbilities.components.size(); i++) {
 		if (registry.playerAbilities.components[i].id == abilityId) {
 			return true;
@@ -1889,7 +2008,7 @@ void WorldSystem::step_menu() {
 	if (state == GAME_STATE::START_MENU) {
 		MENU_OPTION option = menu_system->poll_start_menu();
 		if (option == MENU_OPTION::START_GAME) {
-			state = GAME_STATE::RUNNING;
+			restart_game(true);
 		} else if (option == MENU_OPTION::LOAD_GAME) {
 			load_game();
 			state = GAME_STATE::RUNNING;
@@ -1909,7 +2028,8 @@ void WorldSystem::step_menu() {
 			Mix_Volume(-1, 128);
 			Mix_VolumeMusic(45);
 		} else if (option == MENU_OPTION::EXIT_CURR_PLAY) {
-			restart_game();
+			state = GAME_STATE::START_MENU;
+			step_menu();
 		}
 	}
 }

@@ -76,6 +76,8 @@ class RenderSystem {
 		textures_path("ui/tutorial4_shoot.png"),
 		textures_path("ui/tutorial5_pause.png"),
 		textures_path("ui/tutorial6_end.png"),
+		textures_path("ui/death_screen_1.png"),
+		textures_path("ui/death_screen_2.png"),
 		textures_path("ui/icon_damage.png"),
 		textures_path("ui/icon_slow.png"),
 		textures_path("ui/icon_fov.png"),
@@ -92,6 +94,7 @@ class RenderSystem {
 		textures_path("ui/crosshair.png"),
 		textures_path("ui/skull.png"),
 		textures_path("ui/question.png"),
+		textures_path("ui/credits.png"),
 	};
 
 	std::array<GLuint, effect_count> effects;

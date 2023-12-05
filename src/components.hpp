@@ -84,7 +84,8 @@ enum class GAME_STATE {
 	PAUSE_MENU = START_MENU + 1,
 	DIALOG = PAUSE_MENU + 1,
 	RUNNING = DIALOG + 1,
-	ENDED = RUNNING + 1
+	ENDED = RUNNING + 1,
+	CREDITS = ENDED + 1,
 };
 
 enum class BUTTON_SELECT {
@@ -162,7 +163,9 @@ enum class TEXTURE_ASSET_ID {
 	TUTORIAL_SHOOT = TUTORIAL_ROTATE + 1,
 	TUTORIAL_PAUSE = TUTORIAL_SHOOT + 1,
 	TUTORIAL_END = TUTORIAL_PAUSE + 1,
-	ICON_DAMAGE = TUTORIAL_END + 1,
+	DEATH_SCREEN_1 = TUTORIAL_END + 1,
+	DEATH_SCREEN_2 = DEATH_SCREEN_1 + 1,
+	ICON_DAMAGE = DEATH_SCREEN_2 + 1,
 	ICON_SLOW = ICON_DAMAGE + 1,
 	ICON_FOV = ICON_SLOW + 1,
 	ICON_AMMO = ICON_FOV + 1,
@@ -178,7 +181,8 @@ enum class TEXTURE_ASSET_ID {
 	CROSSHAIR = MENU_UNMUTE + 1,
 	ICON_SKULL = CROSSHAIR + 1,
 	ICON_QUESTION = ICON_SKULL + 1,
-	TEXTURE_COUNT = ICON_QUESTION + 1 // TEXTURE_COUNT indicates that no txture is needed
+	CREDITS = ICON_QUESTION + 1,
+	TEXTURE_COUNT = CREDITS + 1 // TEXTURE_COUNT indicates that no txture is needed
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
@@ -222,8 +226,11 @@ enum class RENDER_ORDER {
 	ENEMIES_FR = ENEMIES_BK + 1,
 	BOSS = ENEMIES_FR + 1,
 	UI = BOSS + 1,
-	MENU = UI + 1,
-	RENDER_ORDER_COUNT = MENU + 1
+	UI_FR = UI + 1,
+	MENU = UI_FR + 1,
+	CREDITS_BG = MENU + 1,
+	CREDITS = CREDITS_BG + 1,
+	RENDER_ORDER_COUNT = CREDITS + 1
 };
 const int render_order_count = (int)RENDER_ORDER::RENDER_ORDER_COUNT;
 
@@ -310,10 +317,13 @@ static std::unordered_map <REGION_THEME_ID, TEXTURE_ASSET_ID> region_texture_map
 
 #pragma region Components
 
-// Player component
-struct Player
-{
+struct Game {
 	bool isCureUnlocked = false;
+	bool isSecondBossDefeated = false;
+};
+
+// Player component
+struct Player {
 };
 
 struct Camera {
@@ -547,5 +557,12 @@ struct Waypoint {
 
 struct Boss {
 
+};
+
+struct Credits {
+	float timer = 0.f;
+	float total_time = 18000.f;
+	Entity background;
+	Entity title;
 };
 #pragma endregion

@@ -44,6 +44,8 @@ public:
 	ComponentContainer<Boss> bosses;
 	ComponentContainer<Cure> cure;
 	ComponentContainer<PlayerAbility> playerAbilities;
+	ComponentContainer<Game> game;
+	ComponentContainer<Credits> credits;
 	
 
 	// constructor that adds all containers for looping over them
@@ -82,6 +84,8 @@ public:
 		registry_list.push_back(&bosses);
 		registry_list.push_back(&cure);
 		registry_list.push_back(&playerAbilities);
+		registry_list.push_back(&game);
+		registry_list.push_back(&credits);
 	}
 
 	void clear_all_components() {

@@ -70,7 +70,7 @@ private:
 	void player_dash();
 
 	// restart level
-	void restart_game();
+	void restart_game(bool hard_reset = false);
 
 	// OpenGL window handle
 	GLFWwindow* window;
@@ -80,12 +80,14 @@ private:
 	EffectsSystem* effects_system;
 	float current_speed;
 	Entity player;
+	Entity game_entity;
 	GAME_STATE state;
 	BUTTON_SELECT button_select= BUTTON_SELECT::NONE;
 
 	// UI references
 	Entity healthbar;
 	Entity cursor;
+	Entity death_screen;
 
 	// sound references and handler
 	std::unordered_map<std::string, Mix_Music*> backgroundMusic;
@@ -111,7 +113,7 @@ private:
 
 
 	// Step different sub-systems
-	void step_deathTimer(ScreenState& screen, float elapsed_ms);
+	void step_deathTimer(float elapsed_ms);
 	void step_health();
 	void step_healthbar(float elapsed_ms);
 	void step_invincibility(float elapsed_ms);
@@ -121,6 +123,7 @@ private:
 	void step_timer_with_callback(float elapsed_ms);
 	void step_waypoints();
 	void step_menu();
+	void step_roll_credits(float elapsed_ms);
 
 	void spawnEnemiesNearInterestPoint(vec2 player_position);
 	void spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 player_velocity);
@@ -135,5 +138,8 @@ private:
 	void save_game();
 	json serializeGameState();
 
+	void triggerEndOfGame();
+
 	Entity& getAttachments(Entity character, ATTACHMENT_ID type);
+	bool hasPlayerAbility(PLAYER_ABILITY_ID abilityId);
 };

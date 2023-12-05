@@ -708,7 +708,7 @@ Entity createHealthbar(vec2 position, vec2 scale) {
 		{ TEXTURE_ASSET_ID::HEALTHBAR_FRAME,
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITE,
-			RENDER_ORDER::UI });
+			RENDER_ORDER::UI_FR });
 
 	// Create transform for bar and frame
 	vec2 frameScale = HEALTHBAR_TEXTURE_SIZE * scale;
@@ -878,4 +878,78 @@ void createWaypoint(Region region) {
 			RENDER_ORDER::UI });
 
 	registry.colors.insert(entity, { 1.f,1.f,1.f,0.f });
+}
+
+Entity createDeathScreen(int scenario) {
+	Entity entity = Entity();
+
+	Transform& transform = registry.transforms.emplace(entity);
+	transform.scale = { DIALOG_TEXTURE_SIZE.x, DIALOG_TEXTURE_SIZE.y };
+	transform.is_screen_coord = true;
+
+	registry.renderRequests.insert(
+		entity,
+		{ scenario == 1 ? TEXTURE_ASSET_ID::DEATH_SCREEN_1 : TEXTURE_ASSET_ID::DEATH_SCREEN_2,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE,
+			RENDER_ORDER::UI });
+
+	registry.colors.insert(entity, { 1.f,1.f,1.f,0.f });
+
+	return entity;
+}
+
+Entity createCredits() {
+	// Background texture
+	Entity black_screen = Entity();
+
+	registry.renderRequests.insert(
+		black_screen,
+		{ TEXTURE_ASSET_ID::TEXTURE_COUNT,
+			EFFECT_ASSET_ID::COLOURED,
+			GEOMETRY_BUFFER_ID::STATUSBAR_RECTANGLE,
+			RENDER_ORDER::CREDITS_BG });
+	Transform& bg_transform = registry.transforms.emplace(black_screen);
+	bg_transform.is_screen_coord = true;
+	bg_transform.position.x -= CONTENT_WIDTH_PX / 2;
+	bg_transform.scale = { CONTENT_WIDTH_PX, CONTENT_HEIGHT_PX };
+	registry.colors.insert(black_screen, { 0.f,0.f,0.f,1.f, });
+
+	// Credits texture
+	Entity entity = Entity();
+
+	Credits& credits = registry.credits.emplace(entity);
+	Transform& transform = registry.transforms.emplace(entity);
+	transform.position.y = -DIALOG_TEXTURE_SIZE.y;
+	transform.scale = { DIALOG_TEXTURE_SIZE.x, DIALOG_TEXTURE_SIZE.y };
+	transform.is_screen_coord = true;
+
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::CREDITS,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE,
+			RENDER_ORDER::CREDITS });
+
+	// Title texture
+	Entity title = Entity();
+
+	Transform& title_transform = registry.transforms.emplace(title);
+	title_transform.position.y = -DIALOG_TEXTURE_SIZE.y;
+	title_transform.scale = START_TITLE_TEXTURE_SIZE * 0.4f;
+	title_transform.is_screen_coord = true;
+	registry.colors.insert(title, { 1.f,1.f,1.f,1.f, });
+
+	registry.renderRequests.insert(
+		title,
+		{ TEXTURE_ASSET_ID::START_MENU_TITLE,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE,
+			RENDER_ORDER::CREDITS });
+
+	// Set credit fields
+	credits.background = black_screen;
+	credits.title = title;
+
+	return entity;
 }

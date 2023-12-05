@@ -49,19 +49,19 @@ Entity createSword(RenderSystem* renderer, Entity& playerEntity);
 Entity createCure(vec2 pos);
 Entity createGun(Entity holder);
 // enemies
-Entity createRedEnemy(vec2 pos, float health = 40.0);
-Entity createGreenEnemy(vec2 pos, float health = 150.0);
-Entity createYellowEnemy(vec2 pos, float health = 50.0);
-Entity createBossClone(vec2 pos, float health = 10.0);
-Entity createBoss(RenderSystem* renderer, vec2 pos, float health = 1000.0);
+Entity createRedEnemy(vec2 pos, float health = 40.0f);
+Entity createGreenEnemy(vec2 pos, float health = 150.0f);
+Entity createYellowEnemy(vec2 pos, float health = 50.0f);
+Entity createBossClone(vec2 pos, float health = 10.0f);
+Entity createBoss(RenderSystem* renderer, vec2 pos, float health = 1000.0f);
 void createBossArms(RenderSystem* renderer, Entity bossEntity, vec2 bossSize);
-Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health = 250.0);
+Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health = 250.0f);
 
 /*************************[ environment ]*************************/
 // the random regions
 void createRandomRegions(size_t num_regions, std::default_random_engine& rng);
 void createRandomCysts(std::default_random_engine& rng);
-void createCyst(vec2 pos, float health = 50.0);
+void createCyst(vec2 pos, float health = 50.0f);
 Entity createChest(vec2 pos, REGION_GOAL_ID ability);
 Entity createBullet(Entity shooter, vec2 scale, vec4 color);
 
@@ -73,6 +73,8 @@ Entity createHealthbar(vec2 position, vec2 scale);
 Entity createCrosshair();
 void createWaypoints();
 void createWaypoint(Region region);
+Entity createDeathScreen(int scenario);
+Entity createCredits();
 
 /*************************[ other ]*************************/
 Entity createCamera(vec2 pos);
