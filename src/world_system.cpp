@@ -358,7 +358,7 @@ void WorldSystem::startEntityDeath(Entity entity) {
 		}
 	}
 	else if (registry.cysts.has(entity)) {
-		dt.timer_ms = 100.f; // TODO set based on animation length
+		dt.timer_ms = 50.f; // TODO set based on animation length
 
 		effects_system->apply_random_effect();
 
@@ -700,8 +700,24 @@ void WorldSystem::step_waypoints() {
     }
 }
 
-void WorldSystem::update_camera() {
-	registry.camera.components[0].position = registry.transforms.get(player).position;
+void WorldSystem::shakeCamera(float amount, float ms, float shake_scale, vec2 direction) {
+	Camera& camera = registry.camera.components[0];
+	camera.shake += amount;
+	camera.shake_scale = shake_scale;
+	camera.shake_direction = direction;
+
+	TimedEvent& timer = registry.timedEvents.emplace(Entity());
+	timer.timer_ms = ms;
+	timer.callback = [amount]() {
+		registry.camera.components[0].shake -= amount;
+		};
+}
+
+void WorldSystem::update_camera(float elapsed_ms) {
+	static float total_time = 0.f;
+	total_time += elapsed_ms;
+	Camera & camera = registry.camera.components[0];
+	camera.position = registry.transforms.get(player).position + camera.shake_direction * camera.shake * sin(total_time / camera.shake_scale);
 }
 
 void WorldSystem::remove_garbage() {
@@ -895,6 +911,17 @@ bool isHoldingSpace(float time_ms) {
     return false;
 }
 
+void WorldSystem::squish(Entity entity, float squish_amount) {
+	registry.transforms.get(entity).scale *= squish_amount;
+	TimedEvent& timer = registry.timedEvents.emplace(Entity());
+	timer.timer_ms = 30.f;
+	timer.callback = [entity, squish_amount]() {
+		if (registry.transforms.has(entity)) {
+			registry.transforms.get(entity).scale /= squish_amount;
+		}
+		};
+}
+
 // Compute collisions between entities
 void WorldSystem::resolve_collisions() {
 	// Loop over all collisions detected by the physics system
@@ -937,7 +964,9 @@ void WorldSystem::resolve_collisions() {
 				playerHealth.health -= 10.0;
 			}
 
+			shakeCamera(4.f, 200.f, 10.f, knockback_direction);
 			Mix_PlayChannel(chunkToChannel["player_hit"], soundChunks["player_hit"], 0);
+			squish(player, 0.96f);
 		}
 		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_CHEST) {
 			updateSpaceBarPressDuration();
@@ -1040,6 +1069,7 @@ void WorldSystem::resolve_collisions() {
 				vec2 knockback_direction = normalize(enemy_transform.position - transform.position);
 				enemy_motion.velocity = enemy_motion.max_velocity * knockback_direction;
 				enemy_motion.allow_accel = false;
+				squish(enemy_entity, 0.95f);
 			}
 
 			// Deal damage to enemy
@@ -1047,6 +1077,7 @@ void WorldSystem::resolve_collisions() {
 			enemyHealth.health -= registry.projectiles.get(entity).damage;
 
 			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
+	
 			garbage.push_back(entity);
 			
 		}
@@ -1058,6 +1089,7 @@ void WorldSystem::resolve_collisions() {
 			health.health -= registry.projectiles.get(entity).damage;
 
 			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
+			squish(cyst, 0.9f);
 			garbage.push_back(entity);
 		}
 		else if (collision.collision_type == COLLISION_TYPE::SWORD_WITH_ENEMY) {
@@ -1072,6 +1104,7 @@ void WorldSystem::resolve_collisions() {
 				vec2 knockback_direction = normalize(enemy_transform.position - transform.position);
 				if (enemyAttrib.type != ENEMY_ID::BOSS) {
 					enemy_motion.velocity = enemy_motion.max_velocity * knockback_direction;
+					squish(enemy_entity, 0.95f);
 				} else {
 					// less knockback on boss
 					enemy_motion.velocity = 0.2f * enemy_motion.max_velocity * knockback_direction;
@@ -1104,6 +1137,7 @@ void WorldSystem::resolve_collisions() {
 
 			// Give cyst invincibility to sword for a moment after taking an attack
 			cyst_attrib.sword_attack_cd = 500.f;
+			squish(cyst, 0.9f);
 
 			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
 			}
@@ -1131,9 +1165,10 @@ void WorldSystem::resolve_collisions() {
 			// Deal damage to player
 			Health& playerHealth = registry.healthValues.get(player);
 			playerHealth.health -= registry.projectiles.get(entity).damage;
-
-
+			shakeCamera(3.f, 150.f, 3.f, knockback_direction);
 			Mix_PlayChannel(chunkToChannel["player_hit"], soundChunks["player_hit"], 0);
+			squish(player, 0.96f);
+
 			garbage.push_back(entity);
 		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_BOUNDARY) {

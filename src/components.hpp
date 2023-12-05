@@ -318,6 +318,9 @@ struct Player
 
 struct Camera {
 	vec2 position;
+	float shake = 0.f;
+	float shake_scale = 1.f;
+	vec2 shake_direction = vec2(1.f, 0.f); // make sure its normalized
 };
 
 // Enemy component

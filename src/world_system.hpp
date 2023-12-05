@@ -37,7 +37,7 @@ public:
 	bool step(float elapsed_ms);
 
 
-	void update_camera();
+	void update_camera(float elapsed_ms);
 
 	// Check for collisions
 	void resolve_collisions();
@@ -106,6 +106,9 @@ private:
 	std::unordered_map<ENEMY_ID, int> maxEnemies;
 
 	bool allow_accel;
+	void shakeCamera(float amount, float ms, float shake_scale = 2.f, vec2 direction = vec2(1.f, 0.f));
+	void squish(Entity entity, float squish_amount);
+
 
 	// Step different sub-systems
 	void step_deathTimer(ScreenState& screen, float elapsed_ms);

@@ -62,7 +62,7 @@ int main()
 			physics_system.step(elapsed_ms);
 			world_system.resolve_collisions();
 			render_system.animationSys_step(elapsed_ms);
-			world_system.update_camera();
+			world_system.update_camera(elapsed_ms);
 		}
 		
 		render_system.draw();

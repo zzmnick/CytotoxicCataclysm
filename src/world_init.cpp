@@ -409,6 +409,7 @@ Entity createGreenEnemy(vec2 pos, float health) {
 	Animation& animation = registry.animations.emplace(entity);
 	animation.update_period_ms *= 2;
 	animation.total_frame = (int)ANIMATION_FRAME_COUNT::GREEN_ENEMY_MOVING;
+	animation.pause_animation = true;
 	return entity;
 }
 
@@ -751,6 +752,11 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 	if (registry.enemies.has(shooter)) {
 		bullet_motion.velocity = { cos(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed, 
 			sin(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed};
+
+
+
+
+
 
 	}
 	else {
