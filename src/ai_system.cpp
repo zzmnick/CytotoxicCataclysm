@@ -33,12 +33,11 @@ void AISystem::move_enemies(float elapsed_ms) {
 				enemymotion.allow_accel = true;
 				continue;
 			}
-			// Boss chases player when player is close. More sophisticated AI for boss will be added later
+			// Boss chases player forever after it's activated
 			Enemy& enemyAttribute = registry.enemies.get(entity);
 			vec2 target_point = playerTransform.position;
 			if (enemyAttribute.type == ENEMY_ID::BOSS) {
-				float enemy_player_dist = length(playerTransform.position - enemytransform.position);
-				if (enemy_player_dist > CONTENT_WIDTH_PX / 2) {
+				if (!registry.bosses.get(entity).activated) {
 					for (auto& region : registry.regions.components) {
 						if (region.goal == REGION_GOAL_ID::CURE) {
 							target_point = region.interest_point;
@@ -46,8 +45,7 @@ void AISystem::move_enemies(float elapsed_ms) {
 					}
 				}
 			} else if (enemyAttribute.type == ENEMY_ID::FRIENDBOSS) {
-				float distance = length(playerTransform.position - enemytransform.position);
-				if (distance > CONTENT_WIDTH_PX) {
+				if (!registry.bosses.get(entity).activated) {
 					continue;
 				}
 				Dash& enemyDash = registry.dashes.get(entity);
@@ -116,14 +114,18 @@ void AISystem::enemy_shoot(float elapsed_ms) {
 			if (enemyGun.attack_timer <= 0) {
 				Enemy& enemy = registry.enemies.get(entity);
 				if (enemy.type == ENEMY_ID::BOSS) {
-					createBullet(entity, enemyGun.bullet_size, enemyGun.bullet_color);
-				} else if (enemy.type == ENEMY_ID::FRIENDBOSS) {
-					float decision = (static_cast<float>(rand()) / RAND_MAX); //This generates num between 0 and 1
-					if (decision <= 0.7f) {
+					if (registry.bosses.get(entity).activated) {
 						createBullet(entity, enemyGun.bullet_size, enemyGun.bullet_color);
 					}
-					else {
-						enemy_special_attack(entity);
+				} else if (enemy.type == ENEMY_ID::FRIENDBOSS) {
+					if (registry.bosses.get(entity).activated) {
+						float decision = (static_cast<float>(rand()) / RAND_MAX); //This generates num between 0 and 1
+						if (decision <= 0.7f) {
+							createBullet(entity, enemyGun.bullet_size, enemyGun.bullet_color);
+						}
+						else {
+							enemy_special_attack(entity);
+						}
 					}
 				} else {
 					createBullet(entity, { 13.f, 13.f }, { 0.718f, 1.f, 0.f, 1.f });
@@ -141,7 +143,7 @@ void AISystem::enemy_dash(float elapsed_ms) {
 	for (Entity entity : registry.dashes.entities) {
 		Transform enemy = registry.transforms.get(entity);
 		float distance = length(playerposition - enemy.position);
-		if (registry.enemies.has(entity) && distance <= CONTENT_WIDTH_PX / 2) {
+		if (registry.enemies.has(entity) && registry.bosses.get(entity).activated) {
 			Dash& enemyDash = registry.dashes.get(entity);
 			if (enemyDash.delay_timer_ms <= 0.f) {
 				enemyDash.delay_timer_ms = enemyDash.delay_duration_ms;

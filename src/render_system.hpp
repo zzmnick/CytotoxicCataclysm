@@ -43,6 +43,8 @@ class RenderSystem {
 		textures_path("green_enemy.png"),
 		textures_path("yellow_enemy.png"),
 		textures_path("healthbarframe.png"),
+		textures_path("healthbar_boss.png"),
+		textures_path("healthbar_boost.png"),
 		textures_path("chest.png"),
 		textures_path("cure.PNG"),
 		textures_path("gun.png"),
@@ -66,18 +68,29 @@ class RenderSystem {
 		textures_path("background/skeletal_bg.png"),
 		textures_path("background/cutaneous_bg.png"),
 
-		// UI
-		textures_path("ui/dialog1_this-is.png"),
-		textures_path("ui/dialog2_until-one-day.png"),
-		textures_path("ui/dialog3_im-gonna.png"),
-		textures_path("ui/tutorial1_movement.png"),
-		textures_path("ui/tutorial2_rotate.png"),
-		// textures_path("ui/tutorial3_dash.png"),
-		textures_path("ui/tutorial4_shoot.png"),
-		textures_path("ui/tutorial5_pause.png"),
-		textures_path("ui/tutorial6_end.png"),
+		// Dialog
+		textures_path("dialog/dialog1_this-is.png"),
+		textures_path("dialog/dialog2_until-one-day.png"),
+		textures_path("dialog/dialog3_im-gonna.png"),
+
+		// Tutorial
+		textures_path("tutorial/controls_keyboard.png"),
+		textures_path("tutorial/controls_controller.png"),
+		textures_path("tutorial/waypoints.png"),
+		textures_path("tutorial/cysts-burst.png"),
+		textures_path("tutorial/unlock-bullet-boost.png"),
+		textures_path("tutorial/unlock-health-boost.png"),
+		textures_path("tutorial/unlock-dashing.png"),
+		textures_path("tutorial/unlock-dashing_keyboard.png"),
+		textures_path("tutorial/unlock-dashing_controller.png"),
+		textures_path("tutorial/unlock-sword.png"),
+		textures_path("tutorial/unlock-melee_mouse.png"),
+		textures_path("tutorial/unlock-melee_controller.png"),
+		textures_path("tutorial/start.png"),
 		textures_path("ui/death_screen_1.png"),
 		textures_path("ui/death_screen_2.png"),
+
+		// UI
 		textures_path("ui/icon_damage.png"),
 		textures_path("ui/icon_slow.png"),
 		textures_path("ui/icon_fov.png"),
@@ -95,6 +108,8 @@ class RenderSystem {
 		textures_path("ui/skull.png"),
 		textures_path("ui/question.png"),
 		textures_path("ui/credits.png"),
+		textures_path("ui/hold-space.png"),
+		textures_path("ui/hold-o.png"),
 	};
 
 	std::array<GLuint, effect_count> effects;

@@ -2,67 +2,40 @@
 #include "dialog_system.hpp"
 #include "world_init.hpp"
 
-const float ACTION_DELAY = 3000.f;	// Time during which user is trying the action
-
-DialogSystem::DialogSystem(std::unordered_map<int, int>& keys_pressed, const vec2& mouse)
-	: keys_pressed(keys_pressed), mouse(mouse) {
+DialogSystem::DialogSystem(std::unordered_map<int, int>& keys_pressed, const vec2& mouse, const unsigned char*& controller_buttons)
+	: keys_pressed(keys_pressed), mouse(mouse), controller_buttons(controller_buttons){
 	rendered_entity = Entity();
-	current_dialog_idx = 0;
 	current_status = DIALOG_STATUS::DISPLAY;
-
-	populate_dialogs();
 }
 
-void DialogSystem::add_regular_dialog(TEXTURE_ASSET_ID asset) {
-	dialogs.push_back({
-		asset, 0.f, {0,0},
+// NOTE: A dialog mid-game should be given a higher delay to avoid accidental skips.
+void DialogSystem::add_dialog(TEXTURE_ASSET_ID asset, float skip_delay_duration) {
+	dialogs.push({
+		asset, skip_delay_duration, {0,0},
 		[this]() {
+			if (this->skip_timer > 0) return false;
 			auto keys = (std::unordered_map<int, int>&) this->keys_pressed;
 			for (auto keyVal = keys.begin(); keyVal != keys.end(); ++keyVal) {
 				if (keyVal->second) return true;
 			}
+			if (this->controller_buttons != nullptr) {
+				for (uint i = 0; i < 19; i++) {
+					if (this->controller_buttons[i]) return true;
+				}
+			}
 			return false;
-		}
-		});
+		},
+		false});
 }
 
-void DialogSystem::add_tutorial_dialogs() {
-	dialogs.push_back({
-		TEXTURE_ASSET_ID::TUTORIAL_MOVEMENT, ACTION_DELAY, {0,0},
-		[this]() {
-			auto keys = (std::unordered_map<int, int>&) this->keys_pressed;
-			return (keys[GLFW_KEY_W] || keys[GLFW_KEY_A] || keys[GLFW_KEY_S] || keys[GLFW_KEY_D]);
-		}
-		});
-	dialogs.push_back({
-		TEXTURE_ASSET_ID::TUTORIAL_ROTATE, ACTION_DELAY, {0,0},
-		[this]() {
-			return (length(this->mouse - this->previous_mouse) > 300.f);
-		}
-		});
-	dialogs.push_back({
-		TEXTURE_ASSET_ID::TUTORIAL_SHOOT, ACTION_DELAY, {0,0},
-		[this]() {
-			return ((std::unordered_map<int, int>&) this->keys_pressed)[GLFW_MOUSE_BUTTON_LEFT];
-		}
-		});
-	dialogs.push_back({
-		TEXTURE_ASSET_ID::TUTORIAL_PAUSE, 0.f, {0,0},
-		[this]() {
-			return ((std::unordered_map<int, int>&) this->keys_pressed)[GLFW_KEY_ESCAPE];
-		}
-		});
-	add_regular_dialog(TEXTURE_ASSET_ID::TUTORIAL_END);
-}
-
-void DialogSystem::populate_dialogs() {
-	add_regular_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO1);
-	add_regular_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO2);
-	add_regular_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO3);
-	add_regular_dialog(TEXTURE_ASSET_ID::TUTORIAL_MOVEMENT);
-	add_regular_dialog(TEXTURE_ASSET_ID::TUTORIAL_ROTATE);
-	add_regular_dialog(TEXTURE_ASSET_ID::TUTORIAL_SHOOT);
-	add_regular_dialog(TEXTURE_ASSET_ID::TUTORIAL_PAUSE);
+void DialogSystem::add_camera_movement(vec2 start_pos, vec2 end_pos, float duration) {
+	Stage new_cam_movement;
+	new_cam_movement.camera_movement = true;
+	new_cam_movement.start_pos = start_pos;
+	new_cam_movement.end_pos = end_pos;
+	new_cam_movement.camera_duration = duration;
+	new_cam_movement.camera_timer = duration;
+	dialogs.push(new_cam_movement);
 }
 
 DialogSystem::~DialogSystem() {
@@ -70,16 +43,26 @@ DialogSystem::~DialogSystem() {
 };
 
 bool DialogSystem::is_finished() {
-	return current_dialog_idx == dialogs.size();
+	return dialogs.empty();
 }
 
 bool DialogSystem::is_paused() {
 	return current_status == DIALOG_STATUS::ACTION_TIMER;
 }
 
+void DialogSystem::clear_pending_dialogs() {
+	while(!dialogs.empty()) {
+		dialogs.pop();
+	}
+}
+
+// Returns true if the game should continue running and false if it should be paused
 bool DialogSystem::step(float elapsed_ms) {
-	if (!is_finished()) {
-		Stage& current_stage = dialogs[current_dialog_idx];
+	if (!is_finished() && SHOW_DIALOGS) {
+		Stage& current_stage = dialogs.front();
+		if (current_stage.camera_movement) {
+			current_status = DIALOG_STATUS::MOVING_CAMERA;
+		}
 		switch (current_status) {
 		case (DIALOG_STATUS::DISPLAY): {
 			Transform& transform = registry.transforms.emplace(rendered_entity);
@@ -89,33 +72,48 @@ bool DialogSystem::step(float elapsed_ms) {
 
 			registry.renderRequests.insert(
 				rendered_entity,
-				{ dialogs[current_dialog_idx].instruction_asset,
+				{ dialogs.front().instruction_asset,
 					EFFECT_ASSET_ID::TEXTURED,
 					GEOMETRY_BUFFER_ID::SPRITE,
 					RENDER_ORDER::UI });
 
 			keys_pressed.clear();
+			skip_timer = current_stage.skip_delay_duration;
 			current_status = DIALOG_STATUS::AWAIT_ACTION;
 			return false;
 			break;
 		}
 		case DIALOG_STATUS::AWAIT_ACTION:
+			skip_timer = fmax(skip_timer - elapsed_ms, 0.f);
 			if (current_stage.is_action_performed()) {
-				registry.transforms.remove(rendered_entity);
-				registry.renderRequests.remove(rendered_entity);
+				registry.remove_all_components_of(rendered_entity);
 				// UPDATED: Removed action timer based on feedback from users
 				current_status = DIALOG_STATUS::DISPLAY;
-				current_dialog_idx++;
+				dialogs.pop();
+				return is_finished();
 			}
 			else {
 				return false;
 			}
 			break;
 		case DIALOG_STATUS::ACTION_TIMER:
-			current_stage.action_timer -= elapsed_ms;
-			if (current_stage.action_timer <= 0) {
+			current_stage.skip_delay_duration -= elapsed_ms;
+			if (current_stage.skip_delay_duration <= 0) {
 				current_status = DIALOG_STATUS::DISPLAY;
-				current_dialog_idx++;
+				dialogs.pop();
+			}
+			break;
+		case DIALOG_STATUS::MOVING_CAMERA:
+			current_stage.camera_timer -= elapsed_ms;
+			vec2 current_pos = current_stage.start_pos * (max(0.f, current_stage.camera_timer) / current_stage.camera_duration) + 
+							   current_stage.end_pos * (1.f - (max(0.f, current_stage.camera_timer) / current_stage.camera_duration));
+			registry.camera.components[0].position = current_pos;
+			if (current_stage.camera_timer < 0.f) {
+				current_status = DIALOG_STATUS::DISPLAY;
+				dialogs.pop();
+				return is_finished();
+			} else {
+				return false;
 			}
 			break;
 		default:

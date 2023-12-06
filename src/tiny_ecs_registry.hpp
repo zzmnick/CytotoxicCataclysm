@@ -25,7 +25,7 @@ public:
 	ComponentContainer<Region> regions;
 	ComponentContainer<Chest> chests;
 	ComponentContainer<Health> healthValues;
-	ComponentContainer<PlayerHealthbar> healthbar;
+	ComponentContainer<Healthbar> healthbar;
 	ComponentContainer<Gun> guns;
 	ComponentContainer<Projectile> projectiles;
 	ComponentContainer<Invincibility> invincibility;

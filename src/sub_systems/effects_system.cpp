@@ -22,7 +22,8 @@ void EffectsSystem::apply_random_effect() {
 
 	if (random_probability(rng) <= POS_PROB) {
 		// if health full, do not heal
-		if (!getEffect(CYST_EFFECT_ID::HEAL).is_active && registry.healthValues.get(player).health >= MAX_HEALTH) {
+		if (!getEffect(CYST_EFFECT_ID::HEAL).is_active && registry.healthValues.get(player).health >= 
+				registry.healthValues.get(player).maxHealth) {
 			setActiveTimer(CYST_EFFECT_ID::HEAL, 2000);
 		}
 		if (countActivePositive() >= cyst_neg_start) {
@@ -90,9 +91,6 @@ void EffectsSystem::handle_damage_effect() {
 	float prev_damage = weapon.damage;
 	weapon.damage *= DAMAGE_MULTIPLIER;
 
-	float prev_delay = weapon.attack_delay;
-	weapon.attack_delay *= ATTACK_DELAY_MULTIPLIER;
-
 	float prev_speed = weapon.bullet_speed;
 	weapon.bullet_speed *= BULLET_SPEED_MULTIPLIER;
 
@@ -106,10 +104,9 @@ void EffectsSystem::handle_damage_effect() {
 
 	TimedEvent& effect_timer = registry.timedEvents.emplace(entity);
 	effect_timer.timer_ms = DAMAGE_EFFECT_TIME;
-	effect_timer.callback = [this, prev_damage, prev_delay, prev_speed, prev_size, prev_color]() {
+	effect_timer.callback = [this, prev_damage, prev_speed, prev_size, prev_color]() {
 		Gun& weapon = registry.guns.get(player);
 		weapon.damage = prev_damage;
-		weapon.attack_delay = prev_delay;
 		weapon.bullet_speed = prev_speed;
 		weapon.bullet_size = prev_size;
 		weapon.bullet_color = prev_color;
@@ -120,7 +117,8 @@ void EffectsSystem::handle_damage_effect() {
 }
 
 void EffectsSystem::handle_heal_effect() {
-	registry.healthValues.get(player).health = MAX_HEALTH;
+	float max_health = registry.healthValues.get(player).maxHealth;
+	registry.healthValues.get(player).health = max_health;
 	setActiveTimer(CYST_EFFECT_ID::HEAL, -1);
 }
 

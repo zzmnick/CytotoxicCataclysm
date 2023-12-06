@@ -13,6 +13,7 @@ const vec2 RED_ENEMY_TEXTURE_SIZE = { 48.f, 40.f };
 const vec2 GREEN_ENEMY_TEXTURE_SIZE = { 40.f, 40.f };
 const vec2 YELLOW_ENEMY_TEXTURE_SIZE = { 63.f, 60.f };
 const vec2 HEALTHBAR_TEXTURE_SIZE = { 530.f, 80.f };
+const vec2 BOSS_HEALTHBAR_TEXTURE_SIZE = {1000.f, 126.f};
 const vec2 CHEST_TEXTURE_SIZE = { 358.f, 366.f };
 const vec2 BACTERIOPHAGE_TEXTURE_SIZE = { 180.f, 689.f };
 const vec2 BACTERIOPHAGE_ARM_TEXTURE_SIZE = { 174.f, 33.f };
@@ -28,6 +29,7 @@ const vec2 PAUSE_TITLE_TEXTURE_SIZE = {1193.f, 143.f};
 const vec2 QUESTION_TEXTURE_SIZE = {30.f, 54.f};
 const vec2 SKULL_TEXTURE_SIZE = {45.f, 42.f};
 const vec2 CURE_TEXTURE_SIZE = {21.f, 39.f};
+const vec2 HOLD_GUIDE_TEXTURE_SIZE = {530.f, 110.f};
 
 const float IMMUNITY_TEXTURE_ANGLE = -M_PI / 4;
 
@@ -69,12 +71,14 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color);
 // a red line for debugging purposes
 Entity createLine(vec2 position, float angle, vec2 scale);
 // create healthbar and its frame. Returns healthbar entity
-Entity createHealthbar(vec2 position, vec2 scale);
+std::tuple<Entity, Entity> createHealthbar(vec2 position, vec2 scale);
+std::tuple<Entity, Entity> createBossHealthbar(vec2 position, vec2 scale);
 Entity createCrosshair();
 void createWaypoints();
 void createWaypoint(Region region);
 Entity createDeathScreen(int scenario);
 Entity createCredits();
+Entity createHoldGuide(vec2 position, vec2 scale);
 
 /*************************[ other ]*************************/
 Entity createCamera(vec2 pos);

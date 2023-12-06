@@ -93,9 +93,6 @@ private:
 	const vec4 DAMAGE_BUFF_PROJECTILE_COLOR = { 0.2f,0.1f,0.1f,1.f };
 	const float DAMAGE_EFFECT_TIME = 5500;
 
-	// heal buff consts
-	const float MAX_HEALTH = 100.f; // TODO assuming 100 is max
-
 	// no attack debuff consts
 	const float NO_ATTACK_TIME = 4000.f;
 

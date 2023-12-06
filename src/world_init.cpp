@@ -135,7 +135,7 @@ Entity createSword(RenderSystem* renderer, Entity& holder) {
 		{ TEXTURE_ASSET_ID::TEXTURE_COUNT,
 			EFFECT_ASSET_ID::COLOURED,
 			GEOMETRY_BUFFER_ID::SWORD,
-			RENDER_ORDER::OBJECTS });
+			RENDER_ORDER::PLAYER });
 
 	return melee_entity;
 
@@ -158,7 +158,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 	transform.angle_offset = -M_PI / 2;
 	transform.angle = transform.angle_offset;
 
-	registry.healthValues.insert(entity, {health});
+	registry.healthValues.insert(entity, {health, health});
 
 	// Setting initial components values
 	Enemy& new_enemy = registry.enemies.emplace(entity);
@@ -292,6 +292,7 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 
 	Health& enemyHealth = registry.healthValues.emplace(boss_entity);
 	enemyHealth.health = health;
+	enemyHealth.maxHealth = health;
 
 	Gun& weapon = registry.guns.emplace(boss_entity);
 	weapon.damage = 15.f;
@@ -690,11 +691,32 @@ Entity createLine(vec2 position, float angle, vec2 scale) {
 	return entity;
 }
 
-Entity createHealthbar(vec2 position, vec2 scale) {
+Entity createHoldGuide(vec2 position, vec2 scale) {
+	Entity entity = Entity();
+
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::HOLD_SPACE,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE,
+			RENDER_ORDER::UI });
+
+	registry.colors.insert(entity, { 1.f,1.f,1.f,0.f });
+
+	Transform& transform = registry.transforms.emplace(entity);
+	transform.position = position;
+	transform.scale = scale;
+	transform.is_screen_coord = true;
+
+	return entity;
+}
+
+std::tuple<Entity, Entity> createHealthbar(vec2 position, vec2 scale) {
 	Entity bar = Entity();
 	Entity frame = Entity();
 
-	registry.healthbar.emplace(bar);
+	Healthbar& healthbar = registry.healthbar.emplace(bar);
+	healthbar.full_health_color = { 0.f,1.f,0.f,1.f };
 
 	// Add the components to the renderRequest in order
 	registry.renderRequests.insert(
@@ -708,7 +730,7 @@ Entity createHealthbar(vec2 position, vec2 scale) {
 		{ TEXTURE_ASSET_ID::HEALTHBAR_FRAME,
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITE,
-			RENDER_ORDER::UI_FR });
+			RENDER_ORDER::UI });
 
 	// Create transform for bar and frame
 	vec2 frameScale = HEALTHBAR_TEXTURE_SIZE * scale;
@@ -718,9 +740,44 @@ Entity createHealthbar(vec2 position, vec2 scale) {
 	registry.transforms.insert(bar, { barPosition, barScale, 0.f, true });
 
 	// Create color for bar
-	registry.colors.insert(bar, { 0.f,1.f,0.f,1.f });
+	registry.colors.insert(bar, healthbar.full_health_color);
 
-	return bar;
+	return std::make_tuple(bar, frame);
+}
+
+std::tuple<Entity, Entity> createBossHealthbar(vec2 position, vec2 scale) {
+	Entity bar = Entity();
+	Entity frame = Entity();
+
+	Healthbar& healthbar = registry.healthbar.emplace(bar);
+	healthbar.full_health_color = { 1.f,0.f,0.f,0.f };
+
+	// Add the components to the renderRequest in order
+	registry.renderRequests.insert(
+		bar,
+		{ TEXTURE_ASSET_ID::TEXTURE_COUNT,
+			EFFECT_ASSET_ID::COLOURED,
+			GEOMETRY_BUFFER_ID::STATUSBAR_RECTANGLE,
+			RENDER_ORDER::UI });
+	registry.renderRequests.insert(
+		frame,
+		{ TEXTURE_ASSET_ID::HEALTHBAR_FRAME_BOSS,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE,
+			RENDER_ORDER::UI });
+
+	// Create transform for bar and frame
+	vec2 frameScale = BOSS_HEALTHBAR_TEXTURE_SIZE * scale;
+	registry.transforms.insert(frame, { position, frameScale, 0.f, true });
+	vec2 barPosition = position - vec2(frameScale.x * 0.26, 0.f);
+	vec2 barScale = frameScale * vec2(0.75, 0.18);
+	registry.transforms.insert(bar, { barPosition, barScale, 0.f, true });
+
+	// Create color for bar and hide boss health bar at the beginning
+	registry.colors.insert(bar, healthbar.full_health_color);
+	registry.colors.insert(frame, { 1.f,1.f,1.f,0.f });
+
+	return std::make_tuple(bar, frame);
 }
 
 // Can be used for either player or enemy

@@ -54,11 +54,9 @@ private:
 	void on_key(int key, int, int action, int mod);
 	void on_mouse_move(vec2 pos);
 
-
-
 	void menu_controller(float elapsed_ms_since_last_update);
 
-	void on_controller();
+	void step_controller();
 
 	// User input handlers
 	void control_movement(float elapsed_ms);
@@ -86,8 +84,13 @@ private:
 
 	// UI references
 	Entity healthbar;
+	Entity healthbar_frame;
+	Entity gun;
+	Entity boss_healthbar;
+	Entity boss_healthbar_frame;
 	Entity cursor;
 	Entity death_screen;
+	Entity hold_to_collect;
 
 	// sound references and handler
 	std::unordered_map<std::string, Mix_Music*> backgroundMusic;
@@ -115,7 +118,7 @@ private:
 	// Step different sub-systems
 	void step_deathTimer(float elapsed_ms);
 	void step_health();
-	void step_healthbar(float elapsed_ms);
+	void step_healthbar(float elapsed_ms, Entity healthbar, Entity target, float max_bar_len, bool update_color);
 	void step_invincibility(float elapsed_ms);
 	void step_attack(float elapsed_ms);
 	void step_dash(float elapsed_ms);
@@ -123,6 +126,7 @@ private:
 	void step_timer_with_callback(float elapsed_ms);
 	void step_waypoints();
 	void step_menu();
+	void step_bossfight();
 	void step_healthBoost(float elapsed_ms);
 	void step_roll_credits(float elapsed_ms);
 
@@ -142,6 +146,7 @@ private:
 
 	void triggerEndOfGame();
 
-	Entity& getAttachments(Entity character, ATTACHMENT_ID type);
+	Entity& getAttachment(Entity character, ATTACHMENT_ID type);
 	bool hasPlayerAbility(PLAYER_ABILITY_ID abilityId);
+	void show_hold_to_collect();
 };
