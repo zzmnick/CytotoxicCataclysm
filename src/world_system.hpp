@@ -81,6 +81,14 @@ private:
 	Entity game_entity;
 	GAME_STATE state;
 	BUTTON_SELECT button_select= BUTTON_SELECT::NONE;
+	GameMode easyMode = {GAME_MODE_ID::EASY_MODE, 
+		max_green_easyMode, max_red_easyMode, max_yellow_easyMode,
+	enemy_health_map_easy,
+	FRIEND_BOSS_DIFFICULTY_easy};
+	GameMode regularMode = { GAME_MODE_ID::REGULAR_MODE, 
+		max_green_regularMode, max_red_regularMode, max_yellow_regularMode,
+	enemy_health_map_regular,
+	FRIEND_BOSS_DIFFICULTY};
 
 	// UI references
 	Entity healthbar;
@@ -149,4 +157,6 @@ private:
 	Entity& getAttachment(Entity character, ATTACHMENT_ID type);
 	bool hasPlayerAbility(PLAYER_ABILITY_ID abilityId);
 	void show_hold_to_collect();
+
+	void setGameMode(GAME_MODE_ID id);
 };

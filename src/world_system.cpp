@@ -20,9 +20,6 @@ std::unordered_map < int, float > axes_state;
 const unsigned char *controller_buttons = nullptr;
 vec2 mouse;
 const float SPAWN_RANGE = MAP_RADIUS *0.6f;
-const int MAX_RED_ENEMIES = 8;
-const int MAX_GREEN_ENEMIES = 4;
-const int MAX_YELLOW_ENEMIES = 4;
 const float ENEMY_SPAWN_PADDING = 50.f; // Padding to ensure off-screen spawn
 float enemy_spawn_cooldown = 5.f;
 const float INDIVIDUAL_SPAWN_INTERVAL = 1.0f;
@@ -40,9 +37,9 @@ WorldSystem::WorldSystem() {
 	enemyCounts[ENEMY_ID::RED] = 0;
 	enemyCounts[ENEMY_ID::GREEN] = 0;
 	enemyCounts[ENEMY_ID::YELLOW] = 0;
-	maxEnemies[ENEMY_ID::RED] = MAX_RED_ENEMIES;
-	maxEnemies[ENEMY_ID::GREEN] = MAX_GREEN_ENEMIES;
-	maxEnemies[ENEMY_ID::YELLOW] = MAX_YELLOW_ENEMIES;
+	maxEnemies[ENEMY_ID::RED] = 0;
+    maxEnemies[ENEMY_ID::GREEN] = 0;
+	maxEnemies[ENEMY_ID::YELLOW] = 0;
 	state = GAME_STATE::START_MENU;
 }
 
@@ -660,9 +657,9 @@ void WorldSystem::spawnEnemiesNearInterestPoint(vec2 player_position) {
 	std::uniform_int_distribution<int> type_dist(0, static_cast<int>(enemyTypes.size()) - 1);
 	ENEMY_ID randomType = enemyTypes[type_dist(rng)];
 
-	if (enemyCounts[randomType] < getMaxEnemiesForType(randomType)) {
-		spawnEnemyOfType(randomType, player_position, player_velocity);
-	}
+    if (enemyCounts[randomType] < getMaxEnemiesForType(randomType)) {
+        spawnEnemyOfType(randomType, player_position, player_velocity);
+    }
 
 }
 
@@ -1012,6 +1009,15 @@ void WorldSystem::restart_game(bool hard_reset) {
 	current_speed = 1.f;
 	state = GAME_STATE::RUNNING;
 	isShootingSoundQueued = false;
+
+	//if no gameMode selected yet, set to regular mode
+	if (registry.gameMode.entities.empty()) {
+		Entity placHolder = Entity();
+		registry.gameMode.insert(placHolder, regularMode);
+	}
+	maxEnemies[ENEMY_ID::RED] = registry.gameMode.components.back().max_red;
+	maxEnemies[ENEMY_ID::GREEN] = registry.gameMode.components.back().max_green;
+	maxEnemies[ENEMY_ID::YELLOW] = registry.gameMode.components.back().max_yellow;
 	// Create a new player
 	player = createPlayer({ 0, 0 });
 	effects_system->player = player;
@@ -1941,6 +1947,11 @@ void WorldSystem::load_game() {
         createCure(curePosition);
     }
 
+	auto& gameModeData = gameState["gameMode"][0];
+	assert(static_cast<int>(gameModeData["id"]) < game_mode_id_count);
+	GAME_MODE_ID gm_id = static_cast<GAME_MODE_ID>(gameModeData["id"]);
+	setGameMode(gm_id);
+
     inFile.close();
     std::cout << "Game state loaded." << std::endl;
 }
@@ -2073,6 +2084,13 @@ json WorldSystem::serializeGameState() {
     if (!cureFound) {
         gameState["cure"] = nullptr;
     }
+
+	// Serialize game mode
+	GameMode& gameMode = registry.gameMode.components.back();
+	json gameModeData;
+	gameModeData["id"] = gameMode.id;
+
+	gameState["gameMode"].push_back(gameModeData);
 
     return gameState;
 }
@@ -2272,6 +2290,25 @@ void WorldSystem::handle_shooting_sound_effect() {
 	}
 }
 
+void WorldSystem::setGameMode(GAME_MODE_ID id) {
+	GameMode gm;
+	if (id == GAME_MODE_ID::EASY_MODE) {
+		gm = easyMode;
+	}
+	else {
+		gm = regularMode;
+	}
+	registry.gameMode.components.back() = gm;
+	maxEnemies[ENEMY_ID::RED] = gm.max_red;
+	maxEnemies[ENEMY_ID::GREEN] = gm.max_green;
+	maxEnemies[ENEMY_ID::YELLOW] = gm.max_yellow;
+	for (int i = 0; i < registry.enemies.components.size(); i++) {
+		auto& enemyCom = registry.enemies.components[i];
+		auto& enemyEn = registry.enemies.entities[i];
+		registry.healthValues.get(enemyEn).health = gm.enemy_health_map[enemyCom.type];
+	}
+}
+
 void WorldSystem::step_menu() {
 	if (state == GAME_STATE::START_MENU) {
 		MENU_OPTION option = menu_system->poll_start_menu();
@@ -2282,6 +2319,10 @@ void WorldSystem::step_menu() {
 			state = GAME_STATE::RUNNING;
 		} else if (option == MENU_OPTION::EXIT_GAME) {
 			state = GAME_STATE::ENDED;
+		} else if (option == MENU_OPTION::EASY_GAME_MODE) {
+			setGameMode(GAME_MODE_ID::EASY_MODE);
+		} else if (option == MENU_OPTION::REGULAR_GAME_MODE) {
+			setGameMode(GAME_MODE_ID::REGULAR_MODE);
 		}
 	} else if (state == GAME_STATE::PAUSE_MENU) {
 		MENU_OPTION option = menu_system->poll_pause_menu();

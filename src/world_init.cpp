@@ -41,6 +41,7 @@ Entity createPlayer(vec2 pos)
 	// Create a brand new health with 100 health value
 	registry.healthValues.emplace(entity);
 
+
 	// Add color for player
 	registry.colors.insert(entity, { 1.f,1.f,1.f,1.f });
 	return entity;
@@ -158,7 +159,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 	transform.angle_offset = -M_PI / 2;
 	transform.angle = transform.angle_offset;
 
-	registry.healthValues.insert(entity, {health, health});
+	registry.healthValues.insert(entity, { static_cast<float>(registry.gameMode.components.back().enemy_health_map[ENEMY_ID::BOSS]), static_cast<float>(registry.gameMode.components.back().enemy_health_map[ENEMY_ID::BOSS])});
 
 	// Setting initial components values
 	Enemy& new_enemy = registry.enemies.emplace(entity);
@@ -250,7 +251,7 @@ void createBossArms(RenderSystem* renderer, Entity bossEntity, vec2 bossSize) {
 			Motion& motion = registry.motions.emplace(entity);		// This motion is with respect to parent
 			motion.max_angular_velocity = M_PI / 6.f;
 			registry.enemies.insert(entity, { ENEMY_ID::ENEMY_COUNT });
-			registry.healthValues.insert(entity, { 200.f });
+			registry.healthValues.insert(entity, { static_cast<float>(registry.gameMode.components.back().enemy_health_map[ENEMY_ID::ENEMY_COUNT]) });
 
 			// Add to render_request
 			registry.renderRequests.insert(
@@ -273,7 +274,7 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 	// Assuming boss is a type of enemy
 	registry.collidePlayers.emplace(boss_entity);
 	Dash& enemy_dash = registry.dashes.emplace(boss_entity);
-	enemy_dash.delay_duration_ms = PLAYER_DASH_DELAY / FRIEND_BOSS_DIFFICULTY * 2.f;
+	enemy_dash.delay_duration_ms = PLAYER_DASH_DELAY / registry.gameMode.components.back().FRIEND_BOSS_DIFFICULTY * 2.f;
 	enemy_dash.active_duration_ms = 50.f;
 
 	Enemy& new_enemy = registry.enemies.emplace(boss_entity);
@@ -291,16 +292,16 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 	motion.max_velocity = 350.f; // TODO: Dummy boss for now, change this later
 
 	Health& enemyHealth = registry.healthValues.emplace(boss_entity);
-	enemyHealth.health = health;
-	enemyHealth.maxHealth = health;
+	enemyHealth.health = registry.gameMode.components.back().enemy_health_map[ENEMY_ID::FRIENDBOSS];
+	enemyHealth.maxHealth = registry.gameMode.components.back().enemy_health_map[ENEMY_ID::FRIENDBOSS];;
 
 	Gun& weapon = registry.guns.emplace(boss_entity);
 	weapon.damage = 15.f;
 	weapon.bullet_color = {1.f, 0.8f, 0.8f, 1.f};
-	weapon.bullet_speed = 800.f * FRIEND_BOSS_DIFFICULTY;
+	weapon.bullet_speed = 800.f * registry.gameMode.components.back().FRIEND_BOSS_DIFFICULTY;
 	weapon.bullet_size = { 20.f, 20.f };
 	weapon.angle_offset = IMMUNITY_TEXTURE_ANGLE;
-	weapon.attack_delay = PLAYER_ATTACK_DELAY / FRIEND_BOSS_DIFFICULTY * 1.2f;
+	weapon.attack_delay = PLAYER_ATTACK_DELAY / registry.gameMode.components.back().FRIEND_BOSS_DIFFICULTY * 1.2f;
 
 	registry.bosses.emplace(boss_entity);
 
@@ -340,7 +341,7 @@ Entity createBossClone(vec2 pos, float health) {
 	motion.max_velocity = 300.f; // TODO: Dummy boss for now, change this later
 
 	Health& enemyHealth = registry.healthValues.emplace(entity);
-	enemyHealth.health = health;
+	enemyHealth.health = registry.gameMode.components.back().enemy_health_map[ENEMY_ID::FRIENDBOSSCLONE];
 
 
 	// Add to render_request
@@ -370,7 +371,7 @@ Entity createRedEnemy(vec2 pos, float health) {
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 400;
 	Health& enemyHealth = registry.healthValues.emplace(entity);
-	enemyHealth.health = health;
+	enemyHealth.health = registry.gameMode.components.back().enemy_health_map[ENEMY_ID::RED];
 
 
 	registry.renderRequests.insert(
@@ -397,7 +398,7 @@ Entity createGreenEnemy(vec2 pos, float health) {
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 200;
 	Health& enemyHealth = registry.healthValues.emplace(entity);
-	enemyHealth.health = health;
+	enemyHealth.health = registry.gameMode.components.back().enemy_health_map[ENEMY_ID::GREEN];;
 
 	// Add to render_request
 	registry.renderRequests.insert(
@@ -439,7 +440,7 @@ Entity createYellowEnemy(vec2 pos, float health) {
 	motion.max_angular_velocity = M_PI;
 
 	Health& enemyHealth = registry.healthValues.emplace(entity);
-	enemyHealth.health = health;
+	enemyHealth.health = registry.gameMode.components.back().enemy_health_map[ENEMY_ID::YELLOW];;
 
 	// Add tp render_request
 	registry.renderRequests.insert(

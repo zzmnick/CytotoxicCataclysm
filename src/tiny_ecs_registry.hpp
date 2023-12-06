@@ -46,6 +46,7 @@ public:
 	ComponentContainer<PlayerAbility> playerAbilities;
 	ComponentContainer<Game> game;
 	ComponentContainer<Credits> credits;
+	ComponentContainer<GameMode> gameMode;
 	
 
 	// constructor that adds all containers for looping over them
@@ -86,6 +87,7 @@ public:
 		registry_list.push_back(&playerAbilities);
 		registry_list.push_back(&game);
 		registry_list.push_back(&credits);
+		registry_list.push_back(&gameMode);
 	}
 
 	void clear_all_components() {

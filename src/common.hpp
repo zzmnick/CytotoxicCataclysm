@@ -75,3 +75,14 @@ const float play_animation_threshold = 40.0f;
 const vec4 dashing_default_color = vec4(1, 100, 10, 1.f);
 const vec4 no_color = vec4(0, 0, 0, 0);
 const float ANGLE_PRECISION = 0.01f;
+
+const int max_green_easyMode = 3;
+const int max_red_easyMode = 5;
+const int max_yellow_easyMode = 2;
+const double enemy_health_reductionMultipler = 0.5;
+const float FRIEND_BOSS_DIFFICULTY_easy = 0.5f;	// 1 : normal | <1 : easy | >1 : hard
+
+
+const int max_green_regularMode = 4;
+const int max_red_regularMode = 8;
+const int max_yellow_regularMode = 4;

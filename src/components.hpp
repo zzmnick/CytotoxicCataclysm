@@ -194,7 +194,11 @@ enum class TEXTURE_ASSET_ID {
 	CROSSHAIR = MENU_UNMUTE + 1,
 	ICON_SKULL = CROSSHAIR + 1,
 	ICON_QUESTION = ICON_SKULL + 1,
-	CREDITS = ICON_QUESTION + 1,
+	MENU_EASY_MODE_SELECTED = ICON_QUESTION + 1,
+	MENU_REGULAR_MODE_SELECTED = MENU_EASY_MODE_SELECTED + 1,
+	MENU_EASY_MODE_UNSELECTED = MENU_REGULAR_MODE_SELECTED + 1,
+	MENU_REGULAR_MODE_UNSELECTED = MENU_EASY_MODE_UNSELECTED + 1,
+	CREDITS = MENU_REGULAR_MODE_UNSELECTED + 1,
 	HOLD_SPACE = CREDITS + 1,
 	HOLD_O = HOLD_SPACE + 1,
 	TEXTURE_COUNT = HOLD_O + 1 // TEXTURE_COUNT indicates that no txture is needed
@@ -268,8 +272,17 @@ enum MENU_OPTION {
     MUTE_SOUND = SAVE_GAME + 1,
     UNMUTE_SOUND = MUTE_SOUND + 1,
     EXIT_CURR_PLAY = UNMUTE_SOUND + 1,
-	NONE = EXIT_CURR_PLAY + 1
+	EASY_GAME_MODE = EXIT_CURR_PLAY + 1,
+	REGULAR_GAME_MODE = EASY_GAME_MODE + 1,
+	NONE = REGULAR_GAME_MODE + 1
 };
+
+enum GAME_MODE_ID {
+	EASY_MODE = 0,
+	REGULAR_MODE = EASY_MODE + 1,
+	GAME_MODE_ID_COUNT = REGULAR_MODE + 1,
+};
+const int game_mode_id_count = (int)GAME_MODE_ID::GAME_MODE_ID_COUNT;
 
 enum class ATTACHMENT_ID {
 	DASHING = 0,
@@ -327,6 +340,26 @@ static std::unordered_map <REGION_THEME_ID, TEXTURE_ASSET_ID> region_texture_map
 	{REGION_THEME_ID::MUSCULAR, TEXTURE_ASSET_ID::MUSCULAR_BG},
 	{REGION_THEME_ID::SKELETAL, TEXTURE_ASSET_ID::SKELETAL_BG},
 	{REGION_THEME_ID::CUTANEOUS, TEXTURE_ASSET_ID::CUTANEOUS_BG}
+};
+
+static std::unordered_map <ENEMY_ID, double> enemy_health_map_easy = {
+	{ENEMY_ID::BOSS, 1000.0 * enemy_health_reductionMultipler},
+	{ENEMY_ID::FRIENDBOSS, 259.0 * enemy_health_reductionMultipler},
+	{ENEMY_ID::FRIENDBOSSCLONE, 10.0 * enemy_health_reductionMultipler},
+	{ENEMY_ID::GREEN, 150.0 * enemy_health_reductionMultipler},
+	{ENEMY_ID::RED, 40.0 * enemy_health_reductionMultipler},
+	{ENEMY_ID::YELLOW, 50.0 * enemy_health_reductionMultipler},
+	{ENEMY_ID::ENEMY_COUNT, 200.0 * enemy_health_reductionMultipler}
+};
+
+static std::unordered_map <ENEMY_ID, double> enemy_health_map_regular = {
+	{ENEMY_ID::BOSS, 1000.0},
+	{ENEMY_ID::FRIENDBOSS, 259.0},
+	{ENEMY_ID::FRIENDBOSSCLONE, 10.0},
+	{ENEMY_ID::GREEN, 150.0},
+	{ENEMY_ID::RED, 40.0},
+	{ENEMY_ID::YELLOW, 50.0},
+	{ENEMY_ID::ENEMY_COUNT, 200.0}
 };
 #pragma endregion
 
@@ -583,5 +616,14 @@ struct Credits {
 	float total_time = 18000.f;
 	Entity background;
 	Entity title;
+};
+
+struct GameMode {
+	GAME_MODE_ID id;
+	int max_green;
+	int max_red;
+	int max_yellow;
+	std::unordered_map <ENEMY_ID, double> enemy_health_map;
+	float FRIEND_BOSS_DIFFICULTY;
 };
 #pragma endregion

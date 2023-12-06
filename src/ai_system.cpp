@@ -198,7 +198,7 @@ void AISystem::spread_attack(Entity enemy) {
 
 void AISystem::clone_attack(Entity enemy, int clones) {
 	Transform& playertransform = registry.transforms.get(player);
-
+	
 	for (int i = 0; i < clones; i++) {
 		playertransform.angle += 1;
 		float xpos = playertransform.position.x + cos(playertransform.angle) * 700;
