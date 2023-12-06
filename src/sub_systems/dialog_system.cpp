@@ -59,6 +59,10 @@ void DialogSystem::clear_pending_dialogs() {
 // Returns true if the game should continue running and false if it should be paused
 bool DialogSystem::step(float elapsed_ms) {
 	if (!is_finished() && SHOW_DIALOGS) {
+		if (registry.screenStates.components[0].limit_fov) {
+			prev_limit_fov = true;
+			registry.screenStates.components[0].limit_fov = false;
+		}
 		Stage& current_stage = dialogs.front();
 		if (current_stage.camera_movement) {
 			current_status = DIALOG_STATUS::MOVING_CAMERA;
@@ -120,6 +124,10 @@ bool DialogSystem::step(float elapsed_ms) {
 			break;
 		}
 		previous_mouse = mouse;
+	}
+	if (prev_limit_fov) {
+		prev_limit_fov = false;
+		registry.screenStates.components[0].limit_fov = true;
 	}
 	return true;
 }

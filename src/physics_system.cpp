@@ -125,6 +125,42 @@ bool line_interesect_with_circle(vec2 point_1, vec2 point_2, CollisionCircle cir
 	return false;
 }
 
+// Returns the knockback direction if collides. Otherwise returns {0, 0}
+vec2 collides_with_region_boundary(const Transform& transform, const Motion& motion) {
+	Region bounding_region;
+	float target_angle = atan2f(transform.position.y, transform.position.x);
+	float min_region_angle = 0.f, max_region_angle = 0.f;
+	for (uint i = 0; i < registry.regions.size(); i++) {
+		float angle = registry.transforms.get(registry.regions.entities[i]).angle;
+		if (target_angle > angle && target_angle < angle + M_PI * 2 / NUM_REGIONS) {
+			min_region_angle = angle;
+			max_region_angle = angle + M_PI * 2 / NUM_REGIONS;
+			break;
+		}
+	}
+	std::vector<CollisionCircle> collision_circles = get_collision_circles(transform);
+	vec2 knockback_dir = {0.f, 0.f};
+	for (CollisionCircle circle : collision_circles) {
+		if (line_interesect_with_circle(vec2(0.f, 0.f), vec2(cos(min_region_angle) * MAP_RADIUS, 
+										sin(min_region_angle) * MAP_RADIUS), circle)) {
+			vec2 normal_vec = normalize(vec2(cos(min_region_angle + M_PI / 2), sin(min_region_angle + M_PI / 2)));
+			if (dot(motion.velocity, normal_vec) < 0) {
+				knockback_dir = motion.velocity - 2 * dot(motion.velocity, normal_vec) * normal_vec;
+				break;
+			}
+		}
+		if (line_interesect_with_circle(vec2(0.f, 0.f), vec2(cos(max_region_angle) * MAP_RADIUS, 
+										sin(max_region_angle) * MAP_RADIUS), circle)) {
+			vec2 normal_vec = normalize(vec2(cos(max_region_angle - M_PI / 2), sin(max_region_angle - M_PI / 2)));
+			if (dot(motion.velocity, normal_vec) < 0) {
+				knockback_dir = motion.velocity - 2 * dot(motion.velocity, normal_vec) * normal_vec;
+				break;
+			}
+		}
+	}
+	return knockback_dir;
+}
+
 // Check which side of line point target is on. The line goes from point_1 to point_2
 // Return true if on one side of line and false if on the other
 // Reference: https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
@@ -451,6 +487,13 @@ void check_collision() {
 			else {
 				registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::WITH_BOUNDARY);
 			}
+		}
+
+		if (registry.players.has(entity_i) && registry.bosses.size() > 0 && registry.bosses.components[0].activated) {
+			vec2 knockback_dir = collides_with_region_boundary(transform_i, motion_container.components[i]);
+			if (knockback_dir.x != 0.f && knockback_dir.y != 0.f) {
+				registry.collisions.emplace_with_duplicates(entity_i, COLLISION_TYPE::PLAYER_WITH_REGION_BOUNDARY, knockback_dir);
+			} 
 		}
 
 		// skip if outside screen after checking boundary

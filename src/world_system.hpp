@@ -152,8 +152,6 @@ private:
 	void save_game();
 	json serializeGameState();
 
-	void triggerEndOfGame();
-
 	Entity& getAttachment(Entity character, ATTACHMENT_ID type);
 	bool hasPlayerAbility(PLAYER_ABILITY_ID abilityId);
 	void show_hold_to_collect();

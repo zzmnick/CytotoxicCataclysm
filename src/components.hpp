@@ -53,7 +53,8 @@ enum class COLLISION_TYPE {
 	PLAYER_WITH_CYST = PLAYER_WITH_ENEMY + 1,
 	PLAYER_WITH_CHEST = PLAYER_WITH_CYST + 1,
 	PLAYER_WITH_CURE = PLAYER_WITH_CHEST + 1,
-	ENEMY_WITH_ENEMY = PLAYER_WITH_CURE + 1,
+	PLAYER_WITH_REGION_BOUNDARY = PLAYER_WITH_CURE + 1,
+	ENEMY_WITH_ENEMY = PLAYER_WITH_REGION_BOUNDARY + 1,
 	BULLET_WITH_ENEMY = ENEMY_WITH_ENEMY + 1,
 	BULLET_WITH_PLAYER = BULLET_WITH_ENEMY + 1,
 	BULLET_WITH_BULLET = BULLET_WITH_PLAYER + 1,
@@ -159,9 +160,20 @@ enum class TEXTURE_ASSET_ID {
 	DIALOG_INTRO1 = CUTANEOUS_BG + 1,
 	DIALOG_INTRO2 = DIALOG_INTRO1 + 1,
 	DIALOG_INTRO3 = DIALOG_INTRO2 + 1,
+	PRE_BOSS_DIALOG1 = DIALOG_INTRO3 + 1,
+	PRE_BOSS_DIALOG2 = PRE_BOSS_DIALOG1 + 1,
+	PRE_BOSS_DIALOG3 = PRE_BOSS_DIALOG2 + 1,
+	PRE_BOSS_DIALOG4 = PRE_BOSS_DIALOG3 + 1,
+	POST_BOSS_DIALOG = PRE_BOSS_DIALOG4 + 1,
+	PRE_FRIEND_BOSS_DIALOG1 = POST_BOSS_DIALOG + 1,
+	PRE_FRIEND_BOSS_DIALOG2 = PRE_FRIEND_BOSS_DIALOG1 + 1,
+	PRE_FRIEND_BOSS_DIALOG3 = PRE_FRIEND_BOSS_DIALOG2 + 1,
+	PRE_FRIEND_BOSS_DIALOG4 = PRE_FRIEND_BOSS_DIALOG3 + 1,
+	PRE_FRIEND_BOSS_DIALOG5 = PRE_FRIEND_BOSS_DIALOG4 + 1,
+	POST_FRIEND_BOSS_DIALOG = PRE_FRIEND_BOSS_DIALOG5 + 1,
 
 	// Tutorial
-	TUTORIAL_CONTROLS_KEYBOAD = DIALOG_INTRO3 + 1,
+	TUTORIAL_CONTROLS_KEYBOAD = POST_FRIEND_BOSS_DIALOG + 1,
 	TUTORIAL_CONTROLS_CONTROLLER = TUTORIAL_CONTROLS_KEYBOAD + 1,
 	TUTORIAL_WAYPOINTS = TUTORIAL_CONTROLS_CONTROLLER + 1,
 	TUTORIAL_CYSTS = TUTORIAL_WAYPOINTS + 1,
@@ -240,7 +252,8 @@ const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 enum class RENDER_ORDER {
 	BACKGROUND = 0,
 	OBJECTS = BACKGROUND + 1,
-	PLAYER = OBJECTS + 1,
+	PLAYER_ATTACHMENTS = OBJECTS + 1,
+	PLAYER = PLAYER_ATTACHMENTS + 1,
 	ENEMIES_BK = PLAYER + 1,
 	ENEMIES_FR = ENEMIES_BK + 1,
 	BOSS = ENEMIES_FR + 1,
@@ -429,6 +442,7 @@ struct Collision {
 	// Note, the first object is stored in the ECS container.entities
 	COLLISION_TYPE collision_type;
 	Entity other_entity; // the second object involved in the collision
+	vec2 knockback_dir;
 	Collision(COLLISION_TYPE collision_type, Entity& other_entity) {
 		this->other_entity = other_entity;
 		this->collision_type = collision_type;
@@ -437,6 +451,10 @@ struct Collision {
 		assert((collision_type == COLLISION_TYPE::WITH_BOUNDARY || collision_type == COLLISION_TYPE::BULLET_WITH_BOUNDARY) &&
 			"other_entity must be specified unless colliding with boundary");
 		this->collision_type = collision_type;
+	}
+	Collision(COLLISION_TYPE collision_type, vec2 knockback_dir) {
+		this->collision_type = collision_type;
+		this->knockback_dir = knockback_dir;
 	}
 };
 
@@ -516,8 +534,8 @@ struct Cure {
 struct Health {
 	float health = 100.f;
 	float maxHealth = 100.f;
-	float healthMultiplier = 1.0f;
 	float healthIncrement = 0.f;
+	float healthMultiplier = 1.f;
 };
 
 struct Healthbar {
@@ -595,9 +613,10 @@ struct Gun {
 
 struct Melee {
 	Entity melee_entity;
-	float damage = 20.f;
+	float damage = 40.f;
 	float attack_timer = 0.f;
-	float attack_delay = PLAYER_ATTACK_DELAY;
+	float animation_timer = 0.f;
+	float attack_delay = PLAYER_SWORD_ATTACK_DELAY;
 };
 
 

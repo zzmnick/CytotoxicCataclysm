@@ -302,6 +302,33 @@ void WorldSystem::step_deathTimer(float elapsed_ms) {
 					createCure(enemyDeathSpot);
 					registry.colors.get(boss_healthbar).a = 0.f;
 					registry.colors.get(boss_healthbar_frame).a = 0.f;
+					vec2 player_pos = registry.transforms.get(player).position;
+					dialog_system->add_camera_movement(player_pos, enemyDeathSpot, 1000.f);
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::POST_BOSS_DIALOG);
+					dialog_system->add_camera_movement(enemyDeathSpot, player_pos, 1000.f);
+				} 
+
+				if (type == ENEMY_ID::FRIENDBOSS) {
+					registry.colors.get(boss_healthbar).a = 0.f;
+					registry.colors.get(boss_healthbar_frame).a = 0.f;
+
+					registry.game.get(game_entity).isSecondBossDefeated = true;
+					// remove second boss waypoint
+					for (auto region : registry.regions.components) {
+						if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
+							region.is_cleared = true;
+							for (auto wp : registry.waypoints.entities) {
+								if (registry.waypoints.get(wp).interest_point == region.interest_point) {
+									registry.remove_all_components_of(wp);
+									break;
+								}
+							}
+							break;
+						}
+					}
+
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::POST_FRIEND_BOSS_DIALOG, 1000.f);
+					state = GAME_STATE::CREDITS;
 				}
 
 				enemyCounts[type]--;
@@ -323,16 +350,6 @@ void WorldSystem::remove_entity(Entity entity) {
 		}
 	}
 	registry.remove_all_components_of(entity);
-}
-
-void WorldSystem::triggerEndOfGame() {
-	// do story
-
-	// do end credits
-	state = GAME_STATE::CREDITS;
-	createCredits();
-
-	return;
 }
 
 void WorldSystem::step_roll_credits(float elapsed_ms) {
@@ -427,24 +444,6 @@ void WorldSystem::startEntityDeath(Entity entity) {
 					startEntityDeath(enemyentity);
 				}
 			}
-			registry.colors.get(boss_healthbar).a = 0.f;
-			registry.colors.get(boss_healthbar_frame).a = 0.f;
-
-			registry.game.get(game_entity).isSecondBossDefeated = true;
-			// remove second boss waypoint
-			for (auto region : registry.regions.components) {
-				if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
-					region.is_cleared = true;
-					for (auto wp : registry.waypoints.entities) {
-						if (registry.waypoints.get(wp).interest_point == region.interest_point) {
-							registry.remove_all_components_of(wp);
-							break;
-						}
-					}
-					break;
-				}
-			}
-			triggerEndOfGame();
 		}
 	}
 	else if (registry.cysts.has(entity)) {
@@ -485,7 +484,6 @@ void WorldSystem::step_healthbar(float elapsed_ms, Entity healthbar, Entity targ
 	Healthbar& bar = registry.healthbar.get(healthbar);
 	Health& health = registry.healthValues.get(target);
 	float current_health = health.health;
-	float healthMultiplier = health.healthMultiplier;
 
 	if (bar.previous_health != current_health) {
 		bar.timer_ms -= elapsed_ms;
@@ -497,8 +495,8 @@ void WorldSystem::step_healthbar(float elapsed_ms, Entity healthbar, Entity targ
 		// Interpolate to get value of displayed healthbar
 		float healthbar_scale = 0.f;
 		float normalized_time = bar.timer_ms / HEALTH_BAR_UPDATE_TIME_SLAP;
-		float new_health_pct = bar.previous_health * normalized_time + current_health * (1.f - normalized_time);
-		healthbar_scale = max(0.f, (current_health / healthMultiplier) / 100.f);
+		float disp_health_value = bar.previous_health * normalized_time + current_health * (1.f - normalized_time);
+		healthbar_scale = max(0.f, disp_health_value / health.maxHealth);
 
 		// Update the scale of the healthbar
 		assert(registry.transforms.has(healthbar));
@@ -574,15 +572,17 @@ void WorldSystem::step_attack(float elapsed_ms) {
 		float old_timer = player_sword.attack_timer;
 		if (old_timer > 0.f) {
 			player_sword.attack_timer = max(old_timer - elapsed_ms, 0.f);
-			
-			if (player_sword.attack_timer <= 0) {
-				// Stop sword and set position to the original
-				Entity sword_entity = player_sword.melee_entity;
-				assert(registry.attachments.has(sword_entity) && registry.motions.has(sword_entity));
-				Attachment& att = registry.attachments.get(sword_entity);
-				Motion& sword_motion = registry.motions.get(sword_entity);
-				sword_motion.angular_velocity = 0;
-				att.moved_angle = att.angle_offset;
+			if (player_sword.animation_timer > 0.f) {
+				player_sword.animation_timer = max(player_sword.animation_timer - elapsed_ms, 0.f);
+				if (player_sword.animation_timer <= 0) {
+					// Stop sword and set position to the original
+					Entity sword_entity = player_sword.melee_entity;
+					assert(registry.attachments.has(sword_entity) && registry.motions.has(sword_entity));
+					Attachment& att = registry.attachments.get(sword_entity);
+					Motion& sword_motion = registry.motions.get(sword_entity);
+					sword_motion.angular_velocity = 0;
+					att.moved_angle = att.angle_offset;
+				}
 			}
 		}
 		
@@ -865,12 +865,21 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 
 	// Processing the player state
 	ScreenState& screen = registry.screenStates.components[0];
+	// Drain dialog before displaying credits
+	if (state == GAME_STATE::CREDITS) {
+		if (dialog_system->step(elapsed_ms_since_last_update)) {
+			if (registry.credits.size() == 0) {
+				createCredits();
+			}
+			step_roll_credits(elapsed_ms_since_last_update);
+		}
+		return false;
+	}
 	// Step dialog
 	state = dialog_system->step(elapsed_ms_since_last_update) ? 
 			GAME_STATE::RUNNING : GAME_STATE::DIALOG;
 
 	step_deathTimer(elapsed_ms_since_last_update);
-	if (state == GAME_STATE::CREDITS) step_roll_credits(elapsed_ms_since_last_update);
 
 	if (state != GAME_STATE::RUNNING) return false;
 	/*************************[ gameplay ]*************************/
@@ -951,6 +960,7 @@ void WorldSystem::create_debug_lines() {
 
 // Reset the world state to its initial state
 void WorldSystem::restart_game(bool hard_reset) {
+	dialog_system->clear_pending_dialogs();
 	if (hard_reset) {
 		// remove all persistent game state 
 		while (registry.regions.entities.size() > 0) {
@@ -960,8 +970,6 @@ void WorldSystem::restart_game(bool hard_reset) {
 			registry.remove_all_components_of(registry.waypoints.entities.back());
 		}
 		registry.remove_all_components_of(game_entity);
-		dialog_system->clear_pending_dialogs();
-
 
 		// recreate all persistent game state 
 		createRandomRegions(NUM_REGIONS, rng);
@@ -971,7 +979,7 @@ void WorldSystem::restart_game(bool hard_reset) {
 		dialog_system->add_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO1);
 		dialog_system->add_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO2);
 		dialog_system->add_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO3);
-		if (controller_mode) {	// This will allways be false on the first run since controller is not detected yet
+		if (controller_mode) {
 			dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_CONTROLS_CONTROLLER);
 		}
 		else {
@@ -996,13 +1004,15 @@ void WorldSystem::restart_game(bool hard_reset) {
 	// All that have a motion
 	while (registry.motions.entities.size() > 0)
 		registry.remove_all_components_of(registry.motions.entities.back());
-
 	// Reset enemy counts
 	for (auto& count : enemyCounts) {
 		count.second = 0;
 	}
 	// Debugging for memory/component leaks
 	registry.list_all_components();
+	// Hide boss health bar in case player dies during boss fight
+	registry.colors.get(boss_healthbar).a = 0.f;
+	registry.colors.get(boss_healthbar_frame).a = 0.f;
 
 	/*************************[ setup new world ]*************************/
 	// Reset the game state
@@ -1135,6 +1145,10 @@ void WorldSystem::resolve_collisions() {
 				motion.velocity = 0.95f * reflection;
 				allow_accel = false;
 			}
+		}
+		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_REGION_BOUNDARY) {
+			motion.velocity = 0.95f * collision.knockback_dir;
+			allow_accel = false;
 		}
 		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_ENEMY
 			&& !registry.invincibility.has(entity)) {
@@ -1325,18 +1339,26 @@ void WorldSystem::resolve_collisions() {
 				Transform& enemy_transform = registry.transforms.get(enemy_entity);
 				Motion& enemy_motion = registry.motions.get(enemy_entity);
 				vec2 knockback_direction = normalize(enemy_transform.position - transform.position);
+				// No knockback on boss
 				if (enemyAttrib.type != ENEMY_ID::BOSS) {
-					enemy_motion.velocity = enemy_motion.max_velocity * knockback_direction;
+					if (registry.melees.get(sword_holder).animation_timer > 0.f) {
+						enemy_motion.velocity = enemy_motion.max_velocity * knockback_direction;
+					} else {
+						// Less knockback when sword is not slashing
+						enemy_motion.velocity = enemy_motion.max_velocity / 2.f * knockback_direction;
+					}
 					squish(enemy_entity, 0.95f);
-				} else {
-					// less knockback on boss
-					enemy_motion.velocity = 0.2f * enemy_motion.max_velocity * knockback_direction;
 				}
 				enemy_motion.allow_accel = false;
 
 				// Deal damage to enemy
 				Health& enemyHealth = registry.healthValues.get(enemy_entity);
-				enemyHealth.health -= registry.melees.get(sword_holder).damage;
+				if (registry.melees.get(sword_holder).animation_timer > 0.f) {
+					enemyHealth.health -= registry.melees.get(sword_holder).damage;
+				} else {
+					// Deal less damage when sword is not slashing
+					enemyHealth.health -= registry.melees.get(sword_holder).damage / 4.f;
+				}
 
 				// Give enemy invincibility to sword for a moment after taking an attack
 				enemyAttrib.sword_attack_cd = 500.f;
@@ -1356,7 +1378,11 @@ void WorldSystem::resolve_collisions() {
 			if (cyst_attrib.sword_attack_cd <= 0.f) {
 			// Deal damage to cyst
 			Health& health = registry.healthValues.get(cyst);
-			health.health -= registry.melees.get(sword_holder).damage;
+			if (registry.melees.get(sword_holder).animation_timer > 0.f) {
+				health.health -= registry.melees.get(sword_holder).damage;
+			} else {
+				health.health -= registry.melees.get(sword_holder).damage / 8.f;
+			}
 
 			// Give cyst invincibility to sword for a moment after taking an attack
 			cyst_attrib.sword_attack_cd = 500.f;
@@ -1701,12 +1727,6 @@ void WorldSystem::step_controller() {
 void WorldSystem::control_movement(float elapsed_ms) {
 	Motion& playermovement = registry.motions.get(player);
 
-
-	// FOR TESTING
-	if (keys_pressed[GLFW_KEY_P]) {
-		triggerEndOfGame();
-	}
-
 	// Vertical movement
 	if (keys_pressed[GLFW_KEY_W]) {
 		playermovement.velocity.y += elapsed_ms * playermovement.acceleration_unit;
@@ -1799,6 +1819,7 @@ void WorldSystem::clear_game_state() {
 	
 	registry.game.get(game_entity).isCureUnlocked = false;
 	registry.game.get(game_entity).isSecondBossDefeated = false;
+	registry.game.get(game_entity).isCystTutorialDisplayed = false;
 
 	registry.list_all_components();
 
@@ -1835,6 +1856,7 @@ void WorldSystem::load_game() {
 	Game& gameComponent = registry.game.get(game_entity);
     gameComponent.isCureUnlocked = gameData["isCureUnlocked"];
 	gameComponent.isSecondBossDefeated = gameData["isSecondBossDefeated"];
+	gameComponent.isCystTutorialDisplayed = gameData["isCystTutorialDisplayed"];
 
 	// Deserialize Player Abilities
 	for (const auto& abilityId : gameState["playerAbilities"]) {
@@ -2029,6 +2051,7 @@ json WorldSystem::serializeGameState() {
 	const auto& gameComponent = registry.game.get(game_entity);
     gameState["game"]["isCureUnlocked"] = gameComponent.isCureUnlocked;
 	gameState["game"]["isSecondBossDefeated"] = gameComponent.isSecondBossDefeated;
+	gameState["game"]["isCystTutorialDisplayed"] = gameComponent.isCystTutorialDisplayed;
 
 	for (const auto& abilityEntity : registry.playerAbilities.entities) {
 		const auto& ability = registry.playerAbilities.get(abilityEntity);
@@ -2205,6 +2228,7 @@ void WorldSystem::player_sword_slash() {
 		if (player_sword.attack_timer <= 0) {
 			// Do the slashing
 			player_sword.attack_timer = player_sword.attack_delay;
+			player_sword.animation_timer = player_sword.attack_delay / 2.f;
 			Entity sword_entity = player_sword.melee_entity;
 			assert(registry.attachments.has(sword_entity) && registry.motions.has(sword_entity));
 			Attachment& att = registry.attachments.get(sword_entity);
@@ -2350,9 +2374,9 @@ void WorldSystem::step_bossfight() {
 		if (!registry.bosses.get(current_boss).activated) {
 			vec2 player_pos = registry.transforms.get(player).position;
 			vec2 boss_pos = registry.transforms.get(current_boss).position;
-			float distance = length(player_pos - boss_pos);
+			vec2 distance = abs(player_pos - boss_pos);
 			// Enter boss fight when player is close enough to the boss
-			if (distance < CONTENT_HEIGHT_PX / 2.f) {
+			if (distance.x < CONTENT_WIDTH_PX / 2.f - 100.f && distance.y < CONTENT_HEIGHT_PX / 2.f - 100.f) {
 				registry.bosses.get(current_boss).activated = true;
 				// Kill all small enemies when boss fight starts
 				for (uint i = 0; i < registry.enemies.size(); i++) {
@@ -2362,10 +2386,26 @@ void WorldSystem::step_bossfight() {
 						startEntityDeath(enemy_entity);
 					}
 				}
-				dialog_system->add_camera_movement(player_pos, boss_pos, 500.f);
-				dialog_system->add_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO1);
-				dialog_system->add_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO2);
-				dialog_system->add_camera_movement(boss_pos, player_pos, 500.f);
+				// Remove all bullets when boss fight starts
+				while (registry.projectiles.entities.size() > 0) {
+					registry.remove_all_components_of(registry.projectiles.entities.back());
+				}
+				if (registry.enemies.get(current_boss).type == ENEMY_ID::BOSS) {
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_BOSS_DIALOG1, 1000.f);
+					dialog_system->add_camera_movement(player_pos, boss_pos, 1000.f);
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_BOSS_DIALOG2);
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_BOSS_DIALOG3);
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_BOSS_DIALOG4);
+					dialog_system->add_camera_movement(boss_pos, player_pos, 1000.f);
+				} else if (registry.enemies.get(current_boss).type == ENEMY_ID::FRIENDBOSS) {
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_FRIEND_BOSS_DIALOG1, 1000.f);
+					dialog_system->add_camera_movement(player_pos, boss_pos, 1000.f);
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_FRIEND_BOSS_DIALOG2);
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_FRIEND_BOSS_DIALOG3);
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_FRIEND_BOSS_DIALOG4);
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_FRIEND_BOSS_DIALOG5);
+					dialog_system->add_camera_movement(boss_pos, player_pos, 1000.f);
+				}
 			}
 		}
 	}

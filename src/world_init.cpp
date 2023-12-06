@@ -101,7 +101,7 @@ Entity createGun(Entity holder) {
 		{ TEXTURE_ASSET_ID::GUN,
 		  EFFECT_ASSET_ID::TEXTURED,
 		  GEOMETRY_BUFFER_ID::SPRITE,
-		  RENDER_ORDER::PLAYER });
+		  RENDER_ORDER::PLAYER_ATTACHMENTS });
 
 	return gun_entity;
 }
@@ -117,7 +117,7 @@ Entity createSword(RenderSystem* renderer, Entity& holder) {
 	Attachment& attachment = registry.attachments.emplace(melee_entity);
 	attachment.parent = holder;
 	attachment.type = ATTACHMENT_ID::SWORD;
-	attachment.angle_freedom = M_PI / 3.f;
+	attachment.angle_freedom = M_PI / 2.f;
 
 	attachment.relative_transform_1.rotate(M_PI  - M_PI / 4.f);	// Setting the sword to face in correct direction
 	attachment.relative_transform_1.translate({15.f, -20.f});	// Putting the center of sword in the hand
@@ -128,7 +128,7 @@ Entity createSword(RenderSystem* renderer, Entity& holder) {
 
 	registry.transforms.emplace(melee_entity);
 	Motion& motion = registry.motions.emplace(melee_entity);		// This motion is with respect to parent
-	motion.max_angular_velocity = 8 * M_PI;
+	motion.max_angular_velocity = 5 * M_PI;
 	registry.colors.insert(melee_entity, { 1.f,1.f,1.f,1.f });
 
 	registry.renderRequests.insert(
@@ -136,7 +136,7 @@ Entity createSword(RenderSystem* renderer, Entity& holder) {
 		{ TEXTURE_ASSET_ID::TEXTURE_COUNT,
 			EFFECT_ASSET_ID::COLOURED,
 			GEOMETRY_BUFFER_ID::SWORD,
-			RENDER_ORDER::PLAYER });
+			RENDER_ORDER::PLAYER_ATTACHMENTS });
 
 	return melee_entity;
 

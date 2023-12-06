@@ -46,7 +46,11 @@ void AISystem::move_enemies(float elapsed_ms) {
 				}
 			} else if (enemyAttribute.type == ENEMY_ID::FRIENDBOSS) {
 				if (!registry.bosses.get(entity).activated) {
-					continue;
+					for (auto& region : registry.regions.components) {
+						if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
+							target_point = region.interest_point;
+						}
+					}
 				}
 				Dash& enemyDash = registry.dashes.get(entity);
 				if (enemyDash.active_timer_ms > 0.f) {

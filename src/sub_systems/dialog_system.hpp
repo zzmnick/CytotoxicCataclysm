@@ -56,4 +56,5 @@ private:
 	DIALOG_STATUS current_status;
 	Entity rendered_entity;
 	float skip_timer = SKIP_DELAY;
+	bool prev_limit_fov = false;
 };

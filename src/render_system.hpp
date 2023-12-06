@@ -72,6 +72,17 @@ class RenderSystem {
 		textures_path("dialog/dialog1_this-is.png"),
 		textures_path("dialog/dialog2_until-one-day.png"),
 		textures_path("dialog/dialog3_im-gonna.png"),
+		textures_path("dialog/pre_boss_dialog1.png"),
+		textures_path("dialog/pre_boss_dialog2.png"),
+		textures_path("dialog/pre_boss_dialog3.png"),
+		textures_path("dialog/pre_boss_dialog4.png"),
+		textures_path("dialog/post_boss_dialog.png"),
+		textures_path("dialog/pre_friend_boss_dialog1.png"),
+		textures_path("dialog/pre_friend_boss_dialog2.png"),
+		textures_path("dialog/pre_friend_boss_dialog3.png"),
+		textures_path("dialog/pre_friend_boss_dialog4.png"),
+		textures_path("dialog/pre_friend_boss_dialog5.png"),
+		textures_path("dialog/post_friend_boss_dialog.png"),
 
 		// Tutorial
 		textures_path("tutorial/controls_keyboard.png"),
@@ -113,7 +124,7 @@ class RenderSystem {
 		textures_path("ui/regularMode_unselected.png"),
 		textures_path("ui/credits.png"),
 		textures_path("ui/hold-space.png"),
-		textures_path("ui/hold-o.png"),
+		textures_path("ui/hold-o.png")
 	};
 
 	std::array<GLuint, effect_count> effects;

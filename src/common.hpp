@@ -69,6 +69,7 @@ const float HEALTH_BAR_UPDATE_TIME_SLAP = 200.f;
 const float DEATH_EFFECT_DURATION = 3000.f;
 const float DEATH_EFFECT_DURATION_ENEMY = 400.f;
 const float PLAYER_ATTACK_DELAY = 300.f;
+const float PLAYER_SWORD_ATTACK_DELAY = 500.f;
 const float PLAYER_DASH_DELAY = 800.f;
 const float FRIEND_BOSS_DIFFICULTY = 1.0f;	// 1 : normal | <1 : easy | >1 : hard
 const float play_animation_threshold = 40.0f;
