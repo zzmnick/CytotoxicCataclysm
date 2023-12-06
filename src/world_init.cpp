@@ -821,30 +821,6 @@ Entity createCrosshair() {
 	return entity;
 }
 
-void loadRegions(const json& regionsData) {
-    // Assuming the regions are saved in the same order they were created
-    assert(regionsData.size() == registry.regions.components.size());
-
-    for (size_t i = 0; i < regionsData.size(); ++i) {
-        const auto& regionData = regionsData[i];
-        auto entity = registry.regions.entities[i]; // Get existing entity
-        Region& region = registry.regions.get(entity); // Get existing region component
-
-        // Update region details from JSON data
-        region.theme = static_cast<REGION_THEME_ID>(regionData["theme"]);
-        region.goal = static_cast<REGION_GOAL_ID>(regionData["goal"]);
-        region.enemy = static_cast<ENEMY_ID>(regionData["enemy"]);
-        region.boss = static_cast<BOSS_ID>(regionData["boss"]);
-        region.is_cleared = regionData["is_cleared"];
-        vec2 interest_point = { regionData["interest_point"][0], regionData["interest_point"][1] };
-        region.interest_point = interest_point;
-
-        // Update RenderRequest component
-        RenderRequest& renderReq = registry.renderRequests.get(entity);
-        renderReq.used_texture = region_texture_map[region.theme];
-    }
-}
-
 void createWaypoints() {
 	for (const Region& region : registry.regions.components) {
 		if (region.is_cleared) continue;

@@ -466,7 +466,9 @@ struct Cure {
 
 struct Health {
 	float health = 100.f;
+	float maxHealth = 100.f;
 	float healthMultiplier = 1.0f;
+	float healthIncrement = 0.f;
 };
 
 struct PlayerHealthbar {

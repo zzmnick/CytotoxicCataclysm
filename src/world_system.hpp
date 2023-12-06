@@ -123,6 +123,7 @@ private:
 	void step_timer_with_callback(float elapsed_ms);
 	void step_waypoints();
 	void step_menu();
+	void step_healthBoost(float elapsed_ms);
 	void step_roll_credits(float elapsed_ms);
 
 	void spawnEnemiesNearInterestPoint(vec2 player_position);
@@ -135,6 +136,7 @@ private:
 
 	void clear_game_state();
 	void load_game();
+	void loadRegions(const json& regionsData);
 	void save_game();
 	json serializeGameState();
 

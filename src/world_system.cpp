@@ -425,6 +425,7 @@ void WorldSystem::startEntityDeath(Entity entity) {
 			// remove second boss waypoint
 			for (auto region : registry.regions.components) {
 				if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
+					region.is_cleared = true;
 					for (auto wp : registry.waypoints.entities) {
 						if (registry.waypoints.get(wp).interest_point == region.interest_point) {
 							registry.remove_all_components_of(wp);
@@ -458,6 +459,14 @@ void WorldSystem::step_health() {
 	}
 }
 
+void WorldSystem::step_healthBoost(float elapsed_ms) {
+    Health& health = registry.healthValues.get(player);
+    if (health.healthIncrement > 0) {
+        // Increment health
+        health.health = min(health.health + health.healthIncrement * (elapsed_ms / 1000.0f), health.maxHealth);
+    }
+}
+
 void WorldSystem::step_healthbar(float elapsed_ms) {
 	PlayerHealthbar& bar = registry.healthbar.get(healthbar);
 	Health& playerHealth = registry.healthValues.get(player);
@@ -475,7 +484,7 @@ void WorldSystem::step_healthbar(float elapsed_ms) {
 		float healthbar_scale = 0.f;
 		float normalized_time = bar.timer_ms / HEALTH_BAR_UPDATE_TIME_SLAP;
 		float new_health_pct = bar.previous_health * normalized_time + current_health * (1.f - normalized_time);
-		healthbar_scale = max(0.f, (current_health / playerHealth.healthMultiplier) / 100.f);
+		healthbar_scale = max(0.f, (current_health / healthMultiplier) / 100.f);
 
 		// Update the scale of the healthbar
 		assert(registry.transforms.has(healthbar));
@@ -861,6 +870,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 
 
 	step_health();
+	step_healthBoost(elapsed_ms_since_last_update);
 	step_healthbar(elapsed_ms_since_last_update);
 	step_invincibility(elapsed_ms_since_last_update);
 	step_attack(elapsed_ms_since_last_update);
@@ -994,8 +1004,10 @@ void WorldSystem::restart_game(bool hard_reset) {
 	}
 	if (hasPlayerAbility(PLAYER_ABILITY_ID::HEALTH_BOOST)) {
 		Health& health = registry.healthValues.get(player);
-		health.health = PLAYER_BOOST_HEALTH; // Double the health
-		health.healthMultiplier = 2.0f; // Double the health multiplier
+		health.healthMultiplier = 2.0f;
+		health.maxHealth *= health.healthMultiplier;
+		health.health = health.maxHealth;
+		health.healthIncrement = 1.0f;
 	}
 	if (hasPlayerAbility(PLAYER_ABILITY_ID::BULLET_BOOST)) {
 		Gun& player_gun = registry.guns.get(player);
@@ -1088,12 +1100,12 @@ void WorldSystem::resolve_collisions() {
 
             if (!chest.isOpened && isHoldingSpace(100.0f)) {
                 chest.isOpened = true;
-				PlayerAbility& newAbility = registry.playerAbilities.emplace_with_duplicates(game_entity);
+				Entity abilityEntity = Entity();
 
                 // Grant the ability to the player
 				switch(chest.ability) {
 					case REGION_GOAL_ID::SWORD_ATTACK:{
-						newAbility.id = PLAYER_ABILITY_ID::SWORD;
+						registry.playerAbilities.insert(abilityEntity, { PLAYER_ABILITY_ID::SWORD });
 						createSword(renderer, player);
 
 						Mix_PlayChannel(chunkToChannel["sword_unlock"], soundChunks["sword_unlock"], 0);
@@ -1101,7 +1113,7 @@ void WorldSystem::resolve_collisions() {
 						break;
 					}
 					case REGION_GOAL_ID::MULTIPLE_BULLETS: {
-						newAbility.id = PLAYER_ABILITY_ID::BULLET_BOOST;
+						registry.playerAbilities.insert(abilityEntity, { PLAYER_ABILITY_ID::BULLET_BOOST });
 						assert(registry.guns.has(player));
 						Gun& player_gun = registry.guns.get(player);
 						player_gun.attack_delay /= 2;
@@ -1111,17 +1123,18 @@ void WorldSystem::resolve_collisions() {
 						break;
 					}
 					case REGION_GOAL_ID::HEALTH_BOOST: {
-						newAbility.id = PLAYER_ABILITY_ID::HEALTH_BOOST;
+						registry.playerAbilities.insert(abilityEntity, { PLAYER_ABILITY_ID::HEALTH_BOOST });
 						Health& health = registry.healthValues.get(player);
-            			health.health = PLAYER_BOOST_HEALTH; // Double the health
 						health.healthMultiplier = 2.0f; // Double the health multiplier
-
+						health.maxHealth *= health.healthMultiplier; // Update maximum health
+						health.health = health.maxHealth; // Set current health to max
+						health.healthIncrement = 1.0f; // Set health increment, e.g., 1 health point per second
 						Mix_PlayChannel(chunkToChannel["health_unlock"], soundChunks["health_unlock"], 0);
 						std::cout << "Player received HEALTH_BOOST ability from chest." << std::endl;
 						break;
 					}
 					case REGION_GOAL_ID::DASH: {
-						newAbility.id = PLAYER_ABILITY_ID::DASHING;
+						registry.playerAbilities.insert(abilityEntity, { PLAYER_ABILITY_ID::DASHING });
 						createDashing(player);
 
 						Mix_PlayChannel(chunkToChannel["dash_unlock"], soundChunks["dash_unlock"], 0);
@@ -1150,7 +1163,6 @@ void WorldSystem::resolve_collisions() {
         }
 		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_CURE) {
 			Entity cureEntity = collision.other_entity;
-			Player& playerComponent = registry.players.get(player);
 
 			registry.game.get(game_entity).isCureUnlocked = true;
 				
@@ -1647,15 +1659,43 @@ void WorldSystem::clear_game_state() {
         }
     };
 
+	std::cout << "Clearing stuff now\n";
+
     // Clear regions, enemies, and cysts
-    clearSpecificEntities(registry.enemies);
-    clearSpecificEntities(registry.cysts);
+	clearSpecificEntities(registry.waypoints);
+	//std::cout << "Waypoints Cleared\n";
 	clearSpecificEntities(registry.projectiles);
+	//std::cout << "Projectiles Cleared\n";
+	clearSpecificEntities(registry.playerAbilities);
+	//std::cout << "Abilties Cleared\n";
+    clearSpecificEntities(registry.enemies);
+	//std::cout << "Enemies Cleared\n";
+    clearSpecificEntities(registry.cysts);
+	//std::cout << "Cysts Cleared\n";
+	clearSpecificEntities(registry.chests);
+	//std::cout << "Chests Cleared\n";
+    clearSpecificEntities(registry.cure);
+	// std::cout << "Cure Cleared\n";
+
+    // Clear non-gun attachments
+    auto& attachmentContainer = registry.attachments;
+    for (size_t i = 0; i < attachmentContainer.size(); ++i) {
+        Entity attachmentEntity = attachmentContainer.entities[i];
+        Attachment& attachment = attachmentContainer.components[i];
+        if (attachment.type != ATTACHMENT_ID::GUN) {
+            registry.remove_all_components_of(attachmentEntity);
+        }
+    }
+    std::cout << "Non-gun Attachments Cleared\n";
+
 
     // Reset enemy and player counts
     for (auto &count : enemyCounts) {
         count.second = 0;
     }
+	
+	registry.game.get(game_entity).isCureUnlocked = false;
+	registry.game.get(game_entity).isSecondBossDefeated = false;
 
 	registry.list_all_components();
 
@@ -1687,6 +1727,50 @@ void WorldSystem::load_game() {
     Health& playerHealth = registry.healthValues.get(player);
     playerHealth.health = playerData["health"];
 
+	// Deserialize Game Data
+	const auto& gameData = gameState["game"];
+	Game& gameComponent = registry.game.get(game_entity);
+    gameComponent.isCureUnlocked = gameData["isCureUnlocked"];
+	gameComponent.isSecondBossDefeated = gameData["isSecondBossDefeated"];
+
+	// Deserialize Player Abilities
+	for (const auto& abilityId : gameState["playerAbilities"]) {
+		PLAYER_ABILITY_ID ability = static_cast<PLAYER_ABILITY_ID>(abilityId);
+
+		Entity abilityEntity = Entity();
+		PlayerAbility abilityComponent;
+		abilityComponent.id = ability;
+
+		registry.playerAbilities.insert(abilityEntity, abilityComponent);
+
+		switch (ability) {
+			case PLAYER_ABILITY_ID::SWORD: {
+				createSword(renderer, player);
+				break;
+			}
+			case PLAYER_ABILITY_ID::BULLET_BOOST: {
+				if (registry.guns.has(player)) {
+					Gun& playerGun = registry.guns.get(player);
+					playerGun.attack_delay /= 2;
+				}
+				break;
+			}
+			case PLAYER_ABILITY_ID::HEALTH_BOOST: {
+				Health& health = registry.healthValues.get(player);
+				health.healthMultiplier = 2.0f;
+				health.maxHealth *= health.healthMultiplier;
+				health.healthIncrement = 1.0f;
+				break;
+			}
+			case PLAYER_ABILITY_ID::DASHING: {
+				createDashing(player);
+				break;
+			}
+			default:
+				std::cerr << "Unknown ability loaded: " << static_cast<int>(ability) << std::endl;
+				break;
+		}
+	}
 
     // Deserialize Enemies
     for (const auto& enemyData : gameState["enemies"]) {
@@ -1733,8 +1817,58 @@ void WorldSystem::load_game() {
 				<< ", Health = " << cystHealth << "\n";
     }
 
+    // Deserialize Chests
+    for (const auto& chestData : gameState["chests"]) {
+        vec2 position = {chestData["position"][0], chestData["position"][1]};
+        REGION_GOAL_ID ability = static_cast<REGION_GOAL_ID>(chestData["ability"]);
+        createChest(position, ability);
+    }
+
+    // Deserialize Cure
+    if (!gameComponent.isCureUnlocked && gameState["cure"] != nullptr) {
+        vec2 curePosition = {gameState["cure"]["position"][0], gameState["cure"]["position"][1]};
+        createCure(curePosition);
+    }
+
     inFile.close();
     std::cout << "Game state loaded." << std::endl;
+}
+
+void WorldSystem::loadRegions(const json& regionsData) {
+    // Assuming the regions are saved in the same order they were created
+    assert(regionsData.size() == registry.regions.components.size());
+
+	bool cureUnlocked = registry.game.get(game_entity).isCureUnlocked;
+	bool secondBossDefeated = registry.game.get(game_entity).isSecondBossDefeated;
+
+    for (size_t i = 0; i < regionsData.size(); ++i) {
+        const auto& regionData = regionsData[i];
+        auto entity = registry.regions.entities[i];
+        Region& region = registry.regions.get(entity);
+
+        // Update region details from JSON data
+        region.theme = static_cast<REGION_THEME_ID>(regionData["theme"]);
+        region.goal = static_cast<REGION_GOAL_ID>(regionData["goal"]);
+        region.enemy = static_cast<ENEMY_ID>(regionData["enemy"]);
+        region.boss = static_cast<BOSS_ID>(regionData["boss"]);
+        region.is_cleared = regionData["is_cleared"];
+        vec2 interest_point = { regionData["interest_point"][0], regionData["interest_point"][1] };
+        region.interest_point = interest_point;
+
+        // Update RenderRequest component
+        RenderRequest& renderReq = registry.renderRequests.get(entity);
+        renderReq.used_texture = region_texture_map[region.theme];
+
+        // Create Waypoints if the region is not cleared
+        if (!region.is_cleared) {
+            // Waypoint for second boss should be created if the cure is unlocked and it is not defeated
+            if (region.boss == BOSS_ID::FRIEND && cureUnlocked && !secondBossDefeated) {
+                createWaypoint(region);
+            } else if (region.boss != BOSS_ID::FRIEND) {
+                createWaypoint(region);
+            }
+        }
+    }
 }
 
 void WorldSystem::save_game() {
@@ -1770,15 +1904,14 @@ json WorldSystem::serializeGameState() {
     gameState["player"]["position"] = {playerTransform.position.x, playerTransform.position.y};
     gameState["player"]["health"] = playerHealth.health;
 
-    // // Serialize Player Belongings
-    // auto& belongingsContainer = registry.playerBelongings;
-    // for (uint i = 0; i < belongingsContainer.size(); i++) {
-    //     Entity belongingEntity = belongingsContainer.entities[i];
-    //     const auto& belongingTransform = registry.transforms.get(belongingEntity);
-    //     json belongingData;
-    //     belongingData["position"] = {belongingTransform.position.x, belongingTransform.position.y};
-    //     gameState["playerBelongings"].push_back(belongingData);
-    // }
+	const auto& gameComponent = registry.game.get(game_entity);
+    gameState["game"]["isCureUnlocked"] = gameComponent.isCureUnlocked;
+	gameState["game"]["isSecondBossDefeated"] = gameComponent.isSecondBossDefeated;
+
+	for (const auto& abilityEntity : registry.playerAbilities.entities) {
+		const auto& ability = registry.playerAbilities.get(abilityEntity);
+		gameState["playerAbilities"].push_back(static_cast<int>(ability.id));
+	}
 
     // Serialize Enemies
     auto& enemiesContainer = registry.enemies;
@@ -1804,6 +1937,30 @@ json WorldSystem::serializeGameState() {
         cystData["position"] = {cystTransform.position.x, cystTransform.position.y};
         cystData["health"] = cystHealth.health;
         gameState["cysts"].push_back(cystData);
+    }
+
+    // Serialize Chests
+    for (const Chest& chest : registry.chests.components) {
+        if (!chest.isOpened) {
+            json chestData;
+            chestData["position"] = {chest.position.x, chest.position.y};
+            chestData["ability"] = static_cast<int>(chest.ability);
+            gameState["chests"].push_back(chestData);
+        }
+    }
+
+    // Serialize Cure (if exists and not picked up)
+    bool cureFound = false;
+    for (const auto& cureEntity : registry.cure.entities) {
+        const auto& cureTransform = registry.transforms.get(cureEntity);
+        json cureData;
+        cureData["position"] = {cureTransform.position.x, cureTransform.position.y};
+        gameState["cure"] = cureData;
+        cureFound = true;
+        break;
+    }
+    if (!cureFound) {
+        gameState["cure"] = nullptr;
     }
 
     return gameState;

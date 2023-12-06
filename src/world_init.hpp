@@ -78,7 +78,3 @@ Entity createCredits();
 
 /*************************[ other ]*************************/
 Entity createCamera(vec2 pos);
-
-/*************************[ load ]*************************/
-void loadRegions(const json& regionsData);
-void loadEnemies(const json& enemiesData);
