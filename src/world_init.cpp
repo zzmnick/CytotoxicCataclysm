@@ -48,8 +48,9 @@ Entity createPlayer(vec2 pos)
 }
 
 Entity createDashing(Entity dasher) {
-	Dash& dash_component = registry.dashes.emplace(dasher);
-
+	if (!registry.dashes.has(dasher)) {
+		registry.dashes.emplace(dasher);
+	}
 	Entity dash_entity = Entity();
 	Attachment& attachment = registry.attachments.emplace(dash_entity);
 	attachment.parent = dasher;
@@ -107,13 +108,14 @@ Entity createGun(Entity holder) {
 }
 
 Entity createSword(RenderSystem* renderer, Entity& holder) {
-	Melee& melee_component = registry.melees.emplace(holder);
-
+	if (!registry.melees.has(holder)) {
+		registry.melees.emplace(holder);
+	}
 	Entity melee_entity = Entity();
-	melee_component.melee_entity = melee_entity;
+	registry.melees.get(holder).melee_entity = melee_entity;
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SWORD);
 	registry.meshPtrs.emplace(melee_entity, &mesh);
-
+	
 	Attachment& attachment = registry.attachments.emplace(melee_entity);
 	attachment.parent = holder;
 	attachment.type = ATTACHMENT_ID::SWORD;

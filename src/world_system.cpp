@@ -1783,6 +1783,8 @@ void WorldSystem::clear_game_state() {
 	std::cout << "Clearing stuff now\n";
 
     // Clear regions, enemies, and cysts
+	clearSpecificEntities(registry.game);
+	//std::cout << "Game State Cleared\n";
 	clearSpecificEntities(registry.waypoints);
 	//std::cout << "Waypoints Cleared\n";
 	clearSpecificEntities(registry.projectiles);
@@ -1796,7 +1798,7 @@ void WorldSystem::clear_game_state() {
 	clearSpecificEntities(registry.chests);
 	//std::cout << "Chests Cleared\n";
     clearSpecificEntities(registry.cure);
-	// std::cout << "Cure Cleared\n";
+	//std::cout << "Cure Cleared\n";
 
     // Clear non-gun attachments
     auto& attachmentContainer = registry.attachments;
@@ -1814,10 +1816,6 @@ void WorldSystem::clear_game_state() {
     for (auto &count : enemyCounts) {
         count.second = 0;
     }
-	
-	registry.game.get(game_entity).isCureUnlocked = false;
-	registry.game.get(game_entity).isSecondBossDefeated = false;
-	registry.game.get(game_entity).isCystTutorialDisplayed = false;
 
 	registry.list_all_components();
 
@@ -1839,9 +1837,6 @@ void WorldSystem::load_game() {
     // Clear current game state before loading
     clear_game_state();
 
-	// Deserialize and recreate Regions
-    loadRegions(gameState["regions"]);
-
     // Deserialize Player
     const auto& playerData = gameState["player"];
     Transform& playerTransform = registry.transforms.get(player);
@@ -1851,10 +1846,14 @@ void WorldSystem::load_game() {
 
 	// Deserialize Game Data
 	const auto& gameData = gameState["game"];
+	registry.game.emplace(game_entity);
 	Game& gameComponent = registry.game.get(game_entity);
     gameComponent.isCureUnlocked = gameData["isCureUnlocked"];
 	gameComponent.isSecondBossDefeated = gameData["isSecondBossDefeated"];
 	gameComponent.isCystTutorialDisplayed = gameData["isCystTutorialDisplayed"];
+
+	// Deserialize and recreate Regions
+    loadRegions(gameState["regions"]);
 
 	// Deserialize Player Abilities
 	for (const auto& abilityId : gameState["playerAbilities"]) {
