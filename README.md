@@ -207,14 +207,14 @@ We had the following discrepancies in Milestone 3 compared to the development pl
 
 
 ## Music
-"Voxel Revolution" Kevin MacLeod (incompetech.com)
-Licensed under Creative Commons: By Attribution 4.0 License
-http://creativecommons.org/licenses/by/4.0/
+"Voxel Revolution" Kevin MacLeod (incompetech.com)  
+Licensed under Creative Commons: By Attribution 4.0 License  
+http://creativecommons.org/licenses/by/4.0/  
 
 ## Additional Art 
-Sound Effects: The Essential Retro Video Game Sound Effects Collection by Juhani Junkala
-https://opengameart.org/content/512-sound-effects-8-bit-style
-Keyboard Sprite by: xPheRe
-https://xphere.itch.io/pixel-keyboard-layout
-Joystick Sprite by: Juliano (lightUP)
-https://julianoferreiradelima.itch.io/gamepads-assets-pixelart
+Sound Effects: The Essential Retro Video Game Sound Effects Collection by Juhani Junkala  
+https://opengameart.org/content/512-sound-effects-8-bit-style  
+Keyboard Sprite by: xPheRe  
+https://xphere.itch.io/pixel-keyboard-layout  
+Joystick Sprite by: Juliano (lightUP)  
+https://julianoferreiradelima.itch.io/gamepads-assets-pixelart  
