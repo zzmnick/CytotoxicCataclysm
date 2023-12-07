@@ -396,6 +396,7 @@ Entity createGreenEnemy(vec2 pos, float health) {
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
 	transform.scale = GREEN_ENEMY_SIZE;
+	transform.angle_offset = -0.745*M_PI;
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 200;

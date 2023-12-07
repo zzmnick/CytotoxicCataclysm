@@ -33,11 +33,13 @@ void AISystem::move_enemies(float elapsed_ms) {
 				enemymotion.allow_accel = true;
 				continue;
 			}
+
 			// Boss chases player forever after it's activated
 			Enemy& enemyAttribute = registry.enemies.get(entity);
 			vec2 target_point = playerTransform.position;
 			if (enemyAttribute.type == ENEMY_ID::BOSS) {
 				if (!registry.bosses.get(entity).activated) {
+					enemytransform.angle = atan2(target_point.y - enemytransform.position.y, target_point.x - enemytransform.position.x)+ M_PI / 2;
 					for (auto& region : registry.regions.components) {
 						if (region.goal == REGION_GOAL_ID::CURE) {
 							target_point = region.interest_point;

@@ -1101,7 +1101,7 @@ void WorldSystem::restart_game(bool hard_reset) {
 
 // Call this method each frame to update the space bar duration
 void updateSpaceBarPressDuration() {
-	if (keys_pressed[GLFW_KEY_SPACE]) {
+	if (keys_pressed[GLFW_KEY_SPACE] || controller_buttons[2]) {
 		spaceBarPressDuration += 1;
 	} else {
 		spaceBarPressDuration = 0.0f;
@@ -1593,6 +1593,11 @@ void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
 
 			}
 
+			if (axes_state[0] < -0.3 || buttons[18]) {
+				button_select = BUTTON_SELECT::EASY_MODE;
+				mouse = { -550, -150 };
+			}
+
 		}
 		else if (state == GAME_STATE::START_MENU && button_select == BUTTON_SELECT::LOAD) {
 
@@ -1607,6 +1612,11 @@ void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
 				mouse = { 0,50 };
 
 			}
+			if (axes_state[0] < -0.3 || buttons[18]) {
+				button_select = BUTTON_SELECT::EASY_MODE;
+				mouse = { -550, -150 };
+			}
+
 
 		}
 		else if (state == GAME_STATE::START_MENU && button_select == BUTTON_SELECT::EXIT) {
@@ -1622,7 +1632,49 @@ void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
 				mouse = { 0,-150 };
 
 			}
+			if (axes_state[0] < -0.3 || buttons[18]) {
+				button_select = BUTTON_SELECT::HARD_MODE;
+				mouse = { -540, -350 };
+			}
 
+
+		}
+
+		else if (state == GAME_STATE::START_MENU && button_select == BUTTON_SELECT::EASY_MODE) {
+
+			if (axes_state[1] > 0.3 || buttons[17]) {
+				button_select = BUTTON_SELECT::HARD_MODE;
+				mouse = { -540, -350 };
+
+			}
+
+			if (axes_state[1] < -0.3 || buttons[15]) {
+				button_select = BUTTON_SELECT::HARD_MODE;
+				mouse = { -540, -350 };
+
+			}
+			if (axes_state[0] > 0.3 || buttons[16]) {
+				button_select = BUTTON_SELECT::LOAD;
+				mouse = { 0,-150 };
+			}
+		}
+		else if (state == GAME_STATE::START_MENU && button_select == BUTTON_SELECT::HARD_MODE) {
+
+			if (axes_state[1] > 0.3 || buttons[17]) {
+				button_select = BUTTON_SELECT::EASY_MODE;
+				mouse = { -550, -150 };
+
+			}
+
+			if (axes_state[1] < -0.3 || buttons[15]) {
+				button_select = BUTTON_SELECT::EASY_MODE;
+				mouse = { -550, -150 };
+
+			}
+			if (axes_state[0] > 0.3 || buttons[16]) {
+				button_select = BUTTON_SELECT::EXIT;
+				mouse = { 0,-350 };
+			}
 		}
 
 		else if (state == GAME_STATE::PAUSE_MENU && button_select == BUTTON_SELECT::NONE) {
@@ -2364,6 +2416,7 @@ void WorldSystem::step_menu() {
 			Mix_VolumeMusic(45);
 		} else if (option == MENU_OPTION::EXIT_CURR_PLAY) {
 			state = GAME_STATE::START_MENU;
+			button_select = BUTTON_SELECT::NONE;
 			step_menu();
 		}
 	}
