@@ -449,15 +449,13 @@ void WorldSystem::startEntityDeath(Entity entity) {
 	else if (registry.cysts.has(entity)) {
 		Game& game_state = registry.game.get(game_entity);
 		dt.timer_ms = 50.f; // TODO set based on animation length
-		// If this is the first time breaking a cyst, do not apply the effect to avoid screen effect on tutorial page
+		// If this is the first time breaking a cyst, show tutorial
 		if (!game_state.isCystTutorialDisplayed) {
 			dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_CYSTS, 1500.f);
 			game_state.isCystTutorialDisplayed = true;
 		}
-		else {
-			effects_system->apply_random_effect();
-			// TODO death animation
-		}
+		effects_system->apply_random_effect();
+		// TODO death animation
 	}
 }
 

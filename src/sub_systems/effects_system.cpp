@@ -125,9 +125,15 @@ void EffectsSystem::handle_heal_effect() {
 void EffectsSystem::handle_clear_screen() {
 	// start death timers for on-screen enemies
 	vec2 camPos = registry.camera.components[0].position;
-	for (auto enemy : registry.enemies.entities) {
+	for (uint i = 0; i < registry.enemies.entities.size(); i++) {
+		auto enemy = registry.enemies.entities[i];
+		ENEMY_ID enemy_id = registry.enemies.components[i].type;
 		float distance = length(registry.transforms.get(enemy).position - camPos);
-		if (!registry.bosses.has(enemy) && distance < SCREEN_RADIUS * 0.9) {
+		if (enemy_id != ENEMY_ID::BOSS
+			&& enemy_id != ENEMY_ID::BOSS_ARM
+			&& enemy_id != ENEMY_ID::FRIENDBOSS
+			&& enemy_id != ENEMY_ID::FRIENDBOSSCLONE
+			&& distance < SCREEN_RADIUS * 0.9) {
 			ws.startEntityDeath(enemy);
 		}
 	}
