@@ -69,6 +69,7 @@ private:
 
 	// restart level
 	void restart_game(bool hard_reset = false);
+	void load_player_abilities();
 
 	// OpenGL window handle
 	GLFWwindow* window;
@@ -93,7 +94,6 @@ private:
 	// UI references
 	Entity healthbar;
 	Entity healthbar_frame;
-	Entity gun;
 	Entity boss_healthbar;
 	Entity boss_healthbar_frame;
 	Entity cursor;
@@ -146,7 +146,7 @@ private:
 	void remove_entity(Entity entity);
 	void create_debug_lines();
 
-	void clear_game_state();
+	void reset_persistent_game_state();
 	void load_game();
 	void loadRegions(const json& regionsData);
 	void save_game();

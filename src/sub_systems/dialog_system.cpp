@@ -79,7 +79,7 @@ bool DialogSystem::step(float elapsed_ms) {
 				{ dialogs.front().instruction_asset,
 					EFFECT_ASSET_ID::TEXTURED,
 					GEOMETRY_BUFFER_ID::SPRITE,
-					RENDER_ORDER::UI });
+					RENDER_ORDER::DIALOG });
 
 			keys_pressed.clear();
 			skip_timer = current_stage.skip_delay_duration;

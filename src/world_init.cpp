@@ -733,7 +733,7 @@ std::tuple<Entity, Entity> createHealthbar(vec2 position, vec2 scale) {
 		{ TEXTURE_ASSET_ID::HEALTHBAR_FRAME,
 			EFFECT_ASSET_ID::TEXTURED,
 			GEOMETRY_BUFFER_ID::SPRITE,
-			RENDER_ORDER::UI });
+			RENDER_ORDER::UI_FR });
 
 	// Create transform for bar and frame
 	vec2 frameScale = HEALTHBAR_TEXTURE_SIZE * scale;
