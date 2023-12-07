@@ -34,6 +34,22 @@ MENU_OPTION MenuSystem::poll_start_menu() {
         && selected_option != MENU_OPTION::REGULAR_GAME_MODE 
         && selected_option != MENU_OPTION::EASY_GAME_MODE) {// destroy all menu elements after a choice is made by the user
         destroy_menu();
+    } else if (selected_option == MENU_OPTION::REGULAR_GAME_MODE) {
+        registry.renderRequests.get(entity).used_texture = TEXTURE_ASSET_ID::MENU_REGULAR_MODE_SELECTED;
+        for (uint i = 0; i < registry.menuButtons.size(); i++) {
+            Entity other_entity = registry.menuButtons.entities[i];
+            if (registry.menuButtons.get(other_entity).option == MENU_OPTION::EASY_GAME_MODE) {
+                registry.renderRequests.get(other_entity).used_texture = TEXTURE_ASSET_ID::MENU_EASY_MODE_UNSELECTED;
+            }
+        }
+    } else if (selected_option == MENU_OPTION::EASY_GAME_MODE) {
+        registry.renderRequests.get(entity).used_texture = TEXTURE_ASSET_ID::MENU_EASY_MODE_SELECTED;
+        for (uint i = 0; i < registry.menuButtons.size(); i++) {
+            Entity other_entity = registry.menuButtons.entities[i];
+            if (registry.menuButtons.get(other_entity).option == MENU_OPTION::REGULAR_GAME_MODE) {
+                registry.renderRequests.get(other_entity).used_texture = TEXTURE_ASSET_ID::MENU_REGULAR_MODE_UNSELECTED;
+            }
+        }
     }
 
     return selected_option;
@@ -145,8 +161,13 @@ void MenuSystem::draw_start_menu() {
     create_menu_button({0.f, 50.f}, TEXTURE_ASSET_ID::MENU_START, MENU_OPTION::START_GAME);
     create_menu_button({0.f, -150.f}, TEXTURE_ASSET_ID::MENU_LOAD, MENU_OPTION::LOAD_GAME);
     create_menu_button({0.f, -350.f}, TEXTURE_ASSET_ID::MENU_EXIT, MENU_OPTION::EXIT_GAME);
-    create_menu_button({ -550.f, -150.f }, TEXTURE_ASSET_ID::MENU_EASY_MODE_UNSELECTED, MENU_OPTION::EASY_GAME_MODE);
-    create_menu_button({ -550.f, -350.f }, TEXTURE_ASSET_ID::MENU_REGULAR_MODE_UNSELECTED, MENU_OPTION::REGULAR_GAME_MODE);
+    if (registry.gameMode.components.back().id == GAME_MODE_ID::EASY_MODE) {
+        create_menu_button({ -550.f, -150.f }, TEXTURE_ASSET_ID::MENU_EASY_MODE_SELECTED, MENU_OPTION::EASY_GAME_MODE);
+        create_menu_button({ -550.f, -350.f }, TEXTURE_ASSET_ID::MENU_REGULAR_MODE_UNSELECTED, MENU_OPTION::REGULAR_GAME_MODE);
+    } else {
+        create_menu_button({ -550.f, -150.f }, TEXTURE_ASSET_ID::MENU_EASY_MODE_UNSELECTED, MENU_OPTION::EASY_GAME_MODE);
+        create_menu_button({ -550.f, -350.f }, TEXTURE_ASSET_ID::MENU_REGULAR_MODE_SELECTED, MENU_OPTION::REGULAR_GAME_MODE);
+    }
 }
 
 void MenuSystem::draw_pause_menu() {
