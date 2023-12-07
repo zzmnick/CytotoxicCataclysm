@@ -210,6 +210,10 @@ We had the following discrepancies in Milestone 3 compared to the development pl
 "Voxel Revolution" Kevin MacLeod (incompetech.com)  
 Licensed under Creative Commons: By Attribution 4.0 License  
 http://creativecommons.org/licenses/by/4.0/  
+Menu Music by Juhani Junkala:  
+https://opengameart.org/content/5-chiptunes-action  
+Boss Music from:  
+https://opengameart.org/content/battle-theme-a  
 
 ## Additional Art 
 Sound Effects: The Essential Retro Video Game Sound Effects Collection by Juhani Junkala  

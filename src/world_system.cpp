@@ -161,6 +161,8 @@ GLFWwindow* WorldSystem::create_window() {
 	*/
 
 	backgroundMusic["main"] = Mix_LoadMUS(audio_path("music/Voxel Revolution.wav").c_str());
+	backgroundMusic["boss"] = Mix_LoadMUS(audio_path("music/battleThemeA.wav").c_str());
+	backgroundMusic["menu"] = Mix_LoadMUS(audio_path("music/Ending.wav").c_str());
 	soundChunks["player_hit"] = Mix_LoadWAV(audio_path("sound/sfx_sounds_damage1.wav").c_str());
 	soundChunks["player_dash"] = Mix_LoadWAV(audio_path("sound/sfx_sound_nagger2.wav").c_str());
 	soundChunks["player_death"] = Mix_LoadWAV(audio_path("sound/sfx_sounds_falling3.wav").c_str());
@@ -231,9 +233,6 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	this->renderer = renderer_arg;
 	this->effects_system = new EffectsSystem(player, rng, soundChunks, *this);
 	this->menu_system = new MenuSystem(mouse);
-	// Playing background music indefinitely
-	Mix_FadeInMusic(backgroundMusic["main"], -1, 2000);
-	fprintf(stderr, "Loaded music\n");
 
 	// Create world entities that don't reset
 	cursor = createCrosshair();
@@ -244,6 +243,9 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 
 	// Set all states to default
 	restart_game(true);
+	// Playing background music indefinitely
+	Mix_FadeInMusic(backgroundMusic["menu"], -1, 5000);
+	fprintf(stderr, "Loaded music\n");
 
 	button_select = BUTTON_SELECT::NONE;
 	state = GAME_STATE::START_MENU;
@@ -301,6 +303,7 @@ void WorldSystem::step_deathTimer(float elapsed_ms) {
 					dialog_system->add_camera_movement(player_pos, enemyDeathSpot, 1000.f);
 					dialog_system->add_dialog(TEXTURE_ASSET_ID::POST_BOSS_DIALOG);
 					dialog_system->add_camera_movement(enemyDeathSpot, player_pos, 1000.f);
+					Mix_FadeInMusic(backgroundMusic["main"], -1, 2000);
 				} 
 
 				if (type == ENEMY_ID::FRIENDBOSS) {
@@ -1022,6 +1025,7 @@ void WorldSystem::restart_game(bool hard_reset) {
 		dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_WAYPOINTS);
 		dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_GAME_START);
 	}
+	Mix_FadeInMusic(backgroundMusic["main"], -1, 5000);
 
 	dialog_system->clear_pending_dialogs();
 
@@ -2416,6 +2420,7 @@ void WorldSystem::step_menu() {
 			Mix_VolumeMusic(45);
 		} else if (option == MENU_OPTION::EXIT_CURR_PLAY) {
 			state = GAME_STATE::START_MENU;
+			Mix_FadeInMusic(backgroundMusic["menu"], -1, 5000);
 			button_select = BUTTON_SELECT::NONE;
 			step_menu();
 		}
@@ -2433,6 +2438,8 @@ void WorldSystem::step_bossfight() {
 			// Enter boss fight when player is close enough to the boss
 			if (distance.x < CONTENT_WIDTH_PX / 2.f - 100.f && distance.y < CONTENT_HEIGHT_PX / 2.f - 100.f) {
 				registry.bosses.get(current_boss).activated = true;
+				// start boss music
+				Mix_FadeInMusic(backgroundMusic["boss"], -1, 5000);
 				// Kill all small enemies when boss fight starts
 				for (uint i = 0; i < registry.enemies.size(); i++) {
 					Entity enemy_entity = registry.enemies.entities[i];
