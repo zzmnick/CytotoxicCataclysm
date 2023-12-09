@@ -1008,6 +1008,7 @@ void WorldSystem::restart_game(bool hard_reset) {
 
 
 	/*************************[ cleanup ]*************************/
+	dialog_system->clear_pending_dialogs();
 	if (hard_reset) {
 		reset_persistent_game_state();
 		createWaypoints();
@@ -1027,7 +1028,6 @@ void WorldSystem::restart_game(bool hard_reset) {
 	}
 	Mix_FadeInMusic(backgroundMusic["main"], -1, 5000);
 
-	dialog_system->clear_pending_dialogs();
 
 	// reverse active effects
 	for (auto event : registry.timedEvents.components) {
@@ -1105,7 +1105,7 @@ void WorldSystem::restart_game(bool hard_reset) {
 
 // Call this method each frame to update the space bar duration
 void updateSpaceBarPressDuration() {
-	if (keys_pressed[GLFW_KEY_SPACE] || controller_buttons[2]) {
+	if (keys_pressed[GLFW_KEY_SPACE] || (controller_buttons != nullptr && controller_buttons[2])) {
 		spaceBarPressDuration += 1;
 	} else {
 		spaceBarPressDuration = 0.0f;
