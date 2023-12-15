@@ -2119,10 +2119,11 @@ json WorldSystem::serializeGameState() {
     // Serialize Enemies
     auto& enemiesContainer = registry.enemies;
     for (uint i = 0; i < enemiesContainer.size(); i++) {
+	const Enemy& enemyType = enemiesContainer.components[i];
+	if (enemyType.type == ENEMY_ID::BOSS_ARM || enemyType.type == ENEMY_ID::FRIENDBOSSCLONE) continue;	// don't save these
         Entity enemyEntity = enemiesContainer.entities[i];
         const auto& enemyTransform = registry.transforms.get(enemyEntity);
         const auto& enemyHealth = registry.healthValues.get(enemyEntity);
-        const Enemy& enemyType = enemiesContainer.components[i];
         json enemyData;
         enemyData["position"] = {enemyTransform.position.x, enemyTransform.position.y};
         enemyData["health"] = enemyHealth.health;

@@ -253,7 +253,7 @@ void createBossArms(RenderSystem* renderer, Entity bossEntity, vec2 bossSize) {
 			Motion& motion = registry.motions.emplace(entity);		// This motion is with respect to parent
 			motion.max_angular_velocity = M_PI / 6.f;
 			registry.enemies.insert(entity, { ENEMY_ID::BOSS_ARM });
-			registry.healthValues.insert(entity, { static_cast<float>(registry.gameMode.components.back().enemy_health_map[ENEMY_ID::ENEMY_COUNT]) });
+			registry.healthValues.insert(entity, { static_cast<float>(registry.gameMode.components.back().enemy_health_map[ENEMY_ID::BOSS_ARM]) });
 
 			// Add to render_request
 			registry.renderRequests.insert(

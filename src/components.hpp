@@ -361,22 +361,24 @@ static std::unordered_map <REGION_THEME_ID, TEXTURE_ASSET_ID> region_texture_map
 
 static std::unordered_map <ENEMY_ID, double> enemy_health_map_easy = {
 	{ENEMY_ID::BOSS, 1000.0 * enemy_health_reductionMultipler},
+	{ENEMY_ID::BOSS_ARM, 200.0 * enemy_health_reductionMultipler},
 	{ENEMY_ID::FRIENDBOSS, 259.0 * enemy_health_reductionMultipler},
 	{ENEMY_ID::FRIENDBOSSCLONE, 10.0 * enemy_health_reductionMultipler},
 	{ENEMY_ID::GREEN, 150.0 * enemy_health_reductionMultipler},
 	{ENEMY_ID::RED, 40.0 * enemy_health_reductionMultipler},
 	{ENEMY_ID::YELLOW, 50.0 * enemy_health_reductionMultipler},
-	{ENEMY_ID::ENEMY_COUNT, 200.0 * enemy_health_reductionMultipler}
+	{ENEMY_ID::ENEMY_COUNT, 100.0 * enemy_health_reductionMultipler}
 };
 
 static std::unordered_map <ENEMY_ID, double> enemy_health_map_regular = {
 	{ENEMY_ID::BOSS, 1000.0},
+	{ENEMY_ID::BOSS_ARM, 200.0},
 	{ENEMY_ID::FRIENDBOSS, 259.0},
 	{ENEMY_ID::FRIENDBOSSCLONE, 10.0},
 	{ENEMY_ID::GREEN, 150.0},
 	{ENEMY_ID::RED, 40.0},
 	{ENEMY_ID::YELLOW, 50.0},
-	{ENEMY_ID::ENEMY_COUNT, 200.0}
+	{ENEMY_ID::ENEMY_COUNT, 100.0}
 };
 #pragma endregion
 
