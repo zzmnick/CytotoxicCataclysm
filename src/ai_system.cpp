@@ -10,6 +10,8 @@ void AISystem::step(float elapsed_ms)
 	}
 	if (MOVE_ENEMIES) {
 		move_enemies(elapsed_ms);
+		swarm_keep_distance(elapsed_ms);
+		swarm_block_interestpoint(elapsed_ms);
 	};
 	enemy_shoot(elapsed_ms);
 	enemy_dash(elapsed_ms);
@@ -19,8 +21,6 @@ void AISystem::move_enemies(float elapsed_ms) {
 	Transform& playerTransform = registry.transforms.get(player);
 	for (Entity entity : registry.enemies.entities) {
 		if (registry.motions.has(entity)) {
-			vec2 newForce = {0.f, 0.f};
-
 			assert(registry.transforms.has(entity));
 			Transform& enemytransform = registry.transforms.get(entity);
 			Motion& enemymotion = registry.motions.get(entity);
@@ -60,28 +60,6 @@ void AISystem::move_enemies(float elapsed_ms) {
 				}
 			}
 			enemymotion.force += normalize(vec2(target_point.x - enemytransform.position.x, target_point.y - enemytransform.position.y));
-
-			// Nearby enemies repelling each other (Except bosses and yellow enemies)
-			if (enemyAttribute.type != ENEMY_ID::BOSS && enemyAttribute.type != ENEMY_ID::FRIENDBOSS && enemyAttribute.type != ENEMY_ID::YELLOW) {
-				// Find the closest enemy
-				float minDist = INFINITY;
-				Entity closestEnemy;
-				for (Entity otherEnemy : registry.enemies.entities) {
-					if (entity != otherEnemy && registry.transforms.has(otherEnemy)) {
-						vec2 otherEnemyPos = registry.transforms.get(otherEnemy).position;
-						float dist = length(otherEnemyPos - enemytransform.position);
-						if (dist < minDist) {
-							minDist = dist;
-							closestEnemy = otherEnemy;
-						}
-					}
-				}
-				// Add a small repelling force
-				if (registry.transforms.has(closestEnemy)) {
-					vec2 closestEnemyPos = registry.transforms.get(closestEnemy).position;
-					enemymotion.force += normalize(vec2(enemytransform.position.x - closestEnemyPos.x, enemytransform.position.y - closestEnemyPos.y)) / 2.f;
-				}
-			}
 		}
 	}
 }
@@ -109,6 +87,70 @@ void AISystem::move_articulated_part(float elapsed_seconds, Entity partEntity, M
 	}
 }
 
+
+void AISystem::swarm_keep_distance(float elapsed_ms) {
+	Transform& playerTransform = registry.transforms.get(player);
+	for (Entity entity : registry.enemies.entities) {
+		if (registry.motions.has(entity)			// Ignore if can't move
+			&& !registry.bosses.has(entity)			// Ignore if is a boss
+			&& !registry.attachments.has(entity)) { // Ignore if is an attachment
+			Motion& enemymotion = registry.motions.get(entity);
+			if (enemymotion.max_velocity == 0.f) continue;	// Ignore if can't move
+
+			assert(registry.transforms.has(entity));
+			Transform& enemytransform = registry.transforms.get(entity);
+
+			// Find the closest enemy
+			float minDist = INFINITY;
+			Entity closestEnemy;
+			for (Entity otherEnemy : registry.enemies.entities) {
+				if (entity != otherEnemy && registry.transforms.has(otherEnemy)) {
+					vec2 otherEnemyPos = registry.transforms.get(otherEnemy).position;
+					float dist = length(otherEnemyPos - enemytransform.position);
+					if (dist < minDist) {
+						minDist = dist;
+						closestEnemy = otherEnemy;
+					}
+				}
+			}
+			// Add a small repelling force from the closest enemy
+			if (registry.transforms.has(closestEnemy)) {
+				vec2 closestEnemyPos = registry.transforms.get(closestEnemy).position;
+				enemymotion.force += normalize(enemytransform.position - closestEnemyPos) / 2.f;
+			}
+		}
+	}
+}
+
+
+void AISystem::swarm_block_interestpoint(float elapsed_ms) {
+	Transform& playerTransform = registry.transforms.get(player);
+	// Find closest interest point to the player
+	vec2 interest_point;
+	float min_dist = INFINITY;
+	// TODO: use the new waypoint's interest_point to account for moved boss and cleared regions
+	for (Region& region : registry.regions.components) {
+		float dist = length(region.interest_point - playerTransform.position);
+		if (dist <= min_dist) {
+			interest_point = region.interest_point;
+			min_dist = dist;
+		}
+	}
+	for (Entity entity : registry.enemies.entities) {
+		if (registry.motions.has(entity)			// Ignore if can't move
+			&& !registry.attachments.has(entity)) { // Ignore if is an attachment
+			Motion& enemymotion = registry.motions.get(entity);
+			if (enemymotion.max_velocity == 0.f) continue;	// Ignore if can't move
+			
+			assert(registry.transforms.has(entity));
+			Transform& enemytransform = registry.transforms.get(entity);
+			if (length(interest_point - enemytransform.position) > SCREEN_RADIUS * 2.f) continue;	// Ignore if too far
+
+			// Add a small attraction force towards the interest-point
+			enemymotion.force += (interest_point - enemytransform.position) / (SCREEN_RADIUS * 2.f) * 1.5f;
+		}
+	}
+}
 
 void AISystem::enemy_shoot(float elapsed_ms) {
 	for (Entity entity : registry.guns.entities) {

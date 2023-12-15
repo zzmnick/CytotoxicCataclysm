@@ -21,4 +21,6 @@ private:
 	void enemy_special_attack(Entity enemy);
 	void spread_attack(Entity enemy);
 	void clone_attack(Entity enemy, int clones);
+	void swarm_keep_distance(float elapsed_ms);
+	void swarm_block_interestpoint(float elapsed_ms);
 };
