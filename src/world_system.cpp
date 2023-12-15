@@ -19,7 +19,6 @@ float spaceBarPressDuration = 0.0f;
 std::unordered_map < int, float > axes_state;
 const unsigned char *controller_buttons = nullptr;
 vec2 mouse;
-const float SPAWN_RANGE = MAP_RADIUS *0.6f;
 const float ENEMY_SPAWN_PADDING = 50.f; // Padding to ensure off-screen spawn
 float enemy_spawn_cooldown = 5.f;
 const float INDIVIDUAL_SPAWN_INTERVAL = 1.0f;
@@ -296,7 +295,9 @@ void WorldSystem::step_deathTimer(float elapsed_ms) {
 
 				if (type == ENEMY_ID::BOSS) {
 					vec2 enemyDeathSpot = registry.transforms.get(entity).position;
-					createCure(enemyDeathSpot);
+					Entity cure = createCure(enemyDeathSpot);
+					createWaypoint(REGION_GOAL_ID::CURE, cure);
+					registry.game.get(game_entity).isFirstBossDefeated = true;
 					registry.colors.get(boss_healthbar).a = 0.f;
 					registry.colors.get(boss_healthbar_frame).a = 0.f;
 					vec2 player_pos = registry.transforms.get(player).position;
@@ -304,23 +305,15 @@ void WorldSystem::step_deathTimer(float elapsed_ms) {
 					dialog_system->add_dialog(TEXTURE_ASSET_ID::POST_BOSS_DIALOG);
 					dialog_system->add_camera_movement(enemyDeathSpot, player_pos, 1000.f);
 					Mix_FadeInMusic(backgroundMusic["main"], -1, 2000);
-				} 
-
-				if (type == ENEMY_ID::FRIENDBOSS) {
+				} else if (type == ENEMY_ID::FRIENDBOSS) {
+					registry.game.get(game_entity).isSecondBossDefeated = true;
 					registry.colors.get(boss_healthbar).a = 0.f;
 					registry.colors.get(boss_healthbar_frame).a = 0.f;
 
-					registry.game.get(game_entity).isSecondBossDefeated = true;
-					// remove second boss waypoint
-					for (auto region : registry.regions.components) {
+					// clear region
+					for (Region& region : registry.regions.components) {
 						if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
 							region.is_cleared = true;
-							for (auto wp : registry.waypoints.entities) {
-								if (registry.waypoints.get(wp).interest_point == region.interest_point) {
-									registry.remove_all_components_of(wp);
-									break;
-								}
-							}
 							break;
 						}
 					}
@@ -674,7 +667,7 @@ float calculateSpawnProbability(vec2 player_position) {
 		nearest_distance = std::min(nearest_distance, distance);
 	}
 	// Convert distance to a probability (closer to interest point = higher probability)
-	return 1.0f - (nearest_distance / SPAWN_RANGE);
+	return 1.0f - (nearest_distance / MAP_RADIUS);
 }
 
 void WorldSystem::step_enemySpawn(float elapsed_ms) {
@@ -763,10 +756,23 @@ void WorldSystem::step_waypoints() {
 
 
 	float minDistance = MAP_RADIUS;
-	Entity closestWP = Entity();
-	for (Entity wp : registry.waypoints.entities) {
-		Waypoint waypoint = registry.waypoints.get(wp);
-		vec2 interest_point_screen_coord = vec2(renderer->createViewMatrix() * vec3(waypoint.interest_point, 1.0));
+	Entity closestWP;
+	Game& game = registry.game.get(game_entity);
+	for (int i = (int) registry.waypoints.size() - 1; i >= 0; i--) {
+		Entity wp = registry.waypoints.entities[i];
+		Waypoint& waypoint = registry.waypoints.components[i];
+		vec2 target_point;
+
+		// Update waypoint targets to their live position
+		if (registry.transforms.has(waypoint.target)) {
+			target_point = registry.transforms.get(waypoint.target).position;
+		} else {
+			// if target doesn't exist, remove waypoint
+			registry.remove_all_components_of(wp);
+			continue;
+		}
+
+		vec2 interest_point_screen_coord = vec2(renderer->createViewMatrix() * vec3(target_point, 1.0));
 		vec2 result = findIntersectionPoint(interest_point_screen_coord);
 
 		registry.transforms.get(wp).position = result;
@@ -796,7 +802,7 @@ void WorldSystem::step_waypoints() {
 		}
 	}
 	// set closest icon alpha to 1 if not on screen and player not in center
-    if (registry.waypoints.has(closestWP) && length(registry.transforms.get(player).position) > 600.f) {
+    if (registry.waypoints.has(closestWP) && length(registry.transforms.get(player).position) > SPAWN_REGION_RADIUS / 2.f) {
         float& alpha = registry.colors.get(closestWP).a;
         alpha = alpha == 0.f ? 0.f : 1.f;
     }
@@ -954,6 +960,34 @@ void WorldSystem::create_debug_lines() {
 	}
 }
 
+// Create region goal objects (boss, chest, etc.) and waypoint to them
+// REQUIRES: regions to be set up
+void WorldSystem::populate_region_goals() {
+	Game& game = registry.game.get(game_entity);
+	for (Region& region : registry.regions.components) {
+		if (region.is_cleared) continue;
+
+		if (region.goal == REGION_GOAL_ID::CURE) {
+			if (!game.isFirstBossDefeated) {
+				Entity firstBoss = createBoss(renderer, region.interest_point);
+				createWaypoint(region.goal, firstBoss);
+			}
+			else if (!game.isCureObtained) {
+				Entity cure = createCure(region.interest_point);
+				createWaypoint(region.goal, cure);
+			}
+		} else if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
+			if (game.isCureObtained && !game.isSecondBossDefeated) {
+				Entity secondBoss = createSecondBoss(renderer, region.interest_point);
+				createWaypoint(region.goal, secondBoss);
+			}
+		} else {
+			Entity chest = createChest(region.interest_point, region.goal);
+			createWaypoint(region.goal, chest);
+		}
+	}
+}
+
 void WorldSystem::load_player_abilities() {
 	for (PlayerAbility& ability_component : registry.playerAbilities.components) {
 		PLAYER_ABILITY_ID ability = ability_component.id;
@@ -1011,7 +1045,6 @@ void WorldSystem::restart_game(bool hard_reset) {
 	dialog_system->clear_pending_dialogs();
 	if (hard_reset) {
 		reset_persistent_game_state();
-		createWaypoints();
 
 		// Populate initial dialogs
 		dialog_system->add_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO1);
@@ -1069,32 +1102,19 @@ void WorldSystem::restart_game(bool hard_reset) {
 	maxEnemies[ENEMY_ID::RED] = registry.gameMode.components.back().max_red;
 	maxEnemies[ENEMY_ID::GREEN] = registry.gameMode.components.back().max_green;
 	maxEnemies[ENEMY_ID::YELLOW] = registry.gameMode.components.back().max_yellow;
+	
 	// Create a new player
 	player = createPlayer({ 0, 0 });
 	effects_system->player = player;
+	load_player_abilities();
+	
+	// Populate regions
 	if (DEBUG_MODE) {
 		createBoss(renderer, { 100.f, 100.f });
 		createSecondBoss(renderer, { -100.f, 100.f });
+	} else {
+		populate_region_goals();
 	}
-	else {
-		for (auto& region : registry.regions.components) {
-			if (region.goal == REGION_GOAL_ID::CURE) {
-				if (!registry.game.get(game_entity).isCureUnlocked) {
-					createBoss(renderer, region.interest_point);
-				}
-			}
-			else if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
-				if (registry.game.get(game_entity).isCureUnlocked && !registry.game.get(game_entity).isSecondBossDefeated) {
-					createSecondBoss(renderer, region.interest_point);
-				}
-			}
-			else {
-				createChest(region.interest_point, region.goal);
-			}
-		}
-	}
-
-	load_player_abilities();
 
 	// Hide boss health bar in case player dies during boss fight
 	registry.colors.get(boss_healthbar).a = 0.f;
@@ -1275,15 +1295,8 @@ void WorldSystem::resolve_collisions() {
 				}
 
 				for (auto& region : registry.regions.components) {
-					if (region.interest_point == chest.position) {
+					if (region.goal == chest.ability) {
 						region.is_cleared = true;
-						for (Entity wp : registry.waypoints.entities) {
-							Waypoint waypoint = registry.waypoints.get(wp);
-							if (waypoint.interest_point == region.interest_point) {
-								registry.remove_all_components_of(wp);
-								break;
-							}
-						}
 					}
 				}
 
@@ -1295,22 +1308,14 @@ void WorldSystem::resolve_collisions() {
         }
 		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_CURE) {
 			Entity cureEntity = collision.other_entity;
-
-			registry.game.get(game_entity).isCureUnlocked = true;
-				
-			for (auto& region : registry.regions.components) {
+			registry.game.get(game_entity).isCureObtained = true;
+			
+			for (Region& region : registry.regions.components) {
 				if (region.goal == REGION_GOAL_ID::CURE) {
 					region.is_cleared = true;
-					for (auto wp : registry.waypoints.entities) {
-						if (registry.waypoints.get(wp).interest_point == region.interest_point) {
-							registry.remove_all_components_of(wp);
-							break;
-						}
-					}
-				}
-				if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
-					createSecondBoss(renderer, region.interest_point);
-					createWaypoint(region);
+				} else if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
+					Entity secondBoss = createSecondBoss(renderer, region.interest_point);
+					createWaypoint(region.goal, secondBoss);
 				}
 			}
 
@@ -1935,13 +1940,13 @@ void WorldSystem::load_game() {
 
 	// Recreate required entities with the saved values
 
+	// Deserialize and recreate Regions
+	loadRegions(gameState["regions"]);
+
 	// Deserialize Player
 	const auto& playerData = gameState["player"];
 	player = createPlayer({ playerData["position"][0], playerData["position"][1] });
 	effects_system->player = player;
-
-	// Deserialize and recreate Regions
-    loadRegions(gameState["regions"]);
 
 	// Deserialize Player Abilities
 	for (const auto& abilityId : gameState["playerAbilities"]) {
@@ -1962,7 +1967,7 @@ void WorldSystem::load_game() {
 	assert(registry.game.has(game_entity));
 	const auto& gameData = gameState["game"];
 	Game& gameComponent = registry.game.get(game_entity);
-	gameComponent.isCureUnlocked = gameData["isCureUnlocked"];
+	gameComponent.isCureObtained = gameData["isCureObtained"];
 	gameComponent.isSecondBossDefeated = gameData["isSecondBossDefeated"];
 	gameComponent.isCystTutorialDisplayed = gameData["isCystTutorialDisplayed"];
 
@@ -1974,13 +1979,18 @@ void WorldSystem::load_game() {
         vec2 position = { enemyData["position"][0], enemyData["position"][1] };
         float enemyHealth = enemyData["health"];
         ENEMY_ID enemyType = static_cast<ENEMY_ID>(enemyData["type"]);
-
         switch (enemyType) {
             case ENEMY_ID::BOSS:
-                createBoss(renderer, position, enemyHealth);
+				if (!gameComponent.isFirstBossDefeated) {
+					Entity boss1 = createBoss(renderer, position, enemyHealth);
+					createWaypoint(REGION_GOAL_ID::CURE, boss1);
+				}
                 break;
 			case ENEMY_ID::FRIENDBOSS:
-				createSecondBoss(renderer, position, enemyHealth);
+				if (!gameComponent.isSecondBossDefeated) {
+					Entity boss2 = createSecondBoss(renderer, position, enemyHealth);
+					createWaypoint(REGION_GOAL_ID::CANCER_CELL, boss2);
+				}
 				break;
 			case ENEMY_ID::RED:
 				createRedEnemy(position, enemyHealth);
@@ -2018,13 +2028,15 @@ void WorldSystem::load_game() {
     for (const auto& chestData : gameState["chests"]) {
         vec2 position = {chestData["position"][0], chestData["position"][1]};
         REGION_GOAL_ID ability = static_cast<REGION_GOAL_ID>(chestData["ability"]);
-        createChest(position, ability);
+        Entity chest = createChest(position, ability);
+		createWaypoint(ability, chest);
     }
 
     // Deserialize Cure
-    if (!gameComponent.isCureUnlocked && gameState["cure"] != nullptr) {
+    if (!gameComponent.isCureObtained && gameState["cure"] != nullptr) {
         vec2 curePosition = {gameState["cure"]["position"][0], gameState["cure"]["position"][1]};
-        createCure(curePosition);
+        Entity cure = createCure(curePosition);
+		createWaypoint(REGION_GOAL_ID::CURE, cure);
     }
 
 	auto& gameModeData = gameState["gameMode"][0];
@@ -2040,7 +2052,7 @@ void WorldSystem::loadRegions(const json& regionsData) {
     // Assuming the regions are saved in the same order they were created
     assert(regionsData.size() == registry.regions.components.size());
 
-	bool cureUnlocked = registry.game.get(game_entity).isCureUnlocked;
+	bool cureUnlocked = registry.game.get(game_entity).isCureObtained;
 	bool secondBossDefeated = registry.game.get(game_entity).isSecondBossDefeated;
 
     for (size_t i = 0; i < regionsData.size(); ++i) {
@@ -2060,16 +2072,6 @@ void WorldSystem::loadRegions(const json& regionsData) {
         // Update RenderRequest component
         RenderRequest& renderReq = registry.renderRequests.get(entity);
         renderReq.used_texture = region_texture_map[region.theme];
-
-        // Create Waypoints if the region is not cleared
-        if (!region.is_cleared) {
-            // Waypoint for second boss should be created if the cure is unlocked and it is not defeated
-            if (region.boss == BOSS_ID::FRIEND && cureUnlocked && !secondBossDefeated) {
-                createWaypoint(region);
-            } else if (region.boss != BOSS_ID::FRIEND) {
-                createWaypoint(region);
-            }
-        }
     }
 }
 
@@ -2107,7 +2109,8 @@ json WorldSystem::serializeGameState() {
     gameState["player"]["health"] = playerHealth.health;
 
 	const auto& gameComponent = registry.game.get(game_entity);
-    gameState["game"]["isCureUnlocked"] = gameComponent.isCureUnlocked;
+	gameState["game"]["isFirstBossDefeated"] = gameComponent.isFirstBossDefeated;
+    gameState["game"]["isCureObtained"] = gameComponent.isCureObtained;
 	gameState["game"]["isSecondBossDefeated"] = gameComponent.isSecondBossDefeated;
 	gameState["game"]["isCystTutorialDisplayed"] = gameComponent.isCystTutorialDisplayed;
 

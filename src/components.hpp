@@ -385,7 +385,8 @@ static std::unordered_map <ENEMY_ID, double> enemy_health_map_regular = {
 #pragma region Components
 
 struct Game {
-	bool isCureUnlocked = false;
+	bool isFirstBossDefeated = false;
+	bool isCureObtained = false;
 	bool isSecondBossDefeated = false;
 	bool isCystTutorialDisplayed = false;
 };
@@ -404,7 +405,6 @@ struct Camera {
 // Enemy component
 struct Enemy {
 	ENEMY_ID type;
-	float angle = 0.f;
 	float sword_attack_cd = 0.f;
 };
 
@@ -628,7 +628,8 @@ struct Melee {
 
 // Icons corresponding to interest point
 struct Waypoint {
-	vec2 interest_point = { 0.f, 0.f }; // to reference region
+	Entity target; // Chest or boss. Can be removed from game
+	REGION_GOAL_ID goal = REGION_GOAL_ID::REGION_GOAL_COUNT;
 	vec2 icon_scale = { 20.f, 20.f };
 };
 

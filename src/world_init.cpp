@@ -152,7 +152,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 
 	registry.collidePlayers.emplace(entity);
 	Motion& motion = registry.motions.emplace(entity);
-	motion.max_velocity = 250.f; // TODO: Dummy boss for now, change this later
+	motion.max_velocity = 250.f;
 	motion.max_angular_velocity = M_PI / 6.f;
 
 	Transform& transform = registry.transforms.emplace(entity);
@@ -161,11 +161,14 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 	transform.angle_offset = -M_PI / 2;
 	transform.angle = transform.angle_offset;
 
-	registry.healthValues.insert(entity, { static_cast<float>(registry.gameMode.components.back().enemy_health_map[ENEMY_ID::BOSS]), static_cast<float>(registry.gameMode.components.back().enemy_health_map[ENEMY_ID::BOSS])});
+	Health& enemyHealth = registry.healthValues.emplace(entity);
+	enemyHealth.health = fmin(health, registry.gameMode.components.back().enemy_health_map[ENEMY_ID::BOSS]);
+	enemyHealth.maxHealth = registry.gameMode.components.back().enemy_health_map[ENEMY_ID::BOSS];
 
 	// Setting initial components values
 	Enemy& new_enemy = registry.enemies.emplace(entity);
 	new_enemy.type = ENEMY_ID::BOSS;
+	registry.bosses.emplace(entity);
 
 	Gun& weapon = registry.guns.emplace(entity);
 	weapon.damage = 15.f;
@@ -175,7 +178,6 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 	weapon.bullet_size = { 45.f, 45.f };
 	weapon.bullet_color = { 0.f, 0.992f, 1.f, 1.f };
 
-	registry.bosses.emplace(entity);
 
 	// Add to render_request
 	registry.renderRequests.insert(
@@ -282,6 +284,7 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 	Enemy& new_enemy = registry.enemies.emplace(boss_entity);
 	// Setting initial components values
 	new_enemy.type = ENEMY_ID::FRIENDBOSS;
+	registry.bosses.emplace(boss_entity);
 
 	Transform& transform = registry.transforms.emplace(boss_entity);
 	transform.position = pos;
@@ -291,11 +294,11 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 
 	Motion& motion = registry.motions.emplace(boss_entity);
 
-	motion.max_velocity = 350.f; // TODO: Dummy boss for now, change this later
+	motion.max_velocity = 350.f;
 
 	Health& enemyHealth = registry.healthValues.emplace(boss_entity);
-	enemyHealth.health = registry.gameMode.components.back().enemy_health_map[ENEMY_ID::FRIENDBOSS];
-	enemyHealth.maxHealth = registry.gameMode.components.back().enemy_health_map[ENEMY_ID::FRIENDBOSS];;
+	enemyHealth.health = fmin(health, registry.gameMode.components.back().enemy_health_map[ENEMY_ID::FRIENDBOSS]);
+	enemyHealth.maxHealth = registry.gameMode.components.back().enemy_health_map[ENEMY_ID::FRIENDBOSS];
 
 	Gun& weapon = registry.guns.emplace(boss_entity);
 	weapon.damage = 15.f;
@@ -305,7 +308,6 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 	weapon.angle_offset = IMMUNITY_TEXTURE_ANGLE;
 	weapon.attack_delay = PLAYER_ATTACK_DELAY / registry.gameMode.components.back().FRIEND_BOSS_DIFFICULTY * 1.2f;
 
-	registry.bosses.emplace(boss_entity);
 
 	// Add to render_request
 	registry.renderRequests.insert(
@@ -882,27 +884,20 @@ Entity createCrosshair() {
 	return entity;
 }
 
-void createWaypoints() {
-	for (const Region& region : registry.regions.components) {
-		if (region.is_cleared) continue;
-		if (region.boss == BOSS_ID::FRIEND) continue; // don't show second boss yet
-		createWaypoint(region);
-	}
-}
-
-void createWaypoint(Region region) {
+void createWaypoint(REGION_GOAL_ID goal, Entity target) {
+	assert(registry.transforms.has(target));
+	
 	Entity entity = Entity();
-
 	Waypoint& waypoint = registry.waypoints.emplace(entity);
-	waypoint.interest_point = region.interest_point;
+	waypoint.target = target;
+	waypoint.goal = goal;
 	registry.transforms.insert(entity, {vec2(0.f, 0.f), vec2(30.f, 30.f), 0.f, true });
 
 	TEXTURE_ASSET_ID texture;
-	if (region.boss != BOSS_ID::BOSS_COUNT) {
+	if (goal == REGION_GOAL_ID::CURE || goal == REGION_GOAL_ID::CANCER_CELL) {
 		waypoint.icon_scale = SKULL_TEXTURE_SIZE;
 		texture = TEXTURE_ASSET_ID::ICON_SKULL;
 	} else {
-		// this includes second boss
 		waypoint.icon_scale = QUESTION_TEXTURE_SIZE;
 		texture = TEXTURE_ASSET_ID::ICON_QUESTION;
 	}

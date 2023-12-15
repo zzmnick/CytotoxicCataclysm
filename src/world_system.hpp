@@ -70,6 +70,7 @@ private:
 	// restart level
 	void restart_game(bool hard_reset = false);
 	void load_player_abilities();
+	void populate_region_goals();
 
 	// OpenGL window handle
 	GLFWwindow* window;

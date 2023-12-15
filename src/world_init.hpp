@@ -55,9 +55,9 @@ Entity createRedEnemy(vec2 pos, float health = 40.0f);
 Entity createGreenEnemy(vec2 pos, float health = 150.0f);
 Entity createYellowEnemy(vec2 pos, float health = 50.0f);
 Entity createBossClone(vec2 pos, float health = 10.0f);
-Entity createBoss(RenderSystem* renderer, vec2 pos, float health = 1000.0f);
+Entity createBoss(RenderSystem* renderer, vec2 pos, float health = INFINITY);
 void createBossArms(RenderSystem* renderer, Entity bossEntity, vec2 bossSize);
-Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health = 250.0f);
+Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health = INFINITY);
 
 /*************************[ environment ]*************************/
 // the random regions
@@ -74,8 +74,7 @@ Entity createLine(vec2 position, float angle, vec2 scale);
 std::tuple<Entity, Entity> createHealthbar(vec2 position, vec2 scale);
 std::tuple<Entity, Entity> createBossHealthbar(vec2 position, vec2 scale);
 Entity createCrosshair();
-void createWaypoints();
-void createWaypoint(Region region);
+void createWaypoint(REGION_GOAL_ID goal, Entity target);
 Entity createDeathScreen(int scenario);
 Entity createCredits();
 Entity createHoldGuide(vec2 position, vec2 scale);
