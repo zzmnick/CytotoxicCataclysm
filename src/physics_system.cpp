@@ -127,23 +127,23 @@ bool line_interesect_with_circle(vec2 point_1, vec2 point_2, CollisionCircle cir
 
 // Returns the knockback direction if collides. Otherwise returns {0, 0}
 vec2 collides_with_region_boundary(const Transform& transform, const Motion& motion) {
-	Region bounding_region;
 	float target_angle = atan2f(transform.position.y, transform.position.x);
 	float min_region_angle = 0.f, max_region_angle = 0.f;
+	float region_spread = M_PI * 2 / NUM_REGIONS;
 	for (uint i = 0; i < registry.regions.size(); i++) {
-		float angle = registry.transforms.get(registry.regions.entities[i]).angle;
-		if (target_angle > angle && target_angle < angle + M_PI * 2 / NUM_REGIONS) {
-			min_region_angle = angle;
-			max_region_angle = angle + M_PI * 2 / NUM_REGIONS;
-			break;
+		min_region_angle = registry.transforms.get(registry.regions.entities[i]).angle;
+		if (min_region_angle > M_PI) min_region_angle -= 2 * M_PI;	// Convert from [0, 2PI] to [-PI, +PI]
+		max_region_angle = min_region_angle + region_spread;
+		if (target_angle > min_region_angle && target_angle < max_region_angle) {
+			break;	// Found the region
 		}
 	}
 	std::vector<CollisionCircle> collision_circles = get_collision_circles(transform);
 	vec2 knockback_dir = {0.f, 0.f};
 	for (CollisionCircle circle : collision_circles) {
-		if (line_interesect_with_circle(vec2(0.f, 0.f), vec2(cos(min_region_angle) * MAP_RADIUS, 
+		if (line_interesect_with_circle(vec2(0.f, 0.f), vec2(cosf(min_region_angle) * MAP_RADIUS, 
 										sin(min_region_angle) * MAP_RADIUS), circle)) {
-			vec2 normal_vec = normalize(vec2(cos(min_region_angle + M_PI / 2), sin(min_region_angle + M_PI / 2)));
+			vec2 normal_vec = normalize(vec2(cosf(min_region_angle + M_PI / 2), sinf(min_region_angle + M_PI / 2)));
 			if (dot(motion.velocity, normal_vec) < 0) {
 				knockback_dir = motion.velocity - 2 * dot(motion.velocity, normal_vec) * normal_vec;
 				break;
