@@ -107,12 +107,14 @@ void RenderSystem::setRegionShaderVars(Entity entity) {
 	GLuint mapRadius_loc = glGetUniformLocation(program, "mapRadius");
 	GLuint spawnRadius_loc = glGetUniformLocation(program, "spawnRadius");
 	GLuint edgeThickness_loc = glGetUniformLocation(program, "edgeThickness");
+	GLuint regionAngle_loc = glGetUniformLocation(program, "regionAngle");
 	gl_has_errors();
 
 	// Setting values to the currently bound program
 	glUniform1f(mapRadius_loc, MAP_RADIUS);
 	glUniform1f(spawnRadius_loc, SPAWN_REGION_RADIUS);
 	glUniform1f(edgeThickness_loc, EDGE_FADING_THICKNESS);
+	glUniform1f(regionAngle_loc, 2 * M_PI / NUM_REGIONS);
 	gl_has_errors();
 }
 

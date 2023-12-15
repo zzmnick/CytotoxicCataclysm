@@ -90,7 +90,7 @@ private:
 	const float BULLET_SPEED_MULTIPLIER = 0.6f;
 	const float ATTACK_DELAY_MULTIPLIER = 1.f;
 	const float BULLET_SIZE_MULTIPLIER = 2.f;
-	const vec4 DAMAGE_BUFF_PROJECTILE_COLOR = { 0.2f,0.1f,0.1f,1.f };
+	const vec4 DAMAGE_BUFF_PROJECTILE_COLOR = { 1.0f,0.5f,0.05f,1.f };
 	const float DAMAGE_EFFECT_TIME = 5500;
 
 	// no attack debuff consts

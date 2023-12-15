@@ -9,6 +9,7 @@ in vec2 worldcoord;
 uniform sampler2D sampler0;
 uniform float spawnRadius;
 uniform float mapRadius;
+uniform float regionAngle;
 uniform float edgeThickness;
 
 // Output color
@@ -22,12 +23,11 @@ void main()
 	if (origin_dist > mapRadius) {
 		discard;
 	}
+	float angle = atan(vertcoord.y / vertcoord.x);
+	float angleToEdge = min(angle, regionAngle - angle);
 
-	if (vertcoord.x < edgeThickness) {
-		brightness = 0.01f;
-	}
-	if (vertcoord.y < edgeThickness) {
-		brightness = 0.01f;
+	if (angleToEdge < edgeThickness) {
+		brightness = min(brightness, pow(angleToEdge / edgeThickness, 0.4));
 	}
 	if (origin_dist < spawnRadius) {
 		brightness = min(brightness, pow(origin_dist / spawnRadius, 3));
