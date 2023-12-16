@@ -10,11 +10,11 @@
 // These are hard coded to the dimensions of the entity texture
 const vec2 IMMUNITY_TEXTURE_SIZE = { 30.f, 30.f };
 const vec2 RED_ENEMY_TEXTURE_SIZE = { 48.f, 40.f };
-const vec2 GREEN_ENEMY_TEXTURE_SIZE = { 40.f, 40.f };
+const vec2 GREEN_ENEMY_TEXTURE_SIZE = { 148.f, 140.f };
 const vec2 YELLOW_ENEMY_TEXTURE_SIZE = { 63.f, 60.f };
 const vec2 HEALTHBAR_TEXTURE_SIZE = { 530.f, 80.f };
 const vec2 BOSS_HEALTHBAR_TEXTURE_SIZE = {1000.f, 126.f};
-const vec2 CHEST_TEXTURE_SIZE = { 358.f, 366.f };
+const vec2 CHEST_TEXTURE_SIZE = { 24.f, 76.f };
 const vec2 BACTERIOPHAGE_TEXTURE_SIZE = { 180.f, 689.f };
 const vec2 BACTERIOPHAGE_ARM_TEXTURE_SIZE = { 174.f, 33.f };
 const vec2 DIALOG_TEXTURE_SIZE = { 1920.f, 1080.f };
@@ -36,9 +36,9 @@ const float IMMUNITY_TEXTURE_ANGLE = -M_PI / 4;
 const vec2 STATUSBAR_SCALE = { 1.f, 1.f };
 const vec2 PLAYER_SIZE = IMMUNITY_TEXTURE_SIZE * 3.f;
 const vec2 RED_ENEMY_SIZE = RED_ENEMY_TEXTURE_SIZE * 2.f;
-const vec2 GREEN_ENEMY_SIZE = GREEN_ENEMY_TEXTURE_SIZE * 4.f;
+const vec2 GREEN_ENEMY_SIZE = GREEN_ENEMY_TEXTURE_SIZE * 1.f;
 const vec2 YELLOW_ENEMY_SIZE = YELLOW_ENEMY_TEXTURE_SIZE * 1.5f;
-const vec2 CHEST_SIZE = CHEST_TEXTURE_SIZE * 0.5f;
+const vec2 CHEST_SIZE = CHEST_TEXTURE_SIZE * 3.f;
 const vec2 CURE_SIZE = CURE_TEXTURE_SIZE * 2.0f;
 const vec2 BACTERIOPHAGE_BOSS_SIZE = BACTERIOPHAGE_TEXTURE_SIZE * 0.7f;
 const vec2 FRIEND_BOSS_SIZE = FRIEND_TEXTURE_SIZE * 3.f;
