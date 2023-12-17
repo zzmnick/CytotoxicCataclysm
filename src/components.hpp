@@ -531,6 +531,7 @@ struct Chest {
     REGION_GOAL_ID ability;
     bool isOpened = false;
     vec2 position;
+	bool waveActivated = false;
 };
 
 struct Cure {

@@ -20,8 +20,8 @@ std::unordered_map < int, float > axes_state;
 const unsigned char *controller_buttons = nullptr;
 vec2 mouse;
 const float ENEMY_SPAWN_PADDING = 50.f; // Padding to ensure off-screen spawn
-float enemy_spawn_cooldown = 5.f;
-const float INDIVIDUAL_SPAWN_INTERVAL = 1.0f;
+float enemy_spawn_cooldown = 5000.f;
+float individual_spawn_interval = 1000.f;
 std::vector<ENEMY_ID> enemyTypes = { ENEMY_ID::RED, ENEMY_ID::GREEN, ENEMY_ID::YELLOW }; // Add more types as needed
 float menu_timer = 0.f;
 
@@ -675,10 +675,8 @@ float calculateSpawnProbability(vec2 player_position) {
 }
 
 void WorldSystem::step_enemySpawn(float elapsed_ms) {
-	float elapsed_seconds = elapsed_ms / 1000.f; // Convert milliseconds to seconds
-
 	// Decrease the spawn cooldown timer
-	enemy_spawn_cooldown -= elapsed_seconds;
+	enemy_spawn_cooldown -= elapsed_ms;
 
 	if (enemy_spawn_cooldown <= 0.f) {
 		vec2 player_position = registry.transforms.get(player).position;
@@ -690,7 +688,7 @@ void WorldSystem::step_enemySpawn(float elapsed_ms) {
 		}
 
 		// Reset the cooldown timer for the next individual enemy spawn
-		enemy_spawn_cooldown = INDIVIDUAL_SPAWN_INTERVAL;
+		enemy_spawn_cooldown = individual_spawn_interval;
 	}
 }
 
@@ -913,6 +911,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	step_waypoints();
 	step_controller();
 	step_bossfight();
+	step_chests();
 
 	// Block velocity update for one step after collision to
 	// avoid going out of border / going through enemy
@@ -1125,6 +1124,10 @@ void WorldSystem::restart_game(bool hard_reset) {
 	registry.colors.get(boss_healthbar_frame).a = 0.f;
 
 	createRandomCysts(rng);
+
+	// reset these variables
+	individual_spawn_interval = 1000.f;
+	enemy_spawn_cooldown = 5000.f;
 }
 
 // Call this method each frame to update the space bar duration
@@ -1227,6 +1230,8 @@ void WorldSystem::resolve_collisions() {
             Chest& chest = registry.chests.get(chestEntity);
 
 			if (!chest.isOpened && isHoldingSpace(100.0f)) {
+				enemy_spawn_cooldown = 1000.f; // lower cooldown set by step_chests()
+
                 chest.isOpened = true;
 				Entity abilityEntity = Entity();
 
@@ -2476,6 +2481,44 @@ void WorldSystem::step_bossfight() {
 					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_FRIEND_BOSS_DIALOG5);
 					dialog_system->add_camera_movement(boss_pos, player_pos, 1000.f);
 				}
+			}
+		}
+	}
+}
+
+// When chest is on-screen, spawn lots of enemies at once then dont spawn for x seconds
+void WorldSystem::step_chests() {
+	for (auto c : registry.chests.entities) {
+		Chest& chest = registry.chests.get(c);
+		if (!chest.waveActivated) {
+			if (length(chest.position - registry.transforms.get(player).position) < SCREEN_RADIUS) {
+				printf("activating\n");
+				chest.waveActivated = true;
+
+				individual_spawn_interval = 200.f;
+
+				// first timer: spawn lots of enemies for a couple seconds
+				TimedEvent& timer = registry.timedEvents.emplace(Entity());
+				timer.timer_ms = 2700.f;
+				timer.callback = [c, this]() {
+					// first callback: this code will run when first timer expires
+					individual_spawn_interval = 1000.f; // revert spawn change
+					enemy_spawn_cooldown = 25000.f; // don't spawn for x seconds
+					printf("set cooldown\n");
+
+					// second timer: don't activate again for x seconds
+					TimedEvent& timer = registry.timedEvents.emplace(Entity());
+					timer.timer_ms = 25000.f;
+					timer.callback = [c, this]() {
+						// second callback: this code will run when second timer expires
+						if (registry.chests.has(c)) {
+							Chest& chest = registry.chests.get(c);
+							printf("deactivating\n");
+
+							chest.waveActivated = false;
+						}
+					};
+				};
 			}
 		}
 	}

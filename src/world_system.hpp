@@ -138,6 +138,7 @@ private:
 	void step_bossfight();
 	void step_healthBoost(float elapsed_ms);
 	void step_roll_credits(float elapsed_ms);
+	void step_chests();
 
 	void spawnEnemiesNearInterestPoint(vec2 player_position);
 	void spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 player_velocity);
