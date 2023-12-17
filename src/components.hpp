@@ -361,7 +361,7 @@ static std::unordered_map <REGION_THEME_ID, TEXTURE_ASSET_ID> region_texture_map
 
 static std::unordered_map <ENEMY_ID, float> enemy_health_map_easy = {
 	{ENEMY_ID::BOSS, 1000.f * enemy_health_reductionMultipler},
-	{ENEMY_ID::BOSS_ARM, 200.f * enemy_health_reductionMultipler},
+	{ENEMY_ID::BOSS_ARM, 160.f * enemy_health_reductionMultipler},
 	{ENEMY_ID::FRIENDBOSS, 400.f * enemy_health_reductionMultipler},
 	{ENEMY_ID::FRIENDBOSSCLONE, 10.f * enemy_health_reductionMultipler},
 	{ENEMY_ID::GREEN, 150.f * enemy_health_reductionMultipler},
@@ -372,7 +372,7 @@ static std::unordered_map <ENEMY_ID, float> enemy_health_map_easy = {
 
 static std::unordered_map <ENEMY_ID, float> enemy_health_map_regular = {
 	{ENEMY_ID::BOSS, 1000.f},
-	{ENEMY_ID::BOSS_ARM, 200.f},
+	{ENEMY_ID::BOSS_ARM, 160.f},
 	{ENEMY_ID::FRIENDBOSS, 400.f},
 	{ENEMY_ID::FRIENDBOSSCLONE, 10.f},
 	{ENEMY_ID::GREEN, 150.f},

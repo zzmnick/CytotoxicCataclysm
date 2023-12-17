@@ -436,6 +436,10 @@ void WorldSystem::startEntityDeath(Entity entity) {
 				}
 			}
 		}
+		if (enemy.type == ENEMY_ID::BOSS_ARM) {
+			dt.timer_ms = INFINITY;
+			registry.renderRequests.get(entity).order = RENDER_ORDER::OBJECTS;
+		}
 	}
 	else if (registry.cysts.has(entity)) {
 		Game& game_state = registry.game.get(game_entity);
