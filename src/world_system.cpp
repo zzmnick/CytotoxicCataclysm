@@ -621,13 +621,13 @@ void WorldSystem::spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 pla
     switch (type) {
         case ENEMY_ID::RED:
 			if (out_of_boundary_check(RED_ENEMY_SIZE, spawn_position)) break;
-            std::cout << "Spawning Red Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
+            //std::cout << "Spawning Red Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
             createRedEnemy(spawn_position);
             enemyCounts[ENEMY_ID::RED]++;
             break;
         case ENEMY_ID::GREEN:
 			if (out_of_boundary_check(GREEN_ENEMY_SIZE, spawn_position)) break;
-            std::cout << "Spawning Green Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
+            //std::cout << "Spawning Green Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
             createGreenEnemy(spawn_position);
             enemyCounts[ENEMY_ID::GREEN]++;
             break;
@@ -1096,8 +1096,8 @@ void WorldSystem::restart_game(bool hard_reset) {
 
 	//if no gameMode selected yet, set to regular mode
 	if (registry.gameMode.entities.empty()) {
-		Entity placHolder = Entity();
-		registry.gameMode.insert(placHolder, regularMode);
+		Entity placeHolder = Entity();
+		registry.gameMode.insert(placeHolder, regularMode);
 	}
 	maxEnemies[ENEMY_ID::RED] = registry.gameMode.components.back().max_red;
 	maxEnemies[ENEMY_ID::GREEN] = registry.gameMode.components.back().max_green;
@@ -2009,9 +2009,9 @@ void WorldSystem::load_game() {
                 break;
         }
 
-        std::cout << "Enemy loaded: Type = " << static_cast<int>(enemyType)
-                  << ", Position = (" << position.x << ", " << position.y << ")"
-                  << ", Health = " << enemyHealth << "\n";
+        //std::cout << "Enemy loaded: Type = " << static_cast<int>(enemyType)
+        //          << ", Position = (" << position.x << ", " << position.y << ")"
+        //          << ", Health = " << enemyHealth << "\n";
     }
 
     // Deserialize Cysts
@@ -2020,8 +2020,8 @@ void WorldSystem::load_game() {
 		float cystHealth = cystData["health"];
 		createCyst(position, cystHealth);
 
-		std::cout << "Cyst loaded: Position = (" << position.x << ", " << position.y << ")"
-				<< ", Health = " << cystHealth << "\n";
+		//std::cout << "Cyst loaded: Position = (" << position.x << ", " << position.y << ")"
+		//		<< ", Health = " << cystHealth << "\n";
     }
 
     // Deserialize Chests

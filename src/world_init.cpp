@@ -600,12 +600,12 @@ void createRandomRegions(size_t num_regions, std::default_random_engine& rng) {
 
 void createRandomCysts(std::default_random_engine& rng) {
 	const float ANGLE = (M_PI * 2 / NUM_REGIONS);
-	const int TOTAL_CYSTS = 120; 
+	const int TOTAL_CYSTS = 132; 
 	const float MAX_CLOSENESS = SCREEN_RADIUS / 2;
 
-	const float LOWER_RADIUS = 0.18f * MAP_RADIUS;
+	const float LOWER_RADIUS = 0.17f * MAP_RADIUS;
 	const float UPPER_RADIUS = 0.98f * MAP_RADIUS;
-	const float MEAN_POINT = 0.27f * MAP_RADIUS; // actual mean is approx = max_radius - mean_point
+	const float MEAN_POINT = 0.28f * MAP_RADIUS; // actual mean is approx = max_radius - mean_point
 
 	std::exponential_distribution<float> radius_distribution(1.f / MEAN_POINT);
 	std::uniform_real_distribution<float> angle_distribution(0.f, ANGLE);
@@ -815,12 +815,6 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 	if (registry.enemies.has(shooter)) {
 		bullet_motion.velocity = { cos(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed, 
 			sin(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed};
-
-
-
-
-
-
 	}
 	else {
 		vec2 bullet_direction = normalize(vec2(cos(shooter_transform.angle - weapon.angle_offset), sin(shooter_transform.angle - weapon.angle_offset)));

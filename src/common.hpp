@@ -80,7 +80,7 @@ const float ANGLE_PRECISION = 0.01f;
 const int max_green_easyMode = 3;
 const int max_red_easyMode = 5;
 const int max_yellow_easyMode = 2;
-const double enemy_health_reductionMultipler = 0.5;
+const float enemy_health_reductionMultipler = 0.5f;
 const float FRIEND_BOSS_DIFFICULTY_easy = 0.5f;	// 1 : normal | <1 : easy | >1 : hard
 
 

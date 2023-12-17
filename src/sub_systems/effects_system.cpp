@@ -147,12 +147,12 @@ void EffectsSystem::handle_slow_effect() {
 	float prev_acceleration = motion.acceleration_unit;
 	float prev_max_velocity = motion.max_velocity;
 	motion.acceleration_unit = 0.3f;
-	motion.max_velocity = 200.f;
+	motion.max_velocity = 220.f;
 
 	Entity entity = Entity();
 
 	TimedEvent& effect_timer = registry.timedEvents.emplace(entity);
-	effect_timer.timer_ms = 6000;
+	effect_timer.timer_ms = 4000;
 	effect_timer.callback = [this, prev_acceleration, prev_max_velocity]() {
 		Motion& motion = registry.motions.get(player);
 		motion.acceleration_unit = prev_acceleration;

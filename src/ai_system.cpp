@@ -249,8 +249,8 @@ void AISystem::clone_attack(Entity enemy, int clones) {
 	
 	for (int i = 0; i < clones; i++) {
 		playertransform.angle += 1;
-		float xpos = playertransform.position.x + cos(playertransform.angle) * 700;
-		float ypos = playertransform.position.y + sin(playertransform.angle) * 700;
+		float xpos = playertransform.position.x + cos(playertransform.angle) * 800;
+		float ypos = playertransform.position.y + sin(playertransform.angle) * 800;
 		createBossClone({ xpos,ypos });
 
 	}

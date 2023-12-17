@@ -86,7 +86,7 @@ public:
 
 private:
 	// damage buff consts
-	const float DAMAGE_MULTIPLIER = 2.5f;
+	const float DAMAGE_MULTIPLIER = 2.75f;
 	const float BULLET_SPEED_MULTIPLIER = 0.6f;
 	const float ATTACK_DELAY_MULTIPLIER = 1.f;
 	const float BULLET_SIZE_MULTIPLIER = 2.f;
@@ -94,7 +94,7 @@ private:
 	const float DAMAGE_EFFECT_TIME = 5500;
 
 	// no attack debuff consts
-	const float NO_ATTACK_TIME = 4000.f;
+	const float NO_ATTACK_TIME = 3500.f;
 
 	WorldSystem& ws;
 

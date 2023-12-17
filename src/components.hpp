@@ -359,26 +359,26 @@ static std::unordered_map <REGION_THEME_ID, TEXTURE_ASSET_ID> region_texture_map
 	{REGION_THEME_ID::CUTANEOUS, TEXTURE_ASSET_ID::CUTANEOUS_BG}
 };
 
-static std::unordered_map <ENEMY_ID, double> enemy_health_map_easy = {
-	{ENEMY_ID::BOSS, 1000.0 * enemy_health_reductionMultipler},
-	{ENEMY_ID::BOSS_ARM, 200.0 * enemy_health_reductionMultipler},
-	{ENEMY_ID::FRIENDBOSS, 259.0 * enemy_health_reductionMultipler},
-	{ENEMY_ID::FRIENDBOSSCLONE, 10.0 * enemy_health_reductionMultipler},
-	{ENEMY_ID::GREEN, 150.0 * enemy_health_reductionMultipler},
-	{ENEMY_ID::RED, 40.0 * enemy_health_reductionMultipler},
-	{ENEMY_ID::YELLOW, 50.0 * enemy_health_reductionMultipler},
-	{ENEMY_ID::ENEMY_COUNT, 100.0 * enemy_health_reductionMultipler}
+static std::unordered_map <ENEMY_ID, float> enemy_health_map_easy = {
+	{ENEMY_ID::BOSS, 1000.f * enemy_health_reductionMultipler},
+	{ENEMY_ID::BOSS_ARM, 200.f * enemy_health_reductionMultipler},
+	{ENEMY_ID::FRIENDBOSS, 400.f * enemy_health_reductionMultipler},
+	{ENEMY_ID::FRIENDBOSSCLONE, 10.f * enemy_health_reductionMultipler},
+	{ENEMY_ID::GREEN, 150.f * enemy_health_reductionMultipler},
+	{ENEMY_ID::RED, 40.f * enemy_health_reductionMultipler},
+	{ENEMY_ID::YELLOW, 50.f * enemy_health_reductionMultipler},
+	{ENEMY_ID::ENEMY_COUNT, 100.f * enemy_health_reductionMultipler}
 };
 
-static std::unordered_map <ENEMY_ID, double> enemy_health_map_regular = {
-	{ENEMY_ID::BOSS, 1000.0},
-	{ENEMY_ID::BOSS_ARM, 200.0},
-	{ENEMY_ID::FRIENDBOSS, 259.0},
-	{ENEMY_ID::FRIENDBOSSCLONE, 10.0},
-	{ENEMY_ID::GREEN, 150.0},
-	{ENEMY_ID::RED, 40.0},
-	{ENEMY_ID::YELLOW, 50.0},
-	{ENEMY_ID::ENEMY_COUNT, 100.0}
+static std::unordered_map <ENEMY_ID, float> enemy_health_map_regular = {
+	{ENEMY_ID::BOSS, 1000.f},
+	{ENEMY_ID::BOSS_ARM, 200.f},
+	{ENEMY_ID::FRIENDBOSS, 400.f},
+	{ENEMY_ID::FRIENDBOSSCLONE, 10.f},
+	{ENEMY_ID::GREEN, 150.f},
+	{ENEMY_ID::RED, 40.f},
+	{ENEMY_ID::YELLOW, 50.f},
+	{ENEMY_ID::ENEMY_COUNT, 100.f}
 };
 #pragma endregion
 
@@ -649,7 +649,7 @@ struct GameMode {
 	int max_green;
 	int max_red;
 	int max_yellow;
-	std::unordered_map <ENEMY_ID, double> enemy_health_map;
+	std::unordered_map <ENEMY_ID, float> enemy_health_map;
 	float FRIEND_BOSS_DIFFICULTY;
 };
 #pragma endregion
