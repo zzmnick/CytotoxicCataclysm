@@ -63,6 +63,12 @@ void EffectsSystem::apply_random_effect() {
 		case CYST_EFFECT_ID::CLEAR_SCREEN:
 			handle_clear_screen();
 			break;
+		case CYST_EFFECT_ID::TRIPLE:
+			handle_triple_bullets();
+			break;
+		case CYST_EFFECT_ID::LOTS:
+			handle_lots_of_bullets();
+			break;
 		case CYST_EFFECT_ID::SLOW:
 			handle_slow_effect();
 			break;
@@ -138,6 +144,36 @@ void EffectsSystem::handle_clear_screen() {
 		}
 	}
 	setActiveTimer(CYST_EFFECT_ID::CLEAR_SCREEN, -1);
+}
+
+void EffectsSystem::handle_triple_bullets() {
+	registry.tripleBullets.emplace(player);
+
+	Entity entity = Entity();
+
+	TimedEvent& effect_timer = registry.timedEvents.emplace(entity);
+	effect_timer.timer_ms = DAMAGE_EFFECT_TIME;
+	effect_timer.callback = [this]() {
+		registry.tripleBullets.remove(player);
+		getEffect(CYST_EFFECT_ID::TRIPLE).is_active = false;
+		};
+
+	displayEffect(entity, CYST_EFFECT_ID::TRIPLE);
+}
+
+void EffectsSystem::handle_lots_of_bullets() {
+	registry.lotsOfBullets.emplace(player);
+
+	Entity entity = Entity();
+
+	TimedEvent& effect_timer = registry.timedEvents.emplace(entity);
+	effect_timer.timer_ms = 2000.f;
+	effect_timer.callback = [this]() {
+		registry.lotsOfBullets.remove(player);
+		getEffect(CYST_EFFECT_ID::LOTS).is_active = false;
+		};
+
+	displayEffect(entity, CYST_EFFECT_ID::LOTS);
 }
 
 /*************************[ negative effects ]*************************/
@@ -260,7 +296,7 @@ void EffectsSystem::playSound(CYST_EFFECT_ID id) {
 
 void EffectsSystem::displayEffect(Entity effect, CYST_EFFECT_ID id) {
 	int icon_offset = effect_to_position[id]; // can improve to fill gaps
-	float offset = icon_offset * ICON_SIZE.x * ICON_SCALE + PADDING;
+	float offset = icon_offset * ICON_SIZE.x * ICON_SCALE + (PADDING * icon_offset);
 	Transform& transform = registry.transforms.emplace(effect);
 	transform.position = EFFECTS_POSITION;
 	transform.position.x += offset;

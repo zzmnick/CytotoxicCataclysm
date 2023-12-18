@@ -47,6 +47,8 @@ public:
 	ComponentContainer<Game> game;
 	ComponentContainer<Credits> credits;
 	ComponentContainer<GameMode> gameMode;
+	ComponentContainer<TripleBullets> tripleBullets;
+	ComponentContainer<LotsOfBullets> lotsOfBullets;
 	
 
 	// constructor that adds all containers for looping over them

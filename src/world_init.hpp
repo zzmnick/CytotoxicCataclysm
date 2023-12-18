@@ -65,7 +65,8 @@ void createRandomRegions(size_t num_regions, std::default_random_engine& rng);
 void createRandomCysts(std::default_random_engine& rng);
 void createCyst(vec2 pos, float health = 50.0f);
 Entity createChest(vec2 pos, REGION_GOAL_ID ability);
-Entity createBullet(Entity shooter, vec2 scale, vec4 color);
+void createBullet(Entity shooter, vec2 scale, vec4 color);
+void createBulletHelper(Entity shooter, vec2 scale, vec4 color, float angle_offset);
 
 /*************************[ UI ]*************************/
 // a red line for debugging purposes

@@ -786,8 +786,31 @@ std::tuple<Entity, Entity> createBossHealthbar(vec2 position, vec2 scale) {
 	return std::make_tuple(bar, frame);
 }
 
+void createBullet(Entity shooter, vec2 scale, vec4 color) {
+	if (registry.lotsOfBullets.has(shooter)) {
+		// not efficient but haven't noticed any performance issues
+		createBulletHelper(shooter, scale, color, -M_PI / 5);
+		createBulletHelper(shooter, scale, color, -2 * M_PI / 5);
+		createBulletHelper(shooter, scale, color, -3 * M_PI / 5);
+		createBulletHelper(shooter, scale, color, -4 * M_PI / 5);
+		createBulletHelper(shooter, scale, color, M_PI / 5);
+		createBulletHelper(shooter, scale, color, 2 * M_PI / 5);
+		createBulletHelper(shooter, scale, color, 3 * M_PI / 5);
+		createBulletHelper(shooter, scale, color, 4 * M_PI / 5);
+		createBulletHelper(shooter, scale, color, 0.f);
+		createBulletHelper(shooter, scale, color, M_PI);
+	} else if (registry.tripleBullets.has(shooter)) {
+		createBulletHelper(shooter, scale*0.8f, color, -0.21f);
+		createBulletHelper(shooter, scale, color, 0.f);
+		createBulletHelper(shooter, scale*0.8f, color, 0.21f);
+	}
+	else {
+		createBulletHelper(shooter, scale, color, 0.f);
+	}
+}
+
 // Can be used for either player or enemy
-Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
+void createBulletHelper(Entity shooter, vec2 scale, vec4 color, float angle_offset) {
 	assert(registry.transforms.has(shooter));
 	// Create bullet's components
 	auto bullet_entity = Entity();
@@ -808,7 +831,7 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 
 	bullet_transform.position = t.mat[2];
 	bullet_transform.scale = scale;
-	bullet_transform.angle = 0.0;
+	bullet_transform.angle = 0.f;
 
 	Motion shooter_motion = registry.motions.get(shooter);
 
@@ -817,7 +840,7 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 			sin(shooter_transform.angle - weapon.angle_offset) * weapon.bullet_speed};
 	}
 	else {
-		vec2 bullet_direction = normalize(vec2(cos(shooter_transform.angle - weapon.angle_offset), sin(shooter_transform.angle - weapon.angle_offset)));
+		vec2 bullet_direction = normalize(vec2(cos(shooter_transform.angle + angle_offset - weapon.angle_offset), sin(shooter_transform.angle + angle_offset - weapon.angle_offset)));
 
 		float projection = dot(shooter_motion.velocity, bullet_direction);
 		// add players sideways velocity
@@ -852,8 +875,6 @@ Entity createBullet(Entity shooter, vec2 scale, vec4 color) {
 			EFFECT_ASSET_ID::COLOURED,
 			GEOMETRY_BUFFER_ID::BULLET,
 			RENDER_ORDER::OBJECTS });
-
-	return bullet_entity;
 }
 
 Entity createCamera(vec2 pos) {

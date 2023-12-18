@@ -2305,6 +2305,8 @@ void WorldSystem::player_sword_slash() {
 			Attachment& att = registry.attachments.get(sword_entity);
 			Motion& sword_motion = registry.motions.get(sword_entity);
 			sword_motion.angular_velocity = sword_motion.max_angular_velocity;
+			Mix_PlayChannel(chunkToChannel["sword_unlock"], soundChunks["sword_unlock"], 0);
+
 		}
 	}
 }

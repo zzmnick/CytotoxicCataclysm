@@ -70,9 +70,11 @@ enum class CYST_EFFECT_ID {
 	DAMAGE = 0,
 	HEAL = DAMAGE + 1,
 	CLEAR_SCREEN = HEAL + 1,
+	TRIPLE = CLEAR_SCREEN + 1,
+	LOTS = TRIPLE + 1,
 
 	// NEGATIVE EFFECTS
-	SLOW = CLEAR_SCREEN + 1,
+	SLOW = LOTS + 1,
 	FOV = SLOW + 1,
 	DIRECTION = FOV + 1,
 	NO_ATTACK = DIRECTION + 1,
@@ -653,5 +655,11 @@ struct GameMode {
 	int max_yellow;
 	std::unordered_map <ENEMY_ID, float> enemy_health_map;
 	float FRIEND_BOSS_DIFFICULTY;
+};
+
+struct TripleBullets {
+};
+
+struct LotsOfBullets {
 };
 #pragma endregion
