@@ -39,20 +39,25 @@ void AISystem::move_enemies(float elapsed_ms) {
 			vec2 target_point = playerTransform.position;
 			if (enemyAttribute.type == ENEMY_ID::BOSS) {
 				if (!registry.bosses.get(entity).activated) {
-					enemytransform.angle = atan2(target_point.y - enemytransform.position.y, target_point.x - enemytransform.position.x)+ M_PI / 2;
-					for (auto& region : registry.regions.components) {
-						if (region.goal == REGION_GOAL_ID::CURE) {
-							target_point = region.interest_point;
-						}
-					}
+					enemymotion.max_velocity = 0.f;
+					//target_point = enemytransform.position;
+					//enemytransform.angle = atan2f(target_point.y - enemytransform.position.y, target_point.x - enemytransform.position.x) ;
+					//for (auto& region : registry.regions.components) {
+					//	if (region.goal == REGION_GOAL_ID::CURE) {
+					//		target_point = region.interest_point;
+					//	}
+					//}
 				}
 			} else if (enemyAttribute.type == ENEMY_ID::FRIENDBOSS) {
 				if (!registry.bosses.get(entity).activated) {
-					for (auto& region : registry.regions.components) {
-						if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
-							target_point = region.interest_point;
-						}
-					}
+					enemymotion.max_velocity = 0.f;
+					//target_point = enemytransform.position;
+					//enemytransform.angle = atan2f(target_point.y - enemytransform.position.y, target_point.x - enemytransform.position.x) + enemytransform.angle_offset;
+					//for (auto& region : registry.regions.components) {
+					//	if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
+					//		target_point = region.interest_point;
+					//	}
+					//}
 				}
 				Dash& enemyDash = registry.dashes.get(entity);
 				if (enemyDash.active_timer_ms > 0.f) {
@@ -161,7 +166,7 @@ void AISystem::enemy_shoot(float elapsed_ms) {
 		Gun& enemyGun = registry.guns.get(entity);
 		vec2 playerposition = registry.transforms.get(player).position;
 		Transform& enemy_transform = registry.transforms.get(entity);
-		vec2 distance = abs(playerposition - enemy_transform.position) - length(enemy_transform.scale / 2.f);
+		vec2 distance = abs(playerposition - enemy_transform.position) - length(enemy_transform.scale / 2.f);	// As soon as the enemy is partially visible
 		if (registry.enemies.has(entity) && distance.x <= CONTENT_WIDTH_PX / 2 && distance.y <= CONTENT_HEIGHT_PX / 2) {
 			if (enemyGun.attack_timer <= 0) {
 				Enemy& enemy = registry.enemies.get(entity);

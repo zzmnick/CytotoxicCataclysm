@@ -40,8 +40,7 @@ class DialogSystem {
 public:
 	DialogSystem(std::unordered_map<int, int>& keys_pressed, const vec2& mouse, const unsigned char*& controller_buttons);
 	~DialogSystem();
-	bool is_finished();
-	bool is_paused();
+	bool has_pending();
 	bool step(float elapsed_ms);
 	void add_dialog(TEXTURE_ASSET_ID asset, float skip_delay_duration = SKIP_DELAY);
 	void add_camera_movement(vec2 start_pos, vec2 end_pos, float duration);

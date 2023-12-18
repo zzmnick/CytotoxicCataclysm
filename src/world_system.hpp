@@ -69,7 +69,10 @@ private:
 
 	// restart level
 	void restart_game(bool hard_reset = false);
-	void load_player_abilities();
+	void reset_game_state(bool hard_reset = false);
+	template <typename Component>
+	void clearSpecificEntities(ComponentContainer<Component>& componentRegistry);
+	void populate_player_abilities();
 	void populate_region_goals();
 
 	// OpenGL window handle
@@ -135,7 +138,7 @@ private:
 	void step_timer_with_callback(float elapsed_ms);
 	void step_waypoints();
 	void step_menu();
-	void step_bossfight();
+	void detect_bossfight();
 	void step_healthBoost(float elapsed_ms);
 	void step_roll_credits(float elapsed_ms);
 	void step_chests();
@@ -148,7 +151,6 @@ private:
 	void remove_entity(Entity entity);
 	void create_debug_lines();
 
-	void reset_persistent_game_state();
 	void load_game();
 	void loadRegions(const json& regionsData);
 	void save_game();

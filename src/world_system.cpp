@@ -17,7 +17,7 @@
 std::unordered_map < int, int > keys_pressed;
 float spaceBarPressDuration = 0.0f;
 std::unordered_map < int, float > axes_state;
-const unsigned char *controller_buttons = nullptr;
+const unsigned char* controller_buttons = nullptr;
 vec2 mouse;
 const float ENEMY_SPAWN_PADDING = 50.f; // Padding to ensure off-screen spawn
 float enemy_spawn_cooldown = 5000.f;
@@ -37,7 +37,7 @@ WorldSystem::WorldSystem() {
 	enemyCounts[ENEMY_ID::GREEN] = 0;
 	enemyCounts[ENEMY_ID::YELLOW] = 0;
 	maxEnemies[ENEMY_ID::RED] = 0;
-    maxEnemies[ENEMY_ID::GREEN] = 0;
+	maxEnemies[ENEMY_ID::GREEN] = 0;
 	maxEnemies[ENEMY_ID::YELLOW] = 0;
 	state = GAME_STATE::START_MENU;
 }
@@ -237,8 +237,9 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 	cursor = createCrosshair();
 
 	createCamera({ 0.f, 0.f });
-	hold_to_collect = createHoldGuide({0.f, CONTENT_HEIGHT_PX * -0.42 }, HOLD_GUIDE_TEXTURE_SIZE * 0.5f);
+	hold_to_collect = createHoldGuide({ 0.f, CONTENT_HEIGHT_PX * -0.42 }, HOLD_GUIDE_TEXTURE_SIZE * 0.5f);
 	dialog_system = new DialogSystem(keys_pressed, mouse, controller_buttons);
+	registry.gameMode.insert(Entity(), regularMode);
 
 	// Set all states to default
 	restart_game(true);
@@ -305,7 +306,8 @@ void WorldSystem::step_deathTimer(float elapsed_ms) {
 					dialog_system->add_dialog(TEXTURE_ASSET_ID::POST_BOSS_DIALOG);
 					dialog_system->add_camera_movement(enemyDeathSpot, player_pos, 1000.f);
 					Mix_FadeInMusic(backgroundMusic["main"], -1, 2000);
-				} else if (type == ENEMY_ID::FRIENDBOSS) {
+				}
+				else if (type == ENEMY_ID::FRIENDBOSS) {
 					registry.game.get(game_entity).isSecondBossDefeated = true;
 					registry.colors.get(boss_healthbar).a = 0.f;
 					registry.colors.get(boss_healthbar_frame).a = 0.f;
@@ -334,8 +336,8 @@ void WorldSystem::remove_entity(Entity entity) {
 	// Iterating backwards and updating i since multiple entities can be removed
 	for (int i = (int)registry.attachments.components.size() - 1;
 		i >= 0 && registry.attachments.components.size() > 0;
-		i = min(i-1, (int)registry.attachments.components.size() - 1)
-	) {
+		i = min(i - 1, (int)registry.attachments.components.size() - 1)
+		) {
 		if (registry.attachments.components[i].parent == entity) {
 			remove_entity(registry.attachments.entities[i]);
 		}
@@ -347,7 +349,7 @@ void WorldSystem::step_roll_credits(float elapsed_ms) {
 	const float start_position = -DIALOG_TEXTURE_SIZE.y;
 	const float distance = CONTENT_HEIGHT_PX + DIALOG_TEXTURE_SIZE.y;
 	const float fade_time = 2500.f;
-	const float title_start_position = -DIALOG_TEXTURE_SIZE.y*1.4;
+	const float title_start_position = -DIALOG_TEXTURE_SIZE.y * 1.4;
 
 	for (auto entity : registry.credits.entities) {
 		// rolling the credits
@@ -362,7 +364,7 @@ void WorldSystem::step_roll_credits(float elapsed_ms) {
 			registry.colors.get(credits.background).a = 1.f - (credits.timer - (credits.total_time - fade_time)) / fade_time;
 			registry.colors.get(credits.title).a = 1.f - (credits.timer - (credits.total_time - fade_time)) / fade_time;
 		}
-		
+
 		// end condition
 		if (credits.timer > credits.total_time) {
 			state = GAME_STATE::RUNNING;
@@ -429,7 +431,7 @@ void WorldSystem::startEntityDeath(Entity entity) {
 				static_cast<int>(ceil((DEATH_EFFECT_DURATION_ENEMY + buffer) / static_cast<int>(ANIMATION_FRAME_COUNT::GREEN_ENEMY_DYING))));
 		}
 		if (enemy.type == ENEMY_ID::FRIENDBOSS) {
-			for (Entity enemyentity: registry.enemies.entities){
+			for (Entity enemyentity : registry.enemies.entities) {
 				Enemy& enemyclone = registry.enemies.get(enemyentity);
 				if (enemyclone.type == ENEMY_ID::FRIENDBOSSCLONE) {
 					startEntityDeath(enemyentity);
@@ -466,11 +468,11 @@ void WorldSystem::step_health() {
 }
 
 void WorldSystem::step_healthBoost(float elapsed_ms) {
-    Health& health = registry.healthValues.get(player);
-    if (health.healthIncrement > 0) {
-        // Increment health
-        health.health = min(health.health + health.healthIncrement * (elapsed_ms / 1000.0f), health.maxHealth);
-    }
+	Health& health = registry.healthValues.get(player);
+	if (health.healthIncrement > 0) {
+		// Increment health
+		health.health = min(health.health + health.healthIncrement * (elapsed_ms / 1000.0f), health.maxHealth);
+	}
 }
 
 void WorldSystem::step_healthbar(float elapsed_ms, Entity healthbar, Entity target, float max_bar_len, bool update_color) {
@@ -527,7 +529,7 @@ void WorldSystem::step_invincibility(float elapsed_ms) {
 		// set alpha values
 		vec4& player_color = registry.colors.get(player);
 		player_color.a = flashAlpha;
-		
+
 		// set alpha value for all attachments of  the player
 		for (uint i = 0; i < registry.attachments.size(); i++) {
 			Attachment& att = registry.attachments.components[i];
@@ -578,7 +580,7 @@ void WorldSystem::step_attack(float elapsed_ms) {
 				}
 			}
 		}
-		
+
 
 	}
 }
@@ -594,7 +596,8 @@ void WorldSystem::step_dash(float elapsed_ms) {
 			//make dashing animation invisible
 			vec4& color = registry.colors.get(dashingAnimationEntity);
 			color = no_color;
-		} else {
+		}
+		else {
 			vec4& color = registry.colors.get(dashingAnimationEntity);
 			color = dashing_default_color;
 		}
@@ -622,26 +625,26 @@ void WorldSystem::spawnEnemyOfType(ENEMY_ID type, vec2 player_position, vec2 pla
 	vec2 offset = { cos(angle) * (SCREEN_RADIUS + ENEMY_SPAWN_PADDING), sin(angle) * (SCREEN_RADIUS + ENEMY_SPAWN_PADDING) };
 	vec2 spawn_position = player_position + offset;
 
-    switch (type) {
-        case ENEMY_ID::RED:
-			if (out_of_boundary_check(RED_ENEMY_SIZE, spawn_position)) break;
-            //std::cout << "Spawning Red Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
-            createRedEnemy(spawn_position);
-            enemyCounts[ENEMY_ID::RED]++;
-            break;
-        case ENEMY_ID::GREEN:
-			if (out_of_boundary_check(GREEN_ENEMY_SIZE, spawn_position)) break;
-            //std::cout << "Spawning Green Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
-            createGreenEnemy(spawn_position);
-            enemyCounts[ENEMY_ID::GREEN]++;
-            break;
-		case ENEMY_ID::YELLOW:
-			if (out_of_boundary_check(YELLOW_ENEMY_SIZE, spawn_position)) break;
-			createYellowEnemy(spawn_position);
-			enemyCounts[ENEMY_ID::YELLOW]++;
-        default:
-            break;
-    }
+	switch (type) {
+	case ENEMY_ID::RED:
+		if (out_of_boundary_check(RED_ENEMY_SIZE, spawn_position)) break;
+		//std::cout << "Spawning Red Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
+		createRedEnemy(spawn_position);
+		enemyCounts[ENEMY_ID::RED]++;
+		break;
+	case ENEMY_ID::GREEN:
+		if (out_of_boundary_check(GREEN_ENEMY_SIZE, spawn_position)) break;
+		//std::cout << "Spawning Green Enemy at: (" << spawn_position.x << ", " << spawn_position.y << ")" << std::endl;
+		createGreenEnemy(spawn_position);
+		enemyCounts[ENEMY_ID::GREEN]++;
+		break;
+	case ENEMY_ID::YELLOW:
+		if (out_of_boundary_check(YELLOW_ENEMY_SIZE, spawn_position)) break;
+		createYellowEnemy(spawn_position);
+		enemyCounts[ENEMY_ID::YELLOW]++;
+	default:
+		break;
+	}
 }
 
 void WorldSystem::spawnEnemiesNearInterestPoint(vec2 player_position) {
@@ -650,9 +653,9 @@ void WorldSystem::spawnEnemiesNearInterestPoint(vec2 player_position) {
 	std::uniform_int_distribution<int> type_dist(0, static_cast<int>(enemyTypes.size()) - 1);
 	ENEMY_ID randomType = enemyTypes[type_dist(rng)];
 
-    if (enemyCounts[randomType] < getMaxEnemiesForType(randomType)) {
-        spawnEnemyOfType(randomType, player_position, player_velocity);
-    }
+	if (enemyCounts[randomType] < getMaxEnemiesForType(randomType)) {
+		spawnEnemyOfType(randomType, player_position, player_velocity);
+	}
 
 }
 
@@ -760,7 +763,7 @@ void WorldSystem::step_waypoints() {
 	float minDistance = MAP_RADIUS;
 	Entity closestWP;
 	Game& game = registry.game.get(game_entity);
-	for (int i = (int) registry.waypoints.size() - 1; i >= 0; i--) {
+	for (int i = (int)registry.waypoints.size() - 1; i >= 0; i--) {
 		Entity wp = registry.waypoints.entities[i];
 		Waypoint& waypoint = registry.waypoints.components[i];
 
@@ -768,7 +771,8 @@ void WorldSystem::step_waypoints() {
 		// waypoint.interest_point will be used in AI system
 		if (registry.transforms.has(waypoint.target)) {
 			waypoint.interest_point = registry.transforms.get(waypoint.target).position;
-		} else {
+		}
+		else {
 			// if target doesn't exist, remove waypoint
 			registry.remove_all_components_of(wp);
 			continue;
@@ -779,11 +783,11 @@ void WorldSystem::step_waypoints() {
 
 		registry.transforms.get(wp).position = result;
 
-        float distance = length(interest_point_screen_coord);
-        if (distance < minDistance) {
-            minDistance = distance;
-            closestWP = wp;
-        }
+		float distance = length(interest_point_screen_coord);
+		if (distance < minDistance) {
+			minDistance = distance;
+			closestWP = wp;
+		}
 
 		const float minDistanceThreshold = 1500.f;
 		const float maxDistanceThreshold = 7500.f;
@@ -804,10 +808,10 @@ void WorldSystem::step_waypoints() {
 		}
 	}
 	// set closest icon alpha to 1 if not on screen and player not in center
-    if (registry.waypoints.has(closestWP) && length(registry.transforms.get(player).position) > SPAWN_REGION_RADIUS / 2.f) {
-        float& alpha = registry.colors.get(closestWP).a;
-        alpha = alpha == 0.f ? 0.f : 1.f;
-    }
+	if (registry.waypoints.has(closestWP) && length(registry.transforms.get(player).position) > SPAWN_REGION_RADIUS / 2.f) {
+		float& alpha = registry.colors.get(closestWP).a;
+		alpha = alpha == 0.f ? 0.f : 1.f;
+	}
 }
 
 void WorldSystem::shakeCamera(float amount, float ms, float shake_scale, vec2 direction) {
@@ -826,7 +830,7 @@ void WorldSystem::shakeCamera(float amount, float ms, float shake_scale, vec2 di
 void WorldSystem::update_camera(float elapsed_ms) {
 	static float total_time = 0.f;
 	total_time += elapsed_ms;
-	Camera & camera = registry.camera.components[0];
+	Camera& camera = registry.camera.components[0];
 	camera.position = registry.transforms.get(player).position + camera.shake_direction * camera.shake * sin(total_time / camera.shake_scale);
 }
 
@@ -848,86 +852,85 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	while (registry.debugComponents.entities.size() > 0)
 		registry.remove_all_components_of(registry.debugComponents.entities.back());
 
-	if (DEBUG_MODE)
-		create_debug_lines();
-	step_menu();
-	menu_controller(elapsed_ms_since_last_update);
-	int present = glfwJoystickPresent(GLFW_JOYSTICK_1);
+	ScreenState& screen = registry.screenStates.components[0];
 
 	if (state == GAME_STATE::ENDED) {
 		return false;
-	} else if (state == GAME_STATE::START_MENU || state == GAME_STATE::PAUSE_MENU) {
+	}
+	else if (state == GAME_STATE::START_MENU || state == GAME_STATE::PAUSE_MENU) {
+		step_menu();
+		menu_controller(elapsed_ms_since_last_update);
 		// No screen darkening effect or crosshair in menus
-		ScreenState& screen = registry.screenStates.components[0];
 		screen.screen_darken_factor = 0.f;
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		registry.colors.get(cursor).a = 0.f;
-		return false;
 	}
-
-	// Code below this line will happen only if not in start/pause menu
-
-	// Processing the player state
-	ScreenState& screen = registry.screenStates.components[0];
-	// Drain dialog before displaying credits
-	if (state == GAME_STATE::CREDITS) {
-		if (dialog_system->step(elapsed_ms_since_last_update)) {
-			if (registry.credits.size() == 0) {
-				createCredits();
-			}
-			step_roll_credits(elapsed_ms_since_last_update);
+	else if (dialog_system->has_pending()) {
+		// Step dialog
+		dialog_system->step(elapsed_ms_since_last_update);
+		step_invincibility(elapsed_ms_since_last_update);
+		step_controller();
+		registry.colors.get(cursor).a = 0.f;
+	}
+	else if (state == GAME_STATE::CREDITS) {
+		if (registry.credits.size() == 0) {
+			createCredits();
 		}
-		return false;
+		step_roll_credits(elapsed_ms_since_last_update);
 	}
-	// Step dialog
-	state = dialog_system->step(elapsed_ms_since_last_update) ? 
-			GAME_STATE::RUNNING : GAME_STATE::DIALOG;
+	else if (state == GAME_STATE::RUNNING) {
+		/*************************[ gameplay ]*************************/
+		// Code below this line will happen only during gameplay
 
-	step_deathTimer(elapsed_ms_since_last_update);
+		if (DEBUG_MODE) create_debug_lines();
 
-	if (state != GAME_STATE::RUNNING) return false;
-	/*************************[ gameplay ]*************************/
-	// Code below this line will happen only if not paused
+		// Input updates
+		control_direction();
+		control_action();
+		step_controller();
+		// Block velocity update for one step after collision to
+		// avoid going out of border / going through enemy
+		if (allow_accel) {
+			control_movement(elapsed_ms_since_last_update);
+		}
+		else {
+			allow_accel = true;
+		}
 
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-	registry.colors.get(cursor).a = 1.f;
+		// Input feedbacks
+		handle_shooting_sound_effect();
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
-	step_health();
-	step_healthbar(elapsed_ms_since_last_update, healthbar, player, HEALTHBAR_TEXTURE_SIZE.x * 0.72f, true);
-	if (registry.bosses.size() > 0 && registry.bosses.components[0].activated) {
-		registry.colors.get(boss_healthbar).a = 1.f;
-		registry.colors.get(boss_healthbar_frame).a = 1.f;
-		Entity current_boss = registry.bosses.entities[0];
-		step_healthbar(elapsed_ms_since_last_update, boss_healthbar, current_boss, BOSS_HEALTHBAR_TEXTURE_SIZE.x * 0.75f, false);
-	}
-	step_healthBoost(elapsed_ms_since_last_update);
-	step_invincibility(elapsed_ms_since_last_update);
-	step_attack(elapsed_ms_since_last_update);
-	step_dash(elapsed_ms_since_last_update);
-	if (!(registry.bosses.size() > 0 && registry.bosses.components[0].activated)) {
-		step_enemySpawn(elapsed_ms_since_last_update);
-	}
-	step_timer_with_callback(elapsed_ms_since_last_update);
-	step_waypoints();
-	step_controller();
-	step_bossfight();
-	step_chests();
+		// Game logic
+		step_deathTimer(elapsed_ms_since_last_update);
+		step_health();
+		step_healthbar(elapsed_ms_since_last_update, healthbar, player, HEALTHBAR_TEXTURE_SIZE.x * 0.72f, true);
+		if (registry.bosses.size() > 0 && registry.bosses.components[0].activated) {
+			registry.colors.get(boss_healthbar).a = 1.f;
+			registry.colors.get(boss_healthbar_frame).a = 1.f;
+			Entity current_boss = registry.bosses.entities[0];
+			step_healthbar(elapsed_ms_since_last_update, boss_healthbar, current_boss, BOSS_HEALTHBAR_TEXTURE_SIZE.x * 0.75f, false);
+		}
+		step_healthBoost(elapsed_ms_since_last_update);
+		step_invincibility(elapsed_ms_since_last_update);
+		step_attack(elapsed_ms_since_last_update);
+		step_dash(elapsed_ms_since_last_update);
+		if (!(registry.bosses.size() > 0 && registry.bosses.components[0].activated)) {
+			step_enemySpawn(elapsed_ms_since_last_update);
+		}
+		step_timer_with_callback(elapsed_ms_since_last_update);
+		step_waypoints();
+		detect_bossfight();
+		step_chests();
 
-	// Block velocity update for one step after collision to
-	// avoid going out of border / going through enemy
-	if (allow_accel) {
-		control_movement(elapsed_ms_since_last_update);
+		// Cleanup
+		remove_garbage();
 	}
 	else {
-		allow_accel = true;
+		assert(false);	// Invalid game state
 	}
-	control_direction();
-	control_action();
 
-	handle_shooting_sound_effect();
-	remove_garbage();
-
-	return true;
+	return state == GAME_STATE::RUNNING && !dialog_system->has_pending();
 }
 
 // Draw debug line for all mesh edges in debug mode
@@ -979,19 +982,21 @@ void WorldSystem::populate_region_goals() {
 				Entity cure = createCure(region.interest_point);
 				createWaypoint(region.goal, cure);
 			}
-		} else if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
+		}
+		else if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
 			if (game.isCureObtained && !game.isSecondBossDefeated) {
 				Entity secondBoss = createSecondBoss(renderer, region.interest_point);
 				createWaypoint(region.goal, secondBoss);
 			}
-		} else {
+		}
+		else {
 			Entity chest = createChest(region.interest_point, region.goal);
 			createWaypoint(region.goal, chest);
 		}
 	}
 }
 
-void WorldSystem::load_player_abilities() {
+void WorldSystem::populate_player_abilities() {
 	for (PlayerAbility& ability_component : registry.playerAbilities.components) {
 		PLAYER_ABILITY_ID ability = ability_component.id;
 		switch (ability) {
@@ -1039,16 +1044,13 @@ void WorldSystem::load_player_abilities() {
 
 // Reset the world state to its initial state
 void WorldSystem::restart_game(bool hard_reset) {
-	// Debugging for memory/component leaks
-	registry.list_all_components();
-	printf("==============\nRestarting\n==============\n");
+	printf("\n=========================\n|\tRestarting\t|\n=========================\n");
 
+	reset_game_state(hard_reset);
 
-	/*************************[ cleanup ]*************************/
-	dialog_system->clear_pending_dialogs();
+	/*************************[ setup new world ]*************************/
+
 	if (hard_reset) {
-		reset_persistent_game_state();
-
 		// Populate initial dialogs
 		dialog_system->add_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO1);
 		dialog_system->add_dialog(TEXTURE_ASSET_ID::DIALOG_INTRO2);
@@ -1062,60 +1064,22 @@ void WorldSystem::restart_game(bool hard_reset) {
 		dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_WAYPOINTS);
 		dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_GAME_START);
 	}
-	Mix_FadeInMusic(backgroundMusic["main"], -1, 5000);
 
-
-	// reverse active effects
-	for (auto event : registry.timedEvents.components) {
-		event.callback();
-	}
-	while (registry.timedEvents.entities.size() > 0) {
-		registry.remove_all_components_of(registry.timedEvents.entities.back());
-	}
-	// Remove all entities that we created
-	// All that have a motion
-	while (registry.motions.entities.size() > 0)
-		registry.remove_all_components_of(registry.motions.entities.back());
-
-	while (registry.cysts.entities.size() > 0)
-		registry.remove_all_components_of(registry.cysts.entities.back());
-
-	// Reset enemy counts
-	for (auto& count : enemyCounts) {
-		count.second = 0;
-	}
-
-
-
-	// Debugging for memory/component leaks
-	registry.list_all_components();
-
-	/*************************[ setup new world ]*************************/
-
-	// Reset the game state
-	current_speed = 1.f;
-	state = GAME_STATE::RUNNING;
-	isShootingSoundQueued = false;
-
-	//if no gameMode selected yet, set to regular mode
-	if (registry.gameMode.entities.empty()) {
-		Entity placeHolder = Entity();
-		registry.gameMode.insert(placeHolder, regularMode);
-	}
 	maxEnemies[ENEMY_ID::RED] = registry.gameMode.components.back().max_red;
 	maxEnemies[ENEMY_ID::GREEN] = registry.gameMode.components.back().max_green;
 	maxEnemies[ENEMY_ID::YELLOW] = registry.gameMode.components.back().max_yellow;
-	
+
 	// Create a new player
 	player = createPlayer({ 0, 0 });
 	effects_system->player = player;
-	load_player_abilities();
-	
+	populate_player_abilities();
+
 	// Populate regions
 	if (DEBUG_MODE) {
 		createBoss(renderer, { 100.f, 100.f });
 		createSecondBoss(renderer, { -100.f, 100.f });
-	} else {
+	}
+	else {
 		populate_region_goals();
 	}
 
@@ -1124,26 +1088,24 @@ void WorldSystem::restart_game(bool hard_reset) {
 	registry.colors.get(boss_healthbar_frame).a = 0.f;
 
 	createRandomCysts(rng);
-
-	// reset these variables
-	individual_spawn_interval = 1000.f;
-	enemy_spawn_cooldown = 5000.f;
+	update_camera(0.f);
 }
 
 // Call this method each frame to update the space bar duration
 void updateSpaceBarPressDuration() {
 	if (keys_pressed[GLFW_KEY_SPACE] || (controller_buttons != nullptr && controller_buttons[2])) {
 		spaceBarPressDuration += 1;
-	} else {
+	}
+	else {
 		spaceBarPressDuration = 0.0f;
 	}
 }
 
 bool isHoldingSpace(float time_ms) {
-    if (spaceBarPressDuration >= time_ms) {
-        return true;
-    }
-    return false;
+	if (spaceBarPressDuration >= time_ms) {
+		return true;
+	}
+	return false;
 }
 
 void WorldSystem::squish(Entity entity, float squish_amount) {
@@ -1226,81 +1188,81 @@ void WorldSystem::resolve_collisions() {
 		}
 		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_CHEST) {
 			updateSpaceBarPressDuration();
-            Entity chestEntity = collision.other_entity;
-            Chest& chest = registry.chests.get(chestEntity);
+			Entity chestEntity = collision.other_entity;
+			Chest& chest = registry.chests.get(chestEntity);
 
 			if (!chest.isOpened && isHoldingSpace(100.0f)) {
 				enemy_spawn_cooldown = 1000.f; // lower cooldown set by step_chests()
 
-                chest.isOpened = true;
+				chest.isOpened = true;
 				Entity abilityEntity = Entity();
 
-                // Grant the ability to the player
-				switch(chest.ability) {
-					case REGION_GOAL_ID::SWORD_ATTACK:{
-						registry.playerAbilities.insert(abilityEntity, { PLAYER_ABILITY_ID::SWORD });
-						createSword(renderer, player);
-						dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_SWORD, 1500.f);
-						if (controller_mode) {
-							dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_SWORD_CONTROLLER, 1000.f);
-						}
-						else {
-							dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_SWORD_MOUSE, 1000.f);
-						}
-						Mix_PlayChannel(chunkToChannel["sword_unlock"], soundChunks["sword_unlock"], 0);
-						std::cout << "Player received SWORD ability from chest." << std::endl;
-						break;
+				// Grant the ability to the player
+				switch (chest.ability) {
+				case REGION_GOAL_ID::SWORD_ATTACK: {
+					registry.playerAbilities.insert(abilityEntity, { PLAYER_ABILITY_ID::SWORD });
+					createSword(renderer, player);
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_SWORD, 1500.f);
+					if (controller_mode) {
+						dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_SWORD_CONTROLLER, 1000.f);
 					}
-					case REGION_GOAL_ID::MULTIPLE_BULLETS: {
-						registry.playerAbilities.insert(abilityEntity, { PLAYER_ABILITY_ID::BULLET_BOOST });
-						assert(registry.guns.has(player));
-						Gun& gun_component = registry.guns.get(player);
-						gun_component.attack_delay /= 2;
-						Entity gun_entity = getAttachment(player, ATTACHMENT_ID::GUN);
-						assert(registry.colors.has(gun_entity));
-						vec4& gun_color = registry.colors.get(gun_entity);
-						gun_color.g = 0.5f;
-						gun_color.b = 0.5f;
-						assert(registry.attachments.has(gun_entity));
-						Attachment& att = registry.attachments.get(gun_entity);	// This is a quick workaround
-						att.relative_transform_2.scale({ 1.5f, 1.5f });
-						dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_BULLETBOOST, 1500.f);
-						Mix_PlayChannel(chunkToChannel["bullet_unlock"], soundChunks["bullet_unlock"], 0);
-						std::cout << "Player received BULLET_BOOST ability from chest." << std::endl;
-						break;
+					else {
+						dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_SWORD_MOUSE, 1000.f);
 					}
-					case REGION_GOAL_ID::HEALTH_BOOST: {
-						registry.playerAbilities.insert(abilityEntity, { PLAYER_ABILITY_ID::HEALTH_BOOST });
-						Health& health = registry.healthValues.get(player);
-						assert(registry.renderRequests.has(healthbar_frame));
-						registry.renderRequests.get(healthbar_frame).used_texture = TEXTURE_ASSET_ID::HEALTHBAR_FRAME_BOOST;
-						assert(registry.healthbar.has(healthbar));
-						registry.healthbar.get(healthbar).full_health_color = {0.f, 1.f, 1.f, 1.f};
-						dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_HEALTHBOOST, 1500.f);
-						health.healthMultiplier = 2.0f; // Double the health multiplier
-						health.maxHealth *= health.healthMultiplier; // Update maximum health
-						health.health = health.maxHealth; // Set current health to max
-						health.healthIncrement = 1.0f; // Set health increment, e.g., 1 health point per second
-						Mix_PlayChannel(chunkToChannel["health_unlock"], soundChunks["health_unlock"], 0);
-						std::cout << "Player received HEALTH_BOOST ability from chest." << std::endl;
-						break;
+					Mix_PlayChannel(chunkToChannel["sword_unlock"], soundChunks["sword_unlock"], 0);
+					std::cout << "Player received SWORD ability from chest." << std::endl;
+					break;
+				}
+				case REGION_GOAL_ID::MULTIPLE_BULLETS: {
+					registry.playerAbilities.insert(abilityEntity, { PLAYER_ABILITY_ID::BULLET_BOOST });
+					assert(registry.guns.has(player));
+					Gun& gun_component = registry.guns.get(player);
+					gun_component.attack_delay /= 2;
+					Entity gun_entity = getAttachment(player, ATTACHMENT_ID::GUN);
+					assert(registry.colors.has(gun_entity));
+					vec4& gun_color = registry.colors.get(gun_entity);
+					gun_color.g = 0.5f;
+					gun_color.b = 0.5f;
+					assert(registry.attachments.has(gun_entity));
+					Attachment& att = registry.attachments.get(gun_entity);	// This is a quick workaround
+					att.relative_transform_2.scale({ 1.5f, 1.5f });
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_BULLETBOOST, 1500.f);
+					Mix_PlayChannel(chunkToChannel["bullet_unlock"], soundChunks["bullet_unlock"], 0);
+					std::cout << "Player received BULLET_BOOST ability from chest." << std::endl;
+					break;
+				}
+				case REGION_GOAL_ID::HEALTH_BOOST: {
+					registry.playerAbilities.insert(abilityEntity, { PLAYER_ABILITY_ID::HEALTH_BOOST });
+					Health& health = registry.healthValues.get(player);
+					assert(registry.renderRequests.has(healthbar_frame));
+					registry.renderRequests.get(healthbar_frame).used_texture = TEXTURE_ASSET_ID::HEALTHBAR_FRAME_BOOST;
+					assert(registry.healthbar.has(healthbar));
+					registry.healthbar.get(healthbar).full_health_color = { 0.f, 1.f, 1.f, 1.f };
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_HEALTHBOOST, 1500.f);
+					health.healthMultiplier = 2.0f; // Double the health multiplier
+					health.maxHealth *= health.healthMultiplier; // Update maximum health
+					health.health = health.maxHealth; // Set current health to max
+					health.healthIncrement = 1.0f; // Set health increment, e.g., 1 health point per second
+					Mix_PlayChannel(chunkToChannel["health_unlock"], soundChunks["health_unlock"], 0);
+					std::cout << "Player received HEALTH_BOOST ability from chest." << std::endl;
+					break;
+				}
+				case REGION_GOAL_ID::DASH: {
+					registry.playerAbilities.insert(abilityEntity, { PLAYER_ABILITY_ID::DASHING });
+					createDashing(player);
+					dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_DASHING, 1500.f);
+					if (controller_mode) {
+						dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_DASHING_CONTROLLER, 1000.f);
 					}
-					case REGION_GOAL_ID::DASH: {
-						registry.playerAbilities.insert(abilityEntity, { PLAYER_ABILITY_ID::DASHING });
-						createDashing(player);
-						dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_DASHING, 1500.f);
-						if (controller_mode) {
-							dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_DASHING_CONTROLLER, 1000.f);
-						}
-						else {
-							dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_DASHING_KEYBOARD, 1000.f);
-						}
-						Mix_PlayChannel(chunkToChannel["dash_unlock"], soundChunks["dash_unlock"], 0);
-						std::cout << "Player received DASHING ability from chest." << std::endl;
-						break;
+					else {
+						dialog_system->add_dialog(TEXTURE_ASSET_ID::TUTORIAL_UNLOCK_DASHING_KEYBOARD, 1000.f);
 					}
-					default:
-						std::cout << "Unknown ability. Error." << std::endl;
+					Mix_PlayChannel(chunkToChannel["dash_unlock"], soundChunks["dash_unlock"], 0);
+					std::cout << "Player received DASHING ability from chest." << std::endl;
+					break;
+				}
+				default:
+					std::cout << "Unknown ability. Error." << std::endl;
 				}
 
 				for (auto& region : registry.regions.components) {
@@ -1314,15 +1276,16 @@ void WorldSystem::resolve_collisions() {
 			else if (!chest.isOpened) {
 				show_hold_guide = true;
 			}
-        }
+		}
 		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_CURE) {
 			Entity cureEntity = collision.other_entity;
 			registry.game.get(game_entity).isCureObtained = true;
-			
+
 			for (Region& region : registry.regions.components) {
 				if (region.goal == REGION_GOAL_ID::CURE) {
 					region.is_cleared = true;
-				} else if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
+				}
+				else if (region.goal == REGION_GOAL_ID::CANCER_CELL) {
 					Entity secondBoss = createSecondBoss(renderer, region.interest_point);
 					createWaypoint(region.goal, secondBoss);
 				}
@@ -1334,7 +1297,7 @@ void WorldSystem::resolve_collisions() {
 			// When bullet collides with enemy, only enemy gets knocked back,
 			// towards its relative direction from the enemy
 			Entity enemy_entity = collision.other_entity;
-			Enemy enemyAttrib = registry.enemies.get(enemy_entity);
+			Enemy& enemyAttrib = registry.enemies.get(enemy_entity);
 			if (enemyAttrib.type != ENEMY_ID::BOSS) {
 				Transform& enemy_transform = registry.transforms.get(enemy_entity);
 				Motion& enemy_motion = registry.motions.get(enemy_entity);
@@ -1349,13 +1312,13 @@ void WorldSystem::resolve_collisions() {
 			enemyHealth.health -= registry.projectiles.get(entity).damage;
 
 			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
-	
+
 			garbage.push_back(entity);
-			
+
 		}
 		else if (collision.collision_type == COLLISION_TYPE::BULLET_WITH_CYST) {
 			Entity cyst = collision.other_entity;
-			
+
 			// Deal damage to enemy
 			Health& health = registry.healthValues.get(cyst);
 			health.health -= registry.projectiles.get(entity).damage;
@@ -1378,7 +1341,8 @@ void WorldSystem::resolve_collisions() {
 				if (enemyAttrib.type != ENEMY_ID::BOSS) {
 					if (registry.melees.get(sword_holder).animation_timer > 0.f) {
 						enemy_motion.velocity = enemy_motion.max_velocity * knockback_direction;
-					} else {
+					}
+					else {
 						// Less knockback when sword is not slashing
 						enemy_motion.velocity = enemy_motion.max_velocity / 2.f * knockback_direction;
 					}
@@ -1390,7 +1354,8 @@ void WorldSystem::resolve_collisions() {
 				Health& enemyHealth = registry.healthValues.get(enemy_entity);
 				if (registry.melees.get(sword_holder).animation_timer > 0.f) {
 					enemyHealth.health -= registry.melees.get(sword_holder).damage;
-				} else {
+				}
+				else {
 					// Deal less damage when sword is not slashing
 					enemyHealth.health -= registry.melees.get(sword_holder).damage / 4.f;
 				}
@@ -1400,7 +1365,7 @@ void WorldSystem::resolve_collisions() {
 
 				Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
 			}
-			
+
 		}
 		else if (collision.collision_type == COLLISION_TYPE::SWORD_WITH_CYST) {
 			assert(registry.attachments.has(entity));
@@ -1409,21 +1374,22 @@ void WorldSystem::resolve_collisions() {
 
 			Entity cyst = collision.other_entity;
 			Cyst& cyst_attrib = registry.cysts.get(cyst);
-			
+
 			if (cyst_attrib.sword_attack_cd <= 0.f) {
-			// Deal damage to cyst
-			Health& health = registry.healthValues.get(cyst);
-			if (registry.melees.get(sword_holder).animation_timer > 0.f) {
-				health.health -= registry.melees.get(sword_holder).damage;
-			} else {
-				health.health -= registry.melees.get(sword_holder).damage / 8.f;
-			}
+				// Deal damage to cyst
+				Health& health = registry.healthValues.get(cyst);
+				if (registry.melees.get(sword_holder).animation_timer > 0.f) {
+					health.health -= registry.melees.get(sword_holder).damage;
+				}
+				else {
+					health.health -= registry.melees.get(sword_holder).damage / 8.f;
+				}
 
-			// Give cyst invincibility to sword for a moment after taking an attack
-			cyst_attrib.sword_attack_cd = 500.f;
-			squish(cyst, 0.9f);
+				// Give cyst invincibility to sword for a moment after taking an attack
+				cyst_attrib.sword_attack_cd = 500.f;
+				squish(cyst, 0.9f);
 
-			Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
+				Mix_PlayChannel(chunkToChannel["enemy_hit"], soundChunks["enemy_hit"], 0);
 			}
 		}
 		else if (collision.collision_type == COLLISION_TYPE::PLAYER_WITH_CYST
@@ -1505,7 +1471,8 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 		if (action == GLFW_PRESS) {
 			keys_pressed[key] = 1;
 			spaceBarPressDuration = 0.0f; // Reset duration on new press
-		} else if (action == GLFW_RELEASE) {
+		}
+		else if (action == GLFW_RELEASE) {
 			keys_pressed[key] = 0;
 		}
 	}
@@ -1543,7 +1510,7 @@ void WorldSystem::on_mouse_move(vec2 pos) {
 	float offsetX = -60 * sin(angle);
 	float offsetY = -60 * cos(angle);
 	vec2 cursor_position = { clamp(mouseScreenCoord.x + offsetX, -CONTENT_WIDTH_PX / 2.f + 60, CONTENT_WIDTH_PX / 2.f - 60),
-							 clamp(mouseScreenCoord.y + offsetY, - CONTENT_HEIGHT_PX / 2.f + 60, CONTENT_HEIGHT_PX / 2.f - 60)};
+							 clamp(mouseScreenCoord.y + offsetY, -CONTENT_HEIGHT_PX / 2.f + 60, CONTENT_HEIGHT_PX / 2.f - 60) };
 
 	//set cursor/crosshair location
 	registry.transforms.get(cursor).position = cursor_position;
@@ -1590,12 +1557,12 @@ void WorldSystem::menu_controller(float elapsed_ms_since_last_update) {
 
 
 
-		if(state == GAME_STATE::START_MENU && button_select==BUTTON_SELECT::NONE){
+		if (state == GAME_STATE::START_MENU && button_select == BUTTON_SELECT::NONE) {
 			if (axes_state[1] > 0.3 || axes_state[1] < -0.3 || buttons[15] || buttons[17]) {
 				button_select = BUTTON_SELECT::START;
 				mouse = { 0,40 };
 			}
-		
+
 		}
 		else if (state == GAME_STATE::START_MENU && button_select == BUTTON_SELECT::START) {
 
@@ -1824,7 +1791,7 @@ void WorldSystem::control_movement(float elapsed_ms) {
 	playermovement.velocity.y -= elapsed_ms * playermovement.acceleration_unit * axes_state[1];
 
 
-	if ((!(keys_pressed[GLFW_KEY_S] || keys_pressed[GLFW_KEY_W]) || (keys_pressed[GLFW_KEY_S] && keys_pressed[GLFW_KEY_W]))&& (axes_state[1] <= 0.3 && axes_state[1] >= -0.3)) {
+	if ((!(keys_pressed[GLFW_KEY_S] || keys_pressed[GLFW_KEY_W]) || (keys_pressed[GLFW_KEY_S] && keys_pressed[GLFW_KEY_W])) && (axes_state[1] <= 0.3 && axes_state[1] >= -0.3)) {
 		playermovement.velocity.y *= pow(playermovement.deceleration_unit, elapsed_ms);
 	}
 
@@ -1850,104 +1817,118 @@ void WorldSystem::control_movement(float elapsed_ms) {
 	}
 }
 
-void WorldSystem::reset_persistent_game_state() {
-    // Debugging for memory/component leaks
-    registry.list_all_components();
-    std::cout << "Clearing game state\n";
+template <typename Component>
+void WorldSystem::clearSpecificEntities(ComponentContainer<Component>& componentRegistry) {
+	while (!componentRegistry.entities.empty()) {
+		registry.remove_all_components_of(componentRegistry.entities.back());
+	}
+}
 
-    for (auto event : registry.timedEvents.components) {
-        event.callback();
-    }
+void WorldSystem::reset_game_state(bool hard_reset) {
+	// Debugging for memory/component leaks
+	std::cout << "\n------------ Before Cleanup ------------\n";
+	registry.list_all_components();
 
-    auto clearSpecificEntities = [this](auto& componentRegistry) {
-        while (!componentRegistry.entities.empty()) {
-            registry.remove_all_components_of(componentRegistry.entities.back());
-        }
-    };
 
-    dialog_system->clear_pending_dialogs();
+	dialog_system->clear_pending_dialogs();
+	// reverse active effects
+	for (auto event : registry.timedEvents.components) {
+		event.callback();
+	}
 
-	std::cout << "Clearing stuff now\n";
-
-    // Clear regions, enemies, and cysts
-	clearSpecificEntities(registry.game);
-	//std::cout << "Game State Cleared\n";
-	clearSpecificEntities(registry.waypoints);
-	//std::cout << "Waypoints Cleared\n";
-	clearSpecificEntities(registry.projectiles);
-	//std::cout << "Projectiles Cleared\n";
-	clearSpecificEntities(registry.playerAbilities);
-	//std::cout << "Abilties Cleared\n";
-    clearSpecificEntities(registry.enemies);
-	//std::cout << "Enemies Cleared\n";
-    clearSpecificEntities(registry.cysts);
-	//std::cout << "Cysts Cleared\n";
-	clearSpecificEntities(registry.chests);
-	//std::cout << "Chests Cleared\n";
-    clearSpecificEntities(registry.cure);
-	//std::cout << "Cure Cleared\n";
-	clearSpecificEntities(registry.attachments);
-	//std::cout << "Attachments Cleared\n";
-	clearSpecificEntities(registry.deathTimers);
+	// Remove entities that will be recreated
+	clearSpecificEntities(registry.timedEvents);
 	clearSpecificEntities(registry.motions);
-	clearSpecificEntities(registry.collisions);
 	clearSpecificEntities(registry.players);
-	clearSpecificEntities(registry.regions);
-	clearSpecificEntities(registry.healthValues);
+	clearSpecificEntities(registry.collisions);
+	clearSpecificEntities(registry.cysts);
+	clearSpecificEntities(registry.waypoints);
+	clearSpecificEntities(registry.chests);
+	clearSpecificEntities(registry.cure);
 	clearSpecificEntities(registry.projectiles);
+	clearSpecificEntities(registry.enemies);
+	clearSpecificEntities(registry.attachments);
+	clearSpecificEntities(registry.deathTimers);
+	clearSpecificEntities(registry.healthValues);
 	clearSpecificEntities(registry.invincibility);
 	clearSpecificEntities(registry.dashes);
 	clearSpecificEntities(registry.collidePlayers);
 	clearSpecificEntities(registry.collideEnemies);
-	clearSpecificEntities(registry.timedEvents);
 	clearSpecificEntities(registry.melees);
 	clearSpecificEntities(registry.guns);
 	clearSpecificEntities(registry.bosses);
 
-	// Clear individual entities
-	registry.remove_all_components_of(healthbar);
-	registry.remove_all_components_of(healthbar_frame);
-	registry.remove_all_components_of(boss_healthbar_frame);
-	registry.remove_all_components_of(boss_healthbar);
-	registry.remove_all_components_of(death_screen);
+	if (hard_reset) {
+		clearSpecificEntities(registry.game);
+		clearSpecificEntities(registry.playerAbilities);
+		clearSpecificEntities(registry.regions);
 
-  // Reset enemy and player counts
-  for (auto &count : enemyCounts) {
-      count.second = 0;
-  }
+		// Clear individual entities
+		registry.remove_all_components_of(healthbar);
+		registry.remove_all_components_of(healthbar_frame);
+		registry.remove_all_components_of(boss_healthbar_frame);
+		registry.remove_all_components_of(boss_healthbar);
+		registry.remove_all_components_of(death_screen);
 
+		createRandomRegions(NUM_REGIONS, rng);
+		registry.game.emplace(game_entity);
+
+		// Set music
+		Mix_FadeInMusic(backgroundMusic["main"], -1, 5000);
+
+		// Recreate Healthbars
+		std::tuple<Entity, Entity> healthbar_elems = createHealthbar({ -CONTENT_WIDTH_PX * 0.34, CONTENT_HEIGHT_PX * 0.43 }, STATUSBAR_SCALE);
+		healthbar = std::get<0>(healthbar_elems);
+		healthbar_frame = std::get<1>(healthbar_elems);
+		healthbar_elems = createBossHealthbar({ 0.f, CONTENT_HEIGHT_PX * -0.42 }, STATUSBAR_SCALE);
+		boss_healthbar = std::get<0>(healthbar_elems);
+		boss_healthbar_frame = std::get<1>(healthbar_elems);
+	}
+
+	// Reset variables
+	for (auto& count : enemyCounts) {
+		count.second = 0;
+	}
+	current_speed = 1.f;
+	individual_spawn_interval = 1000.f;
+	enemy_spawn_cooldown = 5000.f;
+	isShootingSoundQueued = false;
+	state = GAME_STATE::RUNNING;
+
+	std::cout << "\n------------ After Cleanup ------------\n";
 	registry.list_all_components();
-
-  // Reset game state variables
-  current_speed = 1.f;
-  isShootingSoundQueued = false;
-
-	createRandomRegions(NUM_REGIONS, rng);
-	registry.game.emplace(game_entity);
-
-	// Recreate Healthbars
-	std::tuple<Entity, Entity> healthbar_elems = createHealthbar({ -CONTENT_WIDTH_PX * 0.34, CONTENT_HEIGHT_PX * 0.43 }, STATUSBAR_SCALE);
-	healthbar = std::get<0>(healthbar_elems);
-	healthbar_frame = std::get<1>(healthbar_elems);
-	healthbar_elems = createBossHealthbar({ 0.f, CONTENT_HEIGHT_PX * -0.42 }, STATUSBAR_SCALE);
-	boss_healthbar = std::get<0>(healthbar_elems);
-	boss_healthbar_frame = std::get<1>(healthbar_elems);
-
 }
 
 void WorldSystem::load_game() {
-    std::ifstream inFile("savegame.json");
-    if (!inFile) {
-        std::cerr << "Error opening file for reading." << std::endl;
-        return;
-    }
-    json gameState;
-    inFile >> gameState;
+	printf("\n=========================\n|\tLoading\t\t|\n=========================\n");
 
-    // Clear current game state before loading
-    reset_persistent_game_state();
+	std::ifstream inFile("savegame.json");
+	if (!inFile) {
+		std::cerr << "Error opening file for reading." << std::endl;
+		return;
+	}
+	json gameState;
+	inFile >> gameState;
+
+	// Clear current game state before loading
+	reset_game_state(true);
 
 	// Recreate required entities with the saved values
+
+	// Deserialize game mode
+	auto& gameModeData = gameState["gameMode"][0];
+	assert(static_cast<int>(gameModeData["id"]) < game_mode_id_count);
+	GAME_MODE_ID gm_id = static_cast<GAME_MODE_ID>(gameModeData["id"]);
+	setGameMode(gm_id);
+
+	// Deserialize Game Data
+	assert(registry.game.has(game_entity));
+	const auto& gameData = gameState["game"];
+	Game& gameComponent = registry.game.get(game_entity);
+	gameComponent.isFirstBossDefeated = gameData["isFirstBossDefeated"];
+	gameComponent.isCureObtained = gameData["isCureObtained"];
+	gameComponent.isSecondBossDefeated = gameData["isSecondBossDefeated"];
+	gameComponent.isCystTutorialDisplayed = gameData["isCystTutorialDisplayed"];
 
 	// Deserialize and recreate Regions
 	loadRegions(gameState["regions"]);
@@ -1967,121 +1948,105 @@ void WorldSystem::load_game() {
 
 		registry.playerAbilities.insert(abilityEntity, abilityComponent);
 	}
-	load_player_abilities();
+	populate_player_abilities();
 
 	Health& playerHealth = registry.healthValues.get(player);
 	playerHealth.health = playerData["health"];
 
-	// Deserialize Game Data
-	assert(registry.game.has(game_entity));
-	const auto& gameData = gameState["game"];
-	Game& gameComponent = registry.game.get(game_entity);
-	gameComponent.isCureObtained = gameData["isCureObtained"];
-	gameComponent.isSecondBossDefeated = gameData["isSecondBossDefeated"];
-	gameComponent.isCystTutorialDisplayed = gameData["isCystTutorialDisplayed"];
+	// Deserialize Enemies
+	for (const auto& enemyData : gameState["enemies"]) {
+		vec2 position = { enemyData["position"][0], enemyData["position"][1] };
+		float enemyHealth = enemyData["health"];
+		ENEMY_ID enemyType = static_cast<ENEMY_ID>(enemyData["type"]);
+		switch (enemyType) {
+		case ENEMY_ID::BOSS:
+			if (!gameComponent.isFirstBossDefeated) {
+				Entity boss1 = createBoss(renderer, position, enemyHealth);
+				createWaypoint(REGION_GOAL_ID::CURE, boss1);
+			}
+			break;
+		case ENEMY_ID::FRIENDBOSS:
+			if (!gameComponent.isSecondBossDefeated) {
+				Entity boss2 = createSecondBoss(renderer, position, enemyHealth);
+				createWaypoint(REGION_GOAL_ID::CANCER_CELL, boss2);
+			}
+			break;
+		case ENEMY_ID::RED:
+			createRedEnemy(position, enemyHealth);
+			enemyCounts[ENEMY_ID::RED]++;
+			break;
+		case ENEMY_ID::GREEN:
+			createGreenEnemy(position, enemyHealth);
+			enemyCounts[ENEMY_ID::GREEN]++;
+			break;
+		case ENEMY_ID::YELLOW:
+			createYellowEnemy(position, enemyHealth);
+			enemyCounts[ENEMY_ID::YELLOW]++;
+			break;
+		default:
+			// Handle unknown type
+			break;
+		}
 
-	// Deserialize and recreate Regions
-	loadRegions(gameState["regions"]);
+		//std::cout << "Enemy loaded: Type = " << static_cast<int>(enemyType)
+		//          << ", Position = (" << position.x << ", " << position.y << ")"
+		//          << ", Health = " << enemyHealth << "\n";
+	}
 
-    // Deserialize Enemies
-    for (const auto& enemyData : gameState["enemies"]) {
-        vec2 position = { enemyData["position"][0], enemyData["position"][1] };
-        float enemyHealth = enemyData["health"];
-        ENEMY_ID enemyType = static_cast<ENEMY_ID>(enemyData["type"]);
-        switch (enemyType) {
-            case ENEMY_ID::BOSS:
-				if (!gameComponent.isFirstBossDefeated) {
-					Entity boss1 = createBoss(renderer, position, enemyHealth);
-					createWaypoint(REGION_GOAL_ID::CURE, boss1);
-				}
-                break;
-			case ENEMY_ID::FRIENDBOSS:
-				if (!gameComponent.isSecondBossDefeated) {
-					Entity boss2 = createSecondBoss(renderer, position, enemyHealth);
-					createWaypoint(REGION_GOAL_ID::CANCER_CELL, boss2);
-				}
-				break;
-			case ENEMY_ID::RED:
-				createRedEnemy(position, enemyHealth);
-				enemyCounts[ENEMY_ID::RED]++;
-				break;
-			case ENEMY_ID::GREEN:
-				createGreenEnemy(position, enemyHealth);
-				enemyCounts[ENEMY_ID::GREEN]++;
-				break;
-			case ENEMY_ID::YELLOW:
-				createYellowEnemy(position, enemyHealth);
-				enemyCounts[ENEMY_ID::YELLOW]++;
-                break;
-            default:
-                // Handle unknown type
-                break;
-        }
-
-        //std::cout << "Enemy loaded: Type = " << static_cast<int>(enemyType)
-        //          << ", Position = (" << position.x << ", " << position.y << ")"
-        //          << ", Health = " << enemyHealth << "\n";
-    }
-
-    // Deserialize Cysts
-    for (const auto& cystData : gameState["cysts"]) {
-		vec2 position = {cystData["position"][0], cystData["position"][1]};
+	// Deserialize Cysts
+	for (const auto& cystData : gameState["cysts"]) {
+		vec2 position = { cystData["position"][0], cystData["position"][1] };
 		float cystHealth = cystData["health"];
 		createCyst(position, cystHealth);
 
 		//std::cout << "Cyst loaded: Position = (" << position.x << ", " << position.y << ")"
 		//		<< ", Health = " << cystHealth << "\n";
-    }
+	}
 
-    // Deserialize Chests
-    for (const auto& chestData : gameState["chests"]) {
-        vec2 position = {chestData["position"][0], chestData["position"][1]};
-        REGION_GOAL_ID ability = static_cast<REGION_GOAL_ID>(chestData["ability"]);
-        Entity chest = createChest(position, ability);
+	// Deserialize Chests
+	for (const auto& chestData : gameState["chests"]) {
+		vec2 position = { chestData["position"][0], chestData["position"][1] };
+		REGION_GOAL_ID ability = static_cast<REGION_GOAL_ID>(chestData["ability"]);
+		Entity chest = createChest(position, ability);
 		createWaypoint(ability, chest);
-    }
+	}
 
-    // Deserialize Cure
-    if (!gameComponent.isCureObtained && gameState["cure"] != nullptr) {
-        vec2 curePosition = {gameState["cure"]["position"][0], gameState["cure"]["position"][1]};
-        Entity cure = createCure(curePosition);
+	// Deserialize Cure
+	if (!gameComponent.isCureObtained && gameState["cure"] != nullptr) {
+		vec2 curePosition = { gameState["cure"]["position"][0], gameState["cure"]["position"][1] };
+		Entity cure = createCure(curePosition);
 		createWaypoint(REGION_GOAL_ID::CURE, cure);
-    }
+	}
 
-	auto& gameModeData = gameState["gameMode"][0];
-	assert(static_cast<int>(gameModeData["id"]) < game_mode_id_count);
-	GAME_MODE_ID gm_id = static_cast<GAME_MODE_ID>(gameModeData["id"]);
-	setGameMode(gm_id);
-
-    inFile.close();
-    std::cout << "Game state loaded." << std::endl;
+	inFile.close();
+	std::cout << "Game state loaded." << std::endl;
 }
 
 void WorldSystem::loadRegions(const json& regionsData) {
-    // Assuming the regions are saved in the same order they were created
-    assert(regionsData.size() == registry.regions.components.size());
+	// Assuming the regions are saved in the same order they were created
+	assert(regionsData.size() == registry.regions.components.size());
 
 	bool cureUnlocked = registry.game.get(game_entity).isCureObtained;
 	bool secondBossDefeated = registry.game.get(game_entity).isSecondBossDefeated;
 
-    for (size_t i = 0; i < regionsData.size(); ++i) {
-        const auto& regionData = regionsData[i];
-        auto entity = registry.regions.entities[i];
-        Region& region = registry.regions.get(entity);
+	for (size_t i = 0; i < regionsData.size(); ++i) {
+		const auto& regionData = regionsData[i];
+		auto entity = registry.regions.entities[i];
+		Region& region = registry.regions.get(entity);
 
-        // Update region details from JSON data
-        region.theme = static_cast<REGION_THEME_ID>(regionData["theme"]);
-        region.goal = static_cast<REGION_GOAL_ID>(regionData["goal"]);
-        region.enemy = static_cast<ENEMY_ID>(regionData["enemy"]);
-        region.boss = static_cast<BOSS_ID>(regionData["boss"]);
-        region.is_cleared = regionData["is_cleared"];
-        vec2 interest_point = { regionData["interest_point"][0], regionData["interest_point"][1] };
-        region.interest_point = interest_point;
+		// Update region details from JSON data
+		region.theme = static_cast<REGION_THEME_ID>(regionData["theme"]);
+		region.goal = static_cast<REGION_GOAL_ID>(regionData["goal"]);
+		region.enemy = static_cast<ENEMY_ID>(regionData["enemy"]);
+		region.boss = static_cast<BOSS_ID>(regionData["boss"]);
+		region.is_cleared = regionData["is_cleared"];
+		vec2 interest_point = { regionData["interest_point"][0], regionData["interest_point"][1] };
+		region.interest_point = interest_point;
 
-        // Update RenderRequest component
-        RenderRequest& renderReq = registry.renderRequests.get(entity);
-        renderReq.used_texture = region_texture_map[region.theme];
-    }
+		// Update RenderRequest component
+		RenderRequest& renderReq = registry.renderRequests.get(entity);
+		renderReq.used_texture = region_texture_map[region.theme];
+	}
 }
 
 void WorldSystem::save_game() {
@@ -2093,33 +2058,33 @@ void WorldSystem::save_game() {
 	}
 	outFile << gameState.dump(4);
 	outFile.close();
-	std::cout << "Game state saved." << std::endl;	
+	std::cout << "Game state saved." << std::endl;
 }
 
 json WorldSystem::serializeGameState() {
-    json gameState;
+	json gameState;
 
-    // Serialize Regions
-    for (const Region& region : registry.regions.components) {
-        json regionData;
-        regionData["theme"] = static_cast<int>(region.theme);
-        regionData["goal"] = static_cast<int>(region.goal);
-        regionData["enemy"] = static_cast<int>(region.enemy);
-        regionData["boss"] = static_cast<int>(region.boss);
-        regionData["is_cleared"] = region.is_cleared;
-        regionData["interest_point"] = {region.interest_point.x, region.interest_point.y};
-        gameState["regions"].push_back(regionData);
-    }
+	// Serialize Regions
+	for (const Region& region : registry.regions.components) {
+		json regionData;
+		regionData["theme"] = static_cast<int>(region.theme);
+		regionData["goal"] = static_cast<int>(region.goal);
+		regionData["enemy"] = static_cast<int>(region.enemy);
+		regionData["boss"] = static_cast<int>(region.boss);
+		regionData["is_cleared"] = region.is_cleared;
+		regionData["interest_point"] = { region.interest_point.x, region.interest_point.y };
+		gameState["regions"].push_back(regionData);
+	}
 
-    // Serialize Player
-    const auto& playerTransform = registry.transforms.get(player);
-    const auto& playerHealth = registry.healthValues.get(player);
-    gameState["player"]["position"] = {playerTransform.position.x, playerTransform.position.y};
-    gameState["player"]["health"] = playerHealth.health;
+	// Serialize Player
+	const auto& playerTransform = registry.transforms.get(player);
+	const auto& playerHealth = registry.healthValues.get(player);
+	gameState["player"]["position"] = { playerTransform.position.x, playerTransform.position.y };
+	gameState["player"]["health"] = playerHealth.health;
 
 	const auto& gameComponent = registry.game.get(game_entity);
 	gameState["game"]["isFirstBossDefeated"] = gameComponent.isFirstBossDefeated;
-    gameState["game"]["isCureObtained"] = gameComponent.isCureObtained;
+	gameState["game"]["isCureObtained"] = gameComponent.isCureObtained;
 	gameState["game"]["isSecondBossDefeated"] = gameComponent.isSecondBossDefeated;
 	gameState["game"]["isCystTutorialDisplayed"] = gameComponent.isCystTutorialDisplayed;
 
@@ -2128,56 +2093,56 @@ json WorldSystem::serializeGameState() {
 		gameState["playerAbilities"].push_back(static_cast<int>(ability.id));
 	}
 
-    // Serialize Enemies
-    auto& enemiesContainer = registry.enemies;
-    for (uint i = 0; i < enemiesContainer.size(); i++) {
-	const Enemy& enemyType = enemiesContainer.components[i];
-	if (enemyType.type == ENEMY_ID::BOSS_ARM || enemyType.type == ENEMY_ID::FRIENDBOSSCLONE) continue;	// don't save these
-        Entity enemyEntity = enemiesContainer.entities[i];
-        const auto& enemyTransform = registry.transforms.get(enemyEntity);
-        const auto& enemyHealth = registry.healthValues.get(enemyEntity);
-        json enemyData;
-        enemyData["position"] = {enemyTransform.position.x, enemyTransform.position.y};
-        enemyData["health"] = enemyHealth.health;
-        enemyData["type"] = static_cast<int>(enemyType.type);
-        gameState["enemies"].push_back(enemyData);
-    }
+	// Serialize Enemies
+	auto& enemiesContainer = registry.enemies;
+	for (uint i = 0; i < enemiesContainer.size(); i++) {
+		const Enemy& enemyType = enemiesContainer.components[i];
+		if (enemyType.type == ENEMY_ID::BOSS_ARM || enemyType.type == ENEMY_ID::FRIENDBOSSCLONE) continue;	// don't save these
+		Entity enemyEntity = enemiesContainer.entities[i];
+		const auto& enemyTransform = registry.transforms.get(enemyEntity);
+		const auto& enemyHealth = registry.healthValues.get(enemyEntity);
+		json enemyData;
+		enemyData["position"] = { enemyTransform.position.x, enemyTransform.position.y };
+		enemyData["health"] = enemyHealth.health;
+		enemyData["type"] = static_cast<int>(enemyType.type);
+		gameState["enemies"].push_back(enemyData);
+	}
 
-    // Serialize Cysts
-    auto& cystsContainer = registry.cysts;
-    for (uint i = 0; i < cystsContainer.size(); i++) {
-        Entity cystEntity = cystsContainer.entities[i];
-        const auto& cystTransform = registry.transforms.get(cystEntity);
-        const auto& cystHealth = registry.healthValues.get(cystEntity);
-        json cystData;
-        cystData["position"] = {cystTransform.position.x, cystTransform.position.y};
-        cystData["health"] = cystHealth.health;
-        gameState["cysts"].push_back(cystData);
-    }
+	// Serialize Cysts
+	auto& cystsContainer = registry.cysts;
+	for (uint i = 0; i < cystsContainer.size(); i++) {
+		Entity cystEntity = cystsContainer.entities[i];
+		const auto& cystTransform = registry.transforms.get(cystEntity);
+		const auto& cystHealth = registry.healthValues.get(cystEntity);
+		json cystData;
+		cystData["position"] = { cystTransform.position.x, cystTransform.position.y };
+		cystData["health"] = cystHealth.health;
+		gameState["cysts"].push_back(cystData);
+	}
 
-    // Serialize Chests
-    for (const Chest& chest : registry.chests.components) {
-        if (!chest.isOpened) {
-            json chestData;
-            chestData["position"] = {chest.position.x, chest.position.y};
-            chestData["ability"] = static_cast<int>(chest.ability);
-            gameState["chests"].push_back(chestData);
-        }
-    }
+	// Serialize Chests
+	for (const Chest& chest : registry.chests.components) {
+		if (!chest.isOpened) {
+			json chestData;
+			chestData["position"] = { chest.position.x, chest.position.y };
+			chestData["ability"] = static_cast<int>(chest.ability);
+			gameState["chests"].push_back(chestData);
+		}
+	}
 
-    // Serialize Cure (if exists and not picked up)
-    bool cureFound = false;
-    for (const auto& cureEntity : registry.cure.entities) {
-        const auto& cureTransform = registry.transforms.get(cureEntity);
-        json cureData;
-        cureData["position"] = {cureTransform.position.x, cureTransform.position.y};
-        gameState["cure"] = cureData;
-        cureFound = true;
-        break;
-    }
-    if (!cureFound) {
-        gameState["cure"] = nullptr;
-    }
+	// Serialize Cure (if exists and not picked up)
+	bool cureFound = false;
+	for (const auto& cureEntity : registry.cure.entities) {
+		const auto& cureTransform = registry.transforms.get(cureEntity);
+		json cureData;
+		cureData["position"] = { cureTransform.position.x, cureTransform.position.y };
+		gameState["cure"] = cureData;
+		cureFound = true;
+		break;
+	}
+	if (!cureFound) {
+		gameState["cure"] = nullptr;
+	}
 
 	// Serialize game mode
 	GameMode& gameMode = registry.gameMode.components.back();
@@ -2186,16 +2151,16 @@ json WorldSystem::serializeGameState() {
 
 	gameState["gameMode"].push_back(gameModeData);
 
-    return gameState;
+	return gameState;
 }
 
 bool WorldSystem::hasPlayerAbility(PLAYER_ABILITY_ID abilityId) {
-    for (uint i = 0; i < registry.playerAbilities.components.size(); i++) {
+	for (uint i = 0; i < registry.playerAbilities.components.size(); i++) {
 		if (registry.playerAbilities.components[i].id == abilityId) {
 			return true;
 		}
-    }
-    return false;
+	}
+	return false;
 }
 
 Entity& WorldSystem::getAttachment(Entity character, ATTACHMENT_ID type) {
@@ -2219,7 +2184,7 @@ void WorldSystem::control_action() {
 		if (controller_buttons[4]) {
 			player_dash();
 		}
-	
+
 	}
 	if (keys_pressed[GLFW_MOUSE_BUTTON_LEFT]) {
 		player_shoot();
@@ -2249,7 +2214,7 @@ void WorldSystem::control_direction() {
 		if (!(axes_state[5] <= 0.4 && axes_state[5] >= -0.4) || !(axes_state[2] <= 0.4 && axes_state[2] >= -0.4)) {
 			float controller_angle = atan2f(-axes_state[5] * abs(axes_state[5]), axes_state[2] * abs(axes_state[2]));
 			playertransform.angle = controller_angle + playertransform.angle_offset;
-			
+
 			// Set cursor position
 			const float offset_pixels = 40.f; // Same as the gun
 			const float dist_to_cursor = 200.f;
@@ -2259,7 +2224,8 @@ void WorldSystem::control_direction() {
 			cursortransform.position = t.mat[2];
 		}
 
-	} else {
+	}
+	else {
 		float mouse_angle = atan2f(mouse.y, mouse.x);
 		playertransform.angle = mouse_angle + playertransform.angle_offset;
 
@@ -2286,7 +2252,8 @@ void WorldSystem::player_shoot() {
 	if (playerGun.attack_timer <= 0) {
 		createBullet(player, playerGun.bullet_size, playerGun.bullet_color);
 		playerGun.attack_timer = playerGun.attack_delay;
-	} else if (playerGun.attack_timer > PLAYER_ATTACK_DELAY * 2 &&
+	}
+	else if (playerGun.attack_timer > PLAYER_ATTACK_DELAY * 2 &&
 		!Mix_Playing(chunkToChannel["player_shoot_1"])) {
 		// for attack delay effect or long cooldown attacks
 		Mix_PlayChannel(chunkToChannel["player_shoot_1"], soundChunks["no_ammo"], 0);
@@ -2314,7 +2281,7 @@ void WorldSystem::player_sword_slash() {
 void WorldSystem::player_dash() {
 	// Check if the player's dash ability is unlocked
 	if (!registry.dashes.has(player)) return;
-    
+
 	Dash& playerDash = registry.dashes.get(player);
 	if (playerDash.delay_timer_ms > 0) { //make sure player dash cooldown is 0 if not don't allow them to dash
 		return;
@@ -2411,29 +2378,37 @@ void WorldSystem::step_menu() {
 		MENU_OPTION option = menu_system->poll_start_menu();
 		if (option == MENU_OPTION::START_GAME) {
 			restart_game(true);
-		} else if (option == MENU_OPTION::LOAD_GAME) {
+		}
+		else if (option == MENU_OPTION::LOAD_GAME) {
 			load_game();
-			state = GAME_STATE::RUNNING;
-		} else if (option == MENU_OPTION::EXIT_GAME) {
+		}
+		else if (option == MENU_OPTION::EXIT_GAME) {
 			state = GAME_STATE::ENDED;
-		} else if (option == MENU_OPTION::EASY_GAME_MODE) {
+		}
+		else if (option == MENU_OPTION::EASY_GAME_MODE) {
 			setGameMode(GAME_MODE_ID::EASY_MODE);
-		} else if (option == MENU_OPTION::REGULAR_GAME_MODE) {
+		}
+		else if (option == MENU_OPTION::REGULAR_GAME_MODE) {
 			setGameMode(GAME_MODE_ID::REGULAR_MODE);
 		}
-	} else if (state == GAME_STATE::PAUSE_MENU) {
+	}
+	else if (state == GAME_STATE::PAUSE_MENU) {
 		MENU_OPTION option = menu_system->poll_pause_menu();
 		if (option == MENU_OPTION::RESUME_GAME) {
 			state = GAME_STATE::RUNNING;
-		} else if (option == MENU_OPTION::SAVE_GAME) {
+		}
+		else if (option == MENU_OPTION::SAVE_GAME) {
 			save_game();
-		} else if (option == MENU_OPTION::MUTE_SOUND) {
+		}
+		else if (option == MENU_OPTION::MUTE_SOUND) {
 			Mix_Volume(-1, 0);
 			Mix_VolumeMusic(0);
-		} else if (option == MENU_OPTION::UNMUTE_SOUND) {
+		}
+		else if (option == MENU_OPTION::UNMUTE_SOUND) {
 			Mix_Volume(-1, 128);
 			Mix_VolumeMusic(45);
-		} else if (option == MENU_OPTION::EXIT_CURR_PLAY) {
+		}
+		else if (option == MENU_OPTION::EXIT_CURR_PLAY) {
 			state = GAME_STATE::START_MENU;
 			Mix_FadeInMusic(backgroundMusic["menu"], -1, 5000);
 			button_select = BUTTON_SELECT::NONE;
@@ -2442,24 +2417,44 @@ void WorldSystem::step_menu() {
 	}
 }
 
-void WorldSystem::step_bossfight() {
+// Returns true if new boss fight is detected and false otherwise
+void WorldSystem::detect_bossfight() {
 	if (registry.bosses.size() > 0) {
 		// Assume only 1 boss exists at any time
 		Entity current_boss = registry.bosses.entities[0];
 		if (!registry.bosses.get(current_boss).activated) {
-			vec2 player_pos = registry.transforms.get(player).position;
-			vec2 boss_pos = registry.transforms.get(current_boss).position;
-			vec2 distance = abs(player_pos - boss_pos);
+			Transform& boss_transform = registry.transforms.get(current_boss);
+			Transform& player_transform = registry.transforms.get(player);
+			vec2 player_pos = player_transform.position;
+			vec2 boss_pos = boss_transform.position;
+			vec2 distance = abs(player_pos - boss_pos);	// As soon as half of the boss is visible
 			// Enter boss fight when player is close enough to the boss
-			if (distance.x < CONTENT_WIDTH_PX / 2.f - 100.f && distance.y < CONTENT_HEIGHT_PX / 2.f - 100.f) {
+			if (distance.x < CONTENT_WIDTH_PX / 2.f && distance.y < CONTENT_HEIGHT_PX / 2.f) {
 				registry.bosses.get(current_boss).activated = true;
+				registry.collidePlayers.emplace(current_boss);	// set here to avoid hitting boss when inactive
 				// start boss music
 				Mix_FadeInMusic(backgroundMusic["boss"], -1, 5000);
+
+				// rotate player to face the boss
+				vec2 delta_pos = boss_pos - player_pos;
+				player_transform.angle = atan2f(delta_pos.y, delta_pos.x) + player_transform.angle_offset;
+				for (uint i = 0; i < registry.attachments.size(); i++) {
+					Entity att_entity = registry.attachments.entities[i];
+					Attachment& att_comp = registry.attachments.components[i];
+					if (att_comp.parent == player) {
+						PhysicsSystem::update_attachment_orientation(att_entity, 1000.f);
+					}
+				}
+
 				// Kill all small enemies when boss fight starts
 				for (uint i = 0; i < registry.enemies.size(); i++) {
 					Entity enemy_entity = registry.enemies.entities[i];
-					if (!registry.bosses.has(enemy_entity) && !registry.deathTimers.has(enemy_entity) &&
-							!registry.attachments.has(enemy_entity)) {
+					Enemy& enemy_comp = registry.enemies.components[i];
+					if (enemy_comp.type != ENEMY_ID::BOSS
+						&& enemy_comp.type != ENEMY_ID::BOSS_ARM
+						&& enemy_comp.type != ENEMY_ID::FRIENDBOSS
+						&& enemy_comp.type != ENEMY_ID::FRIENDBOSSCLONE
+						&& !registry.deathTimers.has(enemy_entity)) {
 						startEntityDeath(enemy_entity);
 					}
 				}
@@ -2468,13 +2463,24 @@ void WorldSystem::step_bossfight() {
 					registry.remove_all_components_of(registry.projectiles.entities.back());
 				}
 				if (registry.enemies.get(current_boss).type == ENEMY_ID::BOSS) {
+					registry.motions.get(current_boss).max_velocity = BOSS_MAX_VELOCITY;
+					for (uint i = 0; i < registry.attachments.size(); i++) {
+						Attachment& att = registry.attachments.components[i];
+						if (att.type == ATTACHMENT_ID::BACTERIOPHAGE_ARM) {
+							registry.collidePlayers.emplace(registry.attachments.entities[i]);
+						}
+					}
+
 					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_BOSS_DIALOG1, 1000.f);
 					dialog_system->add_camera_movement(player_pos, boss_pos, 1000.f);
 					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_BOSS_DIALOG2);
 					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_BOSS_DIALOG3);
 					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_BOSS_DIALOG4);
 					dialog_system->add_camera_movement(boss_pos, player_pos, 1000.f);
-				} else if (registry.enemies.get(current_boss).type == ENEMY_ID::FRIENDBOSS) {
+				}
+				else if (registry.enemies.get(current_boss).type == ENEMY_ID::FRIENDBOSS) {
+					registry.motions.get(current_boss).max_velocity = FRIEND_BOSS_MAX_VELOCITY;
+
 					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_FRIEND_BOSS_DIALOG1, 1000.f);
 					dialog_system->add_camera_movement(player_pos, boss_pos, 1000.f);
 					dialog_system->add_dialog(TEXTURE_ASSET_ID::PRE_FRIEND_BOSS_DIALOG2);
@@ -2519,8 +2525,8 @@ void WorldSystem::step_chests() {
 
 							chest.waveActivated = false;
 						}
+						};
 					};
-				};
 			}
 		}
 	}

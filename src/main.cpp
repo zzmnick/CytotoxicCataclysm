@@ -56,8 +56,8 @@ int main()
 		t = now;
 
 		reset_forces();
-		bool isNotPaused = world_system.step(elapsed_ms);
-		if (isNotPaused) {
+		bool isRunning = world_system.step(elapsed_ms);
+		if (isRunning) {
 			ai_system.step(elapsed_ms);
 			physics_system.step(elapsed_ms);
 			world_system.resolve_collisions();
@@ -69,7 +69,7 @@ int main()
 	}
 
 	// Debugging for memory/component leaks
-	printf("==============\nEnding\n==============\n");
+	printf("\n=========================\n|\tEnding\t\t|\n=========================\n");
 	registry.list_all_components();
 
 	return EXIT_SUCCESS;

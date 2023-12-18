@@ -86,8 +86,7 @@ const int cyst_neg_start = static_cast<int>(CYST_EFFECT_ID::SLOW);
 enum class GAME_STATE {
 	START_MENU = 0,
 	PAUSE_MENU = START_MENU + 1,
-	DIALOG = PAUSE_MENU + 1,
-	RUNNING = DIALOG + 1,
+	RUNNING = PAUSE_MENU + 1,
 	ENDED = RUNNING + 1,
 	CREDITS = ENDED + 1,
 };

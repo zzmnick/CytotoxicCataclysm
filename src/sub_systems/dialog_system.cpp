@@ -42,15 +42,13 @@ DialogSystem::~DialogSystem() {
 	registry.remove_all_components_of(rendered_entity);
 };
 
-bool DialogSystem::is_finished() {
-	return dialogs.empty();
-}
-
-bool DialogSystem::is_paused() {
-	return current_status == DIALOG_STATUS::ACTION_TIMER;
+bool DialogSystem::has_pending() {
+	return !dialogs.empty();
 }
 
 void DialogSystem::clear_pending_dialogs() {
+	registry.remove_all_components_of(rendered_entity);
+	current_status = DIALOG_STATUS::DISPLAY;
 	while(!dialogs.empty()) {
 		dialogs.pop();
 	}
@@ -58,7 +56,7 @@ void DialogSystem::clear_pending_dialogs() {
 
 // Returns true if the game should continue running and false if it should be paused
 bool DialogSystem::step(float elapsed_ms) {
-	if (!is_finished() && SHOW_DIALOGS) {
+	if (has_pending() && SHOW_DIALOGS) {
 		if (registry.screenStates.components[0].limit_fov) {
 			prev_limit_fov = true;
 			registry.screenStates.components[0].limit_fov = false;
@@ -94,19 +92,19 @@ bool DialogSystem::step(float elapsed_ms) {
 				// UPDATED: Removed action timer based on feedback from users
 				current_status = DIALOG_STATUS::DISPLAY;
 				dialogs.pop();
-				return is_finished();
+				return !has_pending();
 			}
 			else {
 				return false;
 			}
 			break;
-		case DIALOG_STATUS::ACTION_TIMER:
-			current_stage.skip_delay_duration -= elapsed_ms;
-			if (current_stage.skip_delay_duration <= 0) {
-				current_status = DIALOG_STATUS::DISPLAY;
-				dialogs.pop();
-			}
-			break;
+		//case DIALOG_STATUS::ACTION_TIMER:
+		//	current_stage.skip_delay_duration -= elapsed_ms;
+		//	if (current_stage.skip_delay_duration <= 0) {
+		//		current_status = DIALOG_STATUS::DISPLAY;
+		//		dialogs.pop();
+		//	}
+		//	break;
 		case DIALOG_STATUS::MOVING_CAMERA:
 			current_stage.camera_timer -= elapsed_ms;
 			vec2 current_pos = current_stage.start_pos * (max(0.f, current_stage.camera_timer) / current_stage.camera_duration) + 
@@ -115,7 +113,7 @@ bool DialogSystem::step(float elapsed_ms) {
 			if (current_stage.camera_timer < 0.f) {
 				current_status = DIALOG_STATUS::DISPLAY;
 				dialogs.pop();
-				return is_finished();
+				return !has_pending();
 			} else {
 				return false;
 			}

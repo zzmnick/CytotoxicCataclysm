@@ -10,6 +10,7 @@ class PhysicsSystem
 {
 public:
 	void step(float elapsed_ms);
+	static void update_attachment_orientation(Entity entity, float elapsed_ms);
 
 	PhysicsSystem()
 	{

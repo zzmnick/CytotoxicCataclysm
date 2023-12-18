@@ -115,6 +115,8 @@ Entity createSword(RenderSystem* renderer, Entity& holder) {
 	registry.melees.get(holder).melee_entity = melee_entity;
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SWORD);
 	registry.meshPtrs.emplace(melee_entity, &mesh);
+
+	registry.collideEnemies.emplace(melee_entity);
 	
 	Attachment& attachment = registry.attachments.emplace(melee_entity);
 	attachment.parent = holder;
@@ -150,7 +152,6 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::BACTERIOPHAGE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	registry.collidePlayers.emplace(entity);
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 250.f;
 	motion.max_angular_velocity = M_PI / 6.f;
@@ -158,7 +159,7 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
 	transform.scale = BACTERIOPHAGE_BOSS_SIZE;
-	transform.angle_offset = -M_PI / 2;
+	transform.angle_offset = M_PI / 2;
 	transform.angle = transform.angle_offset;
 
 	Health& enemyHealth = registry.healthValues.emplace(entity);
@@ -172,8 +173,8 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 
 	Gun& weapon = registry.guns.emplace(entity);
 	weapon.damage = 15.f;
-	weapon.offset = { BACTERIOPHAGE_BOSS_SIZE.y / 2.f - 10.f, 0.f };
-	weapon.angle_offset = M_PI / 2;
+	weapon.offset = { -BACTERIOPHAGE_BOSS_SIZE.y / 2.f + 20.f, 0.f };
+	weapon.angle_offset = transform.angle_offset;
 	weapon.bullet_speed = 800.f;
 	weapon.bullet_size = { 45.f, 45.f };
 	weapon.bullet_color = { 0.f, 0.992f, 1.f, 1.f };
@@ -276,7 +277,6 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 	// Create boss components
 	auto boss_entity = Entity();
 	// Assuming boss is a type of enemy
-	registry.collidePlayers.emplace(boss_entity);
 	Dash& enemy_dash = registry.dashes.emplace(boss_entity);
 	enemy_dash.delay_duration_ms = PLAYER_DASH_DELAY / registry.gameMode.components.back().FRIEND_BOSS_DIFFICULTY * 2.f;
 	enemy_dash.active_duration_ms = 50.f;
@@ -288,7 +288,7 @@ Entity createSecondBoss(RenderSystem* renderer, vec2 pos, float health) {
 
 	Transform& transform = registry.transforms.emplace(boss_entity);
 	transform.position = pos;
-	transform.angle_offset = IMMUNITY_TEXTURE_ANGLE + M_PI / 2.f;
+	transform.angle_offset = IMMUNITY_TEXTURE_ANGLE;
 	transform.angle = transform.angle_offset;
 	transform.scale = FRIEND_BOSS_SIZE;
 
@@ -328,15 +328,13 @@ Entity createBossClone(vec2 pos, float health) {
 	// Assuming boss is a type of enemy
 	registry.collidePlayers.emplace(entity);
 
-
-
 	Enemy& new_enemy = registry.enemies.emplace(entity);
 	// Setting initial components values
 	new_enemy.type = ENEMY_ID::FRIENDBOSSCLONE;
 
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
-	transform.angle_offset = IMMUNITY_TEXTURE_ANGLE + M_PI / 2.f;
+	transform.angle_offset = IMMUNITY_TEXTURE_ANGLE;
 	transform.angle = transform.angle_offset;
 	transform.scale = FRIEND_BOSS_SIZE;
 
@@ -365,10 +363,11 @@ Entity createRedEnemy(vec2 pos, float health) {
 	auto entity = Entity();
 	Enemy& new_enemy = registry.enemies.emplace(entity);
 	new_enemy.type = ENEMY_ID::RED;
+	registry.collidePlayers.emplace(entity);
 
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
-	transform.angle_offset = -M_PI / 2;
+	transform.angle_offset = M_PI / 2;
 	transform.angle = transform.angle_offset;
 	transform.scale = RED_ENEMY_SIZE;
 
@@ -394,11 +393,13 @@ Entity createGreenEnemy(vec2 pos, float health) {
 	auto entity = Entity();
 	Enemy& new_enemy = registry.enemies.emplace(entity);
 	new_enemy.type = ENEMY_ID::GREEN;
+	registry.collidePlayers.emplace(entity);
 
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
 	transform.scale = GREEN_ENEMY_SIZE;
-	transform.angle_offset = -0.745*M_PI;
+	transform.angle_offset = 3 * M_PI / 4;
+	transform.angle = transform.angle_offset;
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 200;
@@ -424,6 +425,8 @@ Entity createGreenEnemy(vec2 pos, float health) {
 Entity createYellowEnemy(vec2 pos, float health) {
 	// Create enemy components
 	auto entity = Entity();
+	Enemy& new_enemy = registry.enemies.emplace(entity);
+	new_enemy.type = ENEMY_ID::YELLOW;
 	registry.collidePlayers.emplace(entity);
 
 	Gun& weapon = registry.guns.emplace(entity);
@@ -432,13 +435,9 @@ Entity createYellowEnemy(vec2 pos, float health) {
 	weapon.bullet_size = { 25.f, 25.f };
 	weapon.bullet_color = { 0.718f, 1.f, 0.f, 1.f };
 
-	Enemy& new_enemy = registry.enemies.emplace(entity);
-	new_enemy.type = ENEMY_ID::YELLOW;
-
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
 	transform.scale = YELLOW_ENEMY_SIZE;
-	transform.angle = 1;
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 0.0f;
@@ -459,6 +458,7 @@ Entity createYellowEnemy(vec2 pos, float health) {
 
 Entity createChest(vec2 pos, REGION_GOAL_ID ability) {
     auto entity = Entity();
+	registry.collidePlayers.emplace(entity);
 
     // Set up the transform for the chest
     Transform& transform = registry.transforms.emplace(entity);
@@ -494,6 +494,7 @@ Entity createChest(vec2 pos, REGION_GOAL_ID ability) {
 
 Entity createCure(vec2 pos) {
 	auto entity = Entity();
+	registry.collidePlayers.emplace(entity);
 
 	Transform& transform = registry.transforms.emplace(entity);
     transform.position = pos;
@@ -648,6 +649,7 @@ void createCyst(vec2 pos, float health) {
 	auto cyst_entity = Entity();
 	registry.cysts.emplace(cyst_entity);
 	registry.healthValues.insert(cyst_entity, {health});
+	registry.collidePlayers.emplace(cyst_entity);
 
 	// Motion component only needed for collision check, set all to 0
 	Motion& motion = registry.motions.emplace(cyst_entity);
