@@ -126,28 +126,32 @@ void AISystem::swarm_keep_distance(float elapsed_ms) {
 void AISystem::swarm_block_interestpoint(float elapsed_ms) {
 	Transform& playerTransform = registry.transforms.get(player);
 	// Find closest interest point to the player
-	vec2 interest_point;
+	vec2 closest_interest_point;
 	float min_dist = INFINITY;
-	// TODO: use the new waypoint's interest_point to account for moved boss and cleared regions
-	for (Region& region : registry.regions.components) {
-		float dist = length(region.interest_point - playerTransform.position);
+	for (Waypoint& wp : registry.waypoints.components) {
+		float dist = length(wp.interest_point - playerTransform.position);
 		if (dist <= min_dist) {
-			interest_point = region.interest_point;
+			closest_interest_point = wp.interest_point;
 			min_dist = dist;
 		}
 	}
-	for (Entity entity : registry.enemies.entities) {
-		if (registry.motions.has(entity)			// Ignore if can't move
-			&& !registry.attachments.has(entity)) { // Ignore if is an attachment
+	for (uint i = 0; i < registry.enemies.size(); i++) {
+		Entity entity = registry.enemies.entities[i];
+		Enemy& enemyAttrib = registry.enemies.components[i];
+		if (registry.motions.has(entity)						// Ignore if can't move
+			&& enemyAttrib.type != ENEMY_ID::FRIENDBOSSCLONE	// Ignore if is boss clone
+			&& enemyAttrib.type != ENEMY_ID::FRIENDBOSS			// Ignore if is boss
+			&& enemyAttrib.type != ENEMY_ID::BOSS				// Ignore if is boss
+			&& enemyAttrib.type != ENEMY_ID::BOSS_ARM) {		// Ignore if is boss arm
 			Motion& enemymotion = registry.motions.get(entity);
 			if (enemymotion.max_velocity == 0.f) continue;	// Ignore if can't move
 			
 			assert(registry.transforms.has(entity));
 			Transform& enemytransform = registry.transforms.get(entity);
-			if (length(interest_point - enemytransform.position) > SCREEN_RADIUS * 2.f) continue;	// Ignore if too far
+			if (length(closest_interest_point - enemytransform.position) > SCREEN_RADIUS * 1.5f) continue;	// Ignore if too far
 
 			// Add a small attraction force towards the interest-point
-			enemymotion.force += (interest_point - enemytransform.position) / (SCREEN_RADIUS * 2.f) * 1.5f;
+			enemymotion.force += (closest_interest_point - enemytransform.position) / (SCREEN_RADIUS * 1.5f) * 1.5f;
 		}
 	}
 }

@@ -763,18 +763,18 @@ void WorldSystem::step_waypoints() {
 	for (int i = (int) registry.waypoints.size() - 1; i >= 0; i--) {
 		Entity wp = registry.waypoints.entities[i];
 		Waypoint& waypoint = registry.waypoints.components[i];
-		vec2 target_point;
 
 		// Update waypoint targets to their live position
+		// waypoint.interest_point will be used in AI system
 		if (registry.transforms.has(waypoint.target)) {
-			target_point = registry.transforms.get(waypoint.target).position;
+			waypoint.interest_point = registry.transforms.get(waypoint.target).position;
 		} else {
 			// if target doesn't exist, remove waypoint
 			registry.remove_all_components_of(wp);
 			continue;
 		}
 
-		vec2 interest_point_screen_coord = vec2(renderer->createViewMatrix() * vec3(target_point, 1.0));
+		vec2 interest_point_screen_coord = vec2(renderer->createViewMatrix() * vec3(waypoint.interest_point, 1.0));
 		vec2 result = findIntersectionPoint(interest_point_screen_coord);
 
 		registry.transforms.get(wp).position = result;

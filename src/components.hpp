@@ -631,6 +631,7 @@ struct Melee {
 struct Waypoint {
 	Entity target; // Chest or boss. Can be removed from game
 	REGION_GOAL_ID goal = REGION_GOAL_ID::REGION_GOAL_COUNT;
+	vec2 interest_point;
 	vec2 icon_scale = { 20.f, 20.f };
 };
 
