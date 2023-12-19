@@ -198,32 +198,50 @@ void AISystem::enemy_shoot(float elapsed_ms) {
 void AISystem::enemy_dash(float elapsed_ms) {
 	vec2 playerposition = registry.transforms.get(player).position;
 	for (Entity entity : registry.dashes.entities) {
-		Transform enemy = registry.transforms.get(entity);
-		float distance = length(playerposition - enemy.position);
-		if (registry.enemies.has(entity) && registry.bosses.get(entity).activated) {
+		Transform enemyTransform = registry.transforms.get(entity);
+		if (registry.enemies.has(entity) && registry.bosses.has(entity) && registry.bosses.get(entity).activated) {
+			Enemy& enemyAttrib = registry.enemies.get(entity);
 			Dash& enemyDash = registry.dashes.get(entity);
+			
 			if (enemyDash.delay_timer_ms <= 0.f) {
+				// setup a new dash
+				Motion& enemymotion = registry.motions.get(entity);
+				float currAngle = enemyTransform.angle - enemyTransform.angle_offset;
+				vec2 targetDiff = playerposition - enemyTransform.position;
+				float targetAngle = atan2f(targetDiff.y, targetDiff.x);
+				float distance = length(targetDiff) - length(enemyTransform.scale) - 100.f;
+				float angleRemaining = fabs(targetAngle - currAngle);
+				float dashVelocity; vec2 dashDirection;
+				if (distance < 300.f && enemyAttrib.type == ENEMY_ID::FRIENDBOSS) {
+					// Dashing around the player
+					float decision = (static_cast<float>(rand()) / RAND_MAX); //This generates num between 0 and 1
+					float rightOrleft = decision < 0.5 ? M_PI / 2.f : -M_PI / 2.f;
+					dashDirection = normalize(vec2(cos(currAngle + rightOrleft), sin(currAngle + rightOrleft)));
+					dashVelocity = enemyDash.max_dash_velocity;
+				}
+				else if (angleRemaining <= M_PI / 9.f || angleRemaining - M_PI < ANGLE_PRECISION) {
+					// Dashing towards the player
+					dashDirection = normalize(vec2(cos(currAngle), sin(currAngle)));
+					// Do not pass the player
+					if (enemyDash.max_dash_velocity * enemyDash.active_duration_ms / 1000.f > distance) {
+						dashVelocity = distance / (enemyDash.active_duration_ms / 1000.f);
+					}
+					else {
+						dashVelocity = enemyDash.max_dash_velocity;
+					}
+					
+				} else {
+					return;	// Do not dash
+				}
+				enemymotion.velocity += dashVelocity * dashDirection;
 				enemyDash.delay_timer_ms = enemyDash.delay_duration_ms;
 				enemyDash.active_timer_ms = enemyDash.active_duration_ms;
 			}
-
-			if (enemyDash.active_timer_ms > 0.f) {
-				vec2 dashDirection;
-				if (distance > 300.f) {
-					dashDirection = normalize(vec2(cos(enemy.angle), sin(enemy.angle)));
-				}
-				else {
-					dashDirection = normalize(vec2(cos(enemy.angle - M_PI / 2), sin(enemy.angle - M_PI / 2)));
-				}
-				Motion& enemymotion = registry.motions.get(entity);
-				
-				enemymotion.velocity += enemyDash.max_dash_velocity * dashDirection;
+			else {
+				enemyDash.delay_timer_ms = max(enemyDash.delay_timer_ms - elapsed_ms, 0.f);
+				enemyDash.active_timer_ms = max(enemyDash.active_timer_ms - elapsed_ms, 0.f);
 			}
-
-			enemyDash.delay_timer_ms = max(enemyDash.delay_timer_ms - elapsed_ms, 0.f);
-			enemyDash.active_timer_ms = max(enemyDash.active_timer_ms - elapsed_ms, 0.f);
 		}
-
 	}
 
 }

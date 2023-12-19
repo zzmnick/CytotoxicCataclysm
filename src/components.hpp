@@ -576,8 +576,7 @@ struct Dash {
 	float delay_timer_ms = 0.f;				// Working version of delay_duration_ms
 	float active_duration_ms = 100.f;		// Duration that the entity is dashing
 	float active_timer_ms = 0.f;			// Working version of active_duration_ms
-	float dash_speed = 5.f;
-	float max_dash_velocity = 2000.f;
+	float max_dash_velocity = 2000.f;		// Pixels per second (similar to Motion)
 };
 
 struct Cyst {

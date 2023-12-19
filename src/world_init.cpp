@@ -148,13 +148,18 @@ Entity createSword(RenderSystem* renderer, Entity& holder) {
 
 Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 	// Create boss components
+	GameMode& gameMode = registry.gameMode.components.back();
 	auto entity = Entity();
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::BACTERIOPHAGE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.max_velocity = 250.f;
-	motion.max_angular_velocity = M_PI / 6.f;
+	motion.max_angular_velocity = gameMode.id == GAME_MODE_ID::EASY_MODE ? M_PI / 6.f : M_PI / 4.f;
+	Dash& dash = registry.dashes.emplace(entity);
+	dash.active_duration_ms = 1000.f;
+	dash.delay_duration_ms = gameMode.id == GAME_MODE_ID::EASY_MODE ? 12000.f : 6000.f;
+	dash.max_dash_velocity = 400.f;
 
 	Transform& transform = registry.transforms.emplace(entity);
 	transform.position = pos;
@@ -163,8 +168,8 @@ Entity createBoss(RenderSystem* renderer, vec2 pos, float health) {
 	transform.angle = transform.angle_offset;
 
 	Health& enemyHealth = registry.healthValues.emplace(entity);
-	enemyHealth.health = fmin(health, registry.gameMode.components.back().enemy_health_map[ENEMY_ID::BOSS]);
-	enemyHealth.maxHealth = registry.gameMode.components.back().enemy_health_map[ENEMY_ID::BOSS];
+	enemyHealth.health = fmin(health, gameMode.enemy_health_map[ENEMY_ID::BOSS]);
+	enemyHealth.maxHealth = gameMode.enemy_health_map[ENEMY_ID::BOSS];
 
 	// Setting initial components values
 	Enemy& new_enemy = registry.enemies.emplace(entity);
@@ -214,7 +219,7 @@ void createBossArms(RenderSystem* renderer, Entity bossEntity, vec2 bossSize) {
 			Attachment& articulated = registry.attachments.emplace(entity);
 			articulated.type = ATTACHMENT_ID::BACTERIOPHAGE_ARM;
 			articulated.parent = parent_entity;
-			articulated.angle_freedom = M_PI / 6.f * (arm_part_idx + 1);
+			articulated.angle_freedom = M_PI / 12.f + M_PI / 12.f * (arm_part_idx + 1);
 
 			// Calculate and store the relative position of joint (pivot) with respect to its parent
 			vec2 flipper = { 1.f, 1.f };
@@ -254,7 +259,7 @@ void createBossArms(RenderSystem* renderer, Entity bossEntity, vec2 bossSize) {
 			// The following transform will be adjusted in physics_system to follow its parent
 			registry.transforms.emplace(entity);
 			Motion& motion = registry.motions.emplace(entity);		// This motion is with respect to parent
-			motion.max_angular_velocity = M_PI / 6.f;
+			motion.max_angular_velocity = M_PI / 4.f;
 			registry.enemies.insert(entity, { ENEMY_ID::BOSS_ARM });
 			registry.healthValues.insert(entity, { static_cast<float>(registry.gameMode.components.back().enemy_health_map[ENEMY_ID::BOSS_ARM]) });
 
