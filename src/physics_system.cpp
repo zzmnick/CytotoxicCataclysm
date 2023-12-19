@@ -385,8 +385,7 @@ void step_movement(float elapsed_ms) {
 			else if (speed_above_threshold && animation.total_frame != (int)ANIMATION_FRAME_COUNT::IMMUNITY_MOVING && animation.total_frame != (int)ANIMATION_FRAME_COUNT::IMMUNITY_DYING) {
 				RenderSystem::animationSys_switchAnimation(entity, ANIMATION_FRAME_COUNT::IMMUNITY_MOVING, 30);
 			}
-		}
-		
+		}		
 	}
 }
 

@@ -844,6 +844,20 @@ void WorldSystem::remove_garbage() {
 			registry.remove_all_components_of(bullet);
 		}
 	}
+
+	for (int i = 0; i < registry.enemies.components.size(); i++) {
+		Enemy enemyComponent = registry.enemies.components[i];
+		if (enemyComponent.type == ENEMY_ID::GREEN || enemyComponent.type == ENEMY_ID::RED || enemyComponent.type == ENEMY_ID::YELLOW) {
+			Entity enemyEntity = registry.enemies.entities[i];
+			Transform enemyTransform = registry.transforms.get(enemyEntity);
+			//consider player_pos as the center pointer of the player's view screen. despawn enemy if it is out of the view
+			if (length(enemyTransform.position - player_pos) > SCREEN_RADIUS + 200.f) {
+				registry.remove_all_components_of(enemyEntity);
+				enemyCounts[enemyComponent.type]--;
+				printf("remove enemy with id = %d at position <%f, %f>\n", static_cast<int>(enemyEntity), enemyTransform.position.x, enemyTransform.position.y);
+			}
+		}
+	}
 }
 
 // Update our game world
